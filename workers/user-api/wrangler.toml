@@ -1,0 +1,13 @@
+name = "user-api"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+[env.development]
+routes = [
+  { pattern = "api.localhost/user/*", zone_name = "localhost" }
+]
+
+[env.production]
+routes = [
+  { pattern = "api.example.com/user/*", zone_name = "example.com" }
+]

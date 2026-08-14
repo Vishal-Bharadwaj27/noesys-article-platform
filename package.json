@@ -1,0 +1,17 @@
+{
+  "name": "noesys-article-platform",
+  "version": "1.0.0",
+  "description": "Monorepo for the article platform",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "workers/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces",
+    "build": "npm run build --workspaces",
+    "lint": "npm run lint --workspaces"
+  }
+}
