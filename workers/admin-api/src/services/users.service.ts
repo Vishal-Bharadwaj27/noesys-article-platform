@@ -154,3 +154,33 @@ export async function updateUserAuthRole(db: D1Database, id: string, role: strin
     throw new Error("Some error occurred. Couldn't update the user's role.");
   }
 }
+
+export async function getUserArticles(
+  db: D1Database,
+  userId: string,
+) {
+  const result = await db
+    .prepare(`
+      SELECT
+        a.id,
+        a.title,
+        a.status,
+        a.ai_score,
+        a.version,
+        a.submitted_at,
+
+        at.name AS article_type
+
+      FROM articles a
+      INNER JOIN article_types at
+        ON at.id = a.article_type_id
+
+      WHERE a.user_id = ?
+
+      ORDER BY a.submitted_at DESC
+    `)
+    .bind(userId)
+    .all();
+
+  return result.results;
+}
