@@ -13,5 +13,8 @@
     "dev": "npm run dev --workspaces",
     "build": "npm run build --workspaces",
     "lint": "npm run lint --workspaces"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260818.1"
   }
 }
