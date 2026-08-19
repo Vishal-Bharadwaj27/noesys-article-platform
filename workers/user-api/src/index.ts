@@ -1,5 +1,25 @@
-export default {
-  fetch(request: Request): Response {
-    return new Response('User API')
-  },
-}
+﻿import { Hono } from "hono";
+import authRoutes from "./routes/auth";
+import articleRoutes from "./routes/articles";
+import type { AppEnv } from "./types";
+
+const app = new Hono<AppEnv>();
+
+app.get("/", (c) => {
+  return c.json({
+    success: true,
+    message: "User API is running",
+  });
+});
+
+app.get("/health", (c) => {
+  return c.json({
+    message: "Service is healthy",
+  }, 200);
+});
+
+app.route("/auth", authRoutes);
+app.route("/articles", articleRoutes);
+app.route("/", articleRoutes);
+
+export default app;
