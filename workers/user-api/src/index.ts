@@ -1,6 +1,8 @@
-﻿import { Hono } from "hono";
+import { Hono } from "hono";
 import authRoutes from "./routes/auth";
 import articleRoutes from "./routes/articles";
+import { getArticleTypes } from "./db/articleTypes";
+import { authMiddleware } from "./middleware/auth";
 import type { AppEnv } from "./types";
 
 const app = new Hono<AppEnv>();
@@ -20,6 +22,18 @@ app.get("/health", (c) => {
 
 app.route("/auth", authRoutes);
 app.route("/articles", articleRoutes);
-app.route("/", articleRoutes);
+
+app.get("/article-types", authMiddleware, async (c) => {
+  const db = c.env.DB;
+  const types = await getArticleTypes(db);
+  return c.json({
+    message: "Article types fetched successfully",
+    data: types.map((t) => ({
+      id: t.id,
+      name: t.name,
+      description: t.description,
+    })),
+  });
+});
 
 export default app;
