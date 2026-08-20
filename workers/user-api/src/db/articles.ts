@@ -2,6 +2,7 @@ export type Article = {
   id: string;
   user_id: string;
   article_type_id: string;
+  article_type_name: string;
   title: string;
   content: string;
   status: string;
@@ -13,85 +14,104 @@ export type Article = {
   retry_count: number;
 };
 
+const ARTICLE_COLUMNS = `
+  a.id,
+  a.user_id,
+  a.article_type_id,
+  at.name AS article_type_name,
+  a.title,
+  a.content,
+  a.status,
+  a.ai_score,
+  a.version,
+  a.submitted_at,
+  a.scored_at,
+  a.month_year,
+  a.retry_count
+`;
+
+export type ArticlePagination = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
 export async function getArticlesByUser(
   db: D1Database,
   userId: string,
-  month?: string
-): Promise<Article[]> {
-  if (month) {
+  month?: string,
+  viewAll?: boolean,
+  page?: number,
+  limit?: number
+): Promise<{
+  articles: Article[];
+  pagination?: ArticlePagination;
+}> {
+  const fromClause = `
+    FROM articles a
+    INNER JOIN article_types at ON at.id = a.article_type_id
+  `;
+
+  if (viewAll) {
+    const safePage = Math.max(1, Math.floor(page || 1));
+    const safeLimit = Math.min(100, Math.max(1, Math.floor(limit || 10)));
+    const offset = (safePage - 1) * safeLimit;
+
+    const countResult = await db
+      .prepare(
+        `
+          SELECT COUNT(*) AS total
+          ${fromClause}
+          WHERE a.user_id = ?
+        `
+      )
+      .bind(userId)
+      .first<{ total: number }>();
+
     const result = await db
       .prepare(
         `
-          SELECT
-            id,
-            user_id,
-            article_type_id,
-            title,
-            content,
-            status,
-            ai_score,
-            version,
-            submitted_at,
-            scored_at,
-            month_year,
-            retry_count
-          FROM articles
-          WHERE user_id = ?
-            AND month_year = ?
-          ORDER BY submitted_at DESC
-          WHERE id IN (
-            SELECT id
-            FROM (
-              SELECT id, MAX(version) as max_version
-              FROM articles
-              WHERE user_id = ?
-              GROUP BY id
-            ) as latest_versions
-            WHERE version = latest_versions.max_version
-          )
+          SELECT ${ARTICLE_COLUMNS}
+          ${fromClause}
+          WHERE a.user_id = ?
+          ORDER BY a.submitted_at DESC
+          LIMIT ? OFFSET ?
         `
       )
-      .bind(userId, month)
+      .bind(userId, safeLimit, offset)
       .all<Article>();
 
-    return result.results;
+    const total = countResult?.total ?? 0;
+    const totalPages = Math.max(1, Math.ceil(total / safeLimit));
+
+    return {
+      articles: result.results,
+      pagination: {
+        page: safePage,
+        limit: safeLimit,
+        total,
+        totalPages,
+      },
+    };
   }
 
   const result = await db
     .prepare(
       `
-        SELECT
-          id,
-          user_id,
-          article_type_id,
-          title,
-          content,
-          status,
-          ai_score,
-          version,
-          submitted_at,
-          scored_at,
-          month_year,
-          retry_count
-        FROM articles
-        WHERE user_id = ?
-        ORDER BY submitted_at DESC
-        WHERE id IN (
-          SELECT id
-          FROM (
-            SELECT id, MAX(version) as max_version
-            FROM articles
-            WHERE user_id = ?
-            GROUP BY id
-          ) as latest_versions
-          WHERE version = latest_versions.max_version
-        )
+        SELECT ${ARTICLE_COLUMNS}
+        ${fromClause}
+        WHERE a.user_id = ?
+          AND a.month_year = ?
+        ORDER BY a.submitted_at DESC
       `
     )
-    .bind(userId)
+    .bind(userId, month || new Date().toISOString().slice(0, 7))
     .all<Article>();
 
-  return result.results;
+  return {
+    articles: result.results,
+  };
 }
 
 export async function getArticleById(
@@ -102,22 +122,11 @@ export async function getArticleById(
   return db
     .prepare(
       `
-        SELECT
-          id,
-          user_id,
-          article_type_id,
-          title,
-          content,
-          status,
-          ai_score,
-          version,
-          submitted_at,
-          scored_at,
-          month_year,
-          retry_count
-        FROM articles
-        WHERE id = ?
-          AND user_id = ?
+        SELECT ${ARTICLE_COLUMNS}
+        FROM articles a
+        INNER JOIN article_types at ON at.id = a.article_type_id
+        WHERE a.id = ?
+          AND a.user_id = ?
         LIMIT 1
       `
     )
