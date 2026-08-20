@@ -1,8 +1,22 @@
+export type ArticleListItem = {
+  id: string;
+  title: string;
+  status: string;
+  ai_score: number | null;
+  version: number;
+  month_year: string;
+  submitted_at: string;
+  user_id: string;
+  user_name: string;
+  email: string;
+  job_role: string;
+};
+
 export async function getArticles(
   db: D1Database,
   month?: string,
   status?: string,
-) {
+): Promise<ArticleListItem[]> {
   let sql = `
     SELECT
       a.id,
@@ -44,12 +58,12 @@ export async function getArticles(
   const result = await db
     .prepare(sql)
     .bind(...bindings)
-    .all();
+    .all<ArticleListItem>();
 
   return result.results;
 }
 
-export async function getArticleById(db: D1Database, id: String) {
+export async function getArticleById(db: D1Database, id: string) {
   const article = await db
     .prepare(
       `
@@ -62,7 +76,7 @@ export async function getArticleById(db: D1Database, id: String) {
 
                 FROM articles a
                 INNER JOIN 
-                Users u
+                users u
                 ON a.user_id = u.id
 
                 WHERE a.id = ?

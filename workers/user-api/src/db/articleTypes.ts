@@ -7,9 +7,7 @@ export type ArticleType = {
   updated_at: string;
 };
 
-export async function getArticleTypes(
-  db: D1Database
-): Promise<ArticleType[]> {
+export async function getArticleTypes(db: D1Database): Promise<ArticleType[]> {
   const result = await db
     .prepare(
       `
@@ -22,7 +20,7 @@ export async function getArticleTypes(
           updated_at
         FROM article_types
         ORDER BY name ASC
-      `
+      `,
     )
     .all<ArticleType>();
 
@@ -31,7 +29,7 @@ export async function getArticleTypes(
 
 export async function getArticleTypeById(
   db: D1Database,
-  articleTypeId: string
+  articleTypeId: string,
 ): Promise<ArticleType | null> {
   return db
     .prepare(
@@ -46,8 +44,70 @@ export async function getArticleTypeById(
         FROM article_types
         WHERE id = ?
         LIMIT 1
-      `
+      `,
     )
     .bind(articleTypeId)
     .first<ArticleType>();
+}
+
+// after AI scoring
+export async function updateEvaluation(
+  db: D1Database,
+  articleId: string,
+  score: number,
+  feedback: string,
+  status: string,
+) {
+  if (!articleId?.trim()) {
+    throw new Error("Article id is required");
+  }
+
+  if (
+    typeof score !== "number" ||
+    Number.isNaN(score) ||
+    score < 0 ||
+    score > 10
+  ) {
+    throw new Error("Score must be between 0 and 10");
+  }
+
+  if (!feedback?.trim()) {
+    throw new Error("Feedback is required");
+  }
+
+  const allowedStatuses = ["approved", "rewrite_required"];
+
+  if (!allowedStatuses.includes(status)) {
+    throw new Error("Invalid article status");
+  }
+
+  const existing = await db
+    .prepare(
+      `
+      SELECT id
+      FROM articles
+      WHERE id = ?
+    `,
+    )
+    .bind(articleId)
+    .first();
+
+  if (!existing) {
+    throw new Error("Article not found");
+  }
+
+  await db
+    .prepare(
+      `
+      UPDATE articles
+      SET
+        ai_score = ?,
+        ai_feedback = ?,
+        status = ?,
+        scored_at = ?
+      WHERE id = ?
+    `,
+    )
+    .bind(score, feedback.trim(), status, new Date().toISOString(), articleId)
+    .run();
 }

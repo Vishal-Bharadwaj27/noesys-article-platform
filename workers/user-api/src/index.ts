@@ -13,13 +13,25 @@ app.get("/", (c) => {
 });
 
 app.get("/health", (c) => {
-  return c.json({
-    message: "Service is healthy",
-  }, 200);
+  return c.json(
+    {
+      message: "Service is healthy",
+    },
+    200,
+  );
 });
 
 app.route("/auth", authRoutes);
 app.route("/articles", articleRoutes);
 app.route("/", articleRoutes);
+
+app.onError((err, c) => {
+  return c.json(
+    {
+      message: err.message,
+    },
+    500,
+  );
+});
 
 export default app;
