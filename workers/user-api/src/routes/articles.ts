@@ -1,7 +1,6 @@
 import { Hono } from "hono";
 import { getArticlesByUser, getArticleById, createArticle } from "../db/articles";
 import { getArticleHistory, snapshotArticle, updateArticleForRewrite } from "../db/articleHistory";
-import { getArticleTypes } from "../db/articleTypes";
 import type { AppEnv } from "../types";
 import { authMiddleware } from "../middleware/auth";
 
@@ -234,19 +233,6 @@ articleRoutes.post("/", async (c) => {
       },
     });
   }
-});
-
-articleRoutes.get("/article-types", async (c) => {
-  const db = c.env.DB;
-  const types = await getArticleTypes(db);
-  return c.json({
-    message: "Article types fetched successfully",
-    data: types.map((t) => ({
-      id: t.id,
-      name: t.name,
-      description: t.description,
-    })),
-  });
 });
 
 export default articleRoutes;
