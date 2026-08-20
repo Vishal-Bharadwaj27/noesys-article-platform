@@ -102,11 +102,8 @@ function ArticleTypesCard({
           {type.prompt ? (
             <>
               <pre className="whitespace-pre-wrap text-sm text-slate-700 font-sans leading-relaxed bg-white border border-slate-200 rounded-lg p-3 max-h-56 overflow-y-auto">
-                {type.prompt.content}
+                {type.prompt}
               </pre>
-              <p className="text-xs text-slate-400 mt-2">
-                Last updated {formatDate(type.prompt.updated_at)}
-              </p>
             </>
           ) : (
             <p className="text-sm text-slate-400 italic">
@@ -117,6 +114,6 @@ function ArticleTypesCard({
       )}
     </div>
   );
-};
+}
 
 export default ArticleTypesCard;

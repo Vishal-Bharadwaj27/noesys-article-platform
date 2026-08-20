@@ -46,3 +46,4 @@ export async function authMiddleware(
   c.set("user", user);
   await next();
 }
+

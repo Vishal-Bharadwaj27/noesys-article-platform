@@ -7,8 +7,11 @@ import {
   updateUserAuthRole,
 } from "../services/users.service";
 import type { Env } from "../types";
+import { AuthContext, authMiddleware } from "../middleware/auth";
+import { requiredRole } from "../middleware/requiredRole";
 
-const usersRoute = new Hono<{ Bindings: Env }>();
+const usersRoute = new Hono<{ Bindings: Env } & AuthContext>();
+usersRoute.use("*", requiredRole("admin", "super_admin"));
 
 // get users based on submission_status and month_year
 usersRoute.get("/", async (c) => {

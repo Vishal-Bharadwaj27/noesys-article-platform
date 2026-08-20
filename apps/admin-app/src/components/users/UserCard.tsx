@@ -7,6 +7,8 @@ import {
   UserX,
   UserCheck,
   X,
+  ArrowDownCircle,
+  ArrowUpCircle,
 } from "lucide-react";
 import { formatDate } from "../../utils/date";
 
@@ -29,6 +31,7 @@ type UserCardProps = {
     userId: string,
     nextIsActive: boolean,
   ) => void | Promise<void>;
+  onRoleChange?: (userId: string, nextRole: AuthRole) => void | Promise<void>; // NEW
 };
 
 const ROLE_STYLES: Record<AuthRole, string> = {
@@ -54,8 +57,11 @@ export default function UserCard({
   user,
   submissionStatus,
   onToggleActive,
+  onRoleChange,
 }: UserCardProps) {
   const [modalOpen, setModalOpen] = useState(false);
+  const [roleModalOpen, setRoleModalOpen] = useState(false);
+  const [pendingRole, setPendingRole] = useState<AuthRole | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const isActive = user.is_active === 1;
@@ -65,6 +71,23 @@ export default function UserCard({
     try {
       await onToggleActive?.(user.id, !isActive);
       setModalOpen(false);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const openRoleChange = (role: AuthRole) => {
+    setPendingRole(role);
+    setRoleModalOpen(true);
+  };
+
+  const handleRoleConfirm = async () => {
+    if (!pendingRole) return;
+    setSubmitting(true);
+    try {
+      await onRoleChange?.(user.id, pendingRole);
+      setRoleModalOpen(false);
+      setPendingRole(null);
     } finally {
       setSubmitting(false);
     }
@@ -120,24 +143,47 @@ export default function UserCard({
         </div>
 
         {/* Action */}
-        <button
-          onClick={() => setModalOpen(true)}
-          className={`shrink-0 flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors
-            ${
-              isActive
-                ? "bg-red-50 text-red-600 hover:bg-red-100"
-                : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-            }`}
-        >
-          {isActive ? <UserX size={14} /> : <UserCheck size={14} />}
-          {isActive ? "Deactivate" : "Activate"}
-        </button>
+        <div className="flex flex-col gap-1.5 shrink-0">
+          <button
+            onClick={() => setModalOpen(true)}
+            className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors
+              ${isActive ? "bg-red-50 text-red-600 hover:bg-red-100" : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"}`}
+          >
+            {isActive ? <UserX size={14} /> : <UserCheck size={14} />}
+            {isActive ? "Deactivate" : "Activate"}
+          </button>
 
-        {submissionStatus === "not_submitted" && (
-          <span className="text-[11px] font-medium rounded-full px-2 py-0.5 bg-amber-50 text-amber-700">
-            Not submitted
-          </span>
-        )}
+          {/* promote/demote, hidden entirely for super_admin */}
+          {user.auth_role === "user" && (
+            <button
+              onClick={() => openRoleChange("admin")}
+              className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors"
+            >
+              <ArrowUpCircle size={14} />
+              Promote to Admin
+            </button>
+          )}
+
+          {user.auth_role === "admin" && (
+            <>
+              <button
+                onClick={() => openRoleChange("admin")}
+                className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors"
+              >
+                <ArrowUpCircle size={14} />
+                Promote to Super Admin
+              </button>
+              <button
+                onClick={() => openRoleChange("user")}
+                className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium bg-slate-50 text-slate-600 hover:bg-slate-100 transition-colors"
+              >
+                <ArrowDownCircle size={14} />
+                Demote to User
+              </button>
+            </>
+          )}
+          {/* super_admin: no promote/demote buttons at all — can't be demoted, nothing higher to promote to */}
+        </div>
       </div>
 
       {/* Confirmation modal */}
@@ -205,6 +251,47 @@ export default function UserCard({
                   : isActive
                     ? "Deactivate"
                     : "Activate"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {roleModalOpen && pendingRole && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-slate-900/40"
+            onClick={() => !submitting && setRoleModalOpen(false)}
+          />
+          <div className="relative bg-white rounded-xl shadow-xl w-full max-w-sm p-5">
+            <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center">
+              <ShieldCheck size={18} className="text-indigo-600" />
+            </div>
+            <h2 className="mt-3 font-semibold text-slate-900">
+              Change {user.name}'s role to {ROLE_LABELS[pendingRole]}?
+            </h2>
+
+            <p className="mt-1 text-sm text-slate-500">
+              {pendingRole === "super_admin"
+                ? "This grants full administrative access, including managing other admins."
+                : pendingRole === "user"
+                  ? "They'll lose admin access to users, article types, and prompts."
+                  : "They'll gain access to manage articles, article types, and prompts."}
+            </p>
+            <div className="mt-5 flex gap-2 justify-end">
+              <button
+                onClick={() => setRoleModalOpen(false)}
+                disabled={submitting}
+                className="rounded-lg px-3.5 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRoleConfirm}
+                disabled={submitting}
+                className="rounded-lg px-3.5 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+              >
+                {submitting ? "Please wait..." : "Confirm"}
               </button>
             </div>
           </div>

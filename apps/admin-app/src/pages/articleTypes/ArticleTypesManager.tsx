@@ -21,18 +21,10 @@ export type ArticleType = {
   updated_at: string;
 };
 
-export type Prompt = {
-  id: string;
-  article_type_id: string;
-  content: string;
-  created_by: string;
-  created_at: string;
-  updated_at: string;
-};
 
 // Article type joined with its (optional, since it's created separately) prompt
 export type ArticleTypeWithPrompt = ArticleType & {
-  prompt: Prompt | null;
+  prompt: string | null;
 };
 
 type FormState = {
@@ -84,7 +76,7 @@ export default function ArticleTypesManager({
     setForm({
       name: type.name,
       description: type.description ?? "",
-      promptContent: type.prompt?.content ?? "",
+      promptContent: type.prompt ?? "",
     });
     setFormOpen(true);
   };

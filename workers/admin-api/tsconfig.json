@@ -7,7 +7,7 @@
     "strict": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
-    "noImplicitReturns": true,
+    "noImplicitReturns": false,
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,

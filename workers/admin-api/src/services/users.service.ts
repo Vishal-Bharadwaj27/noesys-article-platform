@@ -23,7 +23,9 @@ export async function getUsers(
           u.id,
           u.name,
           u.email,
-          u.job_role
+          u.job_role,
+          u.is_active,
+          u.auth_role
         FROM users u
         WHERE u.is_active = 1
           AND EXISTS (
@@ -47,7 +49,9 @@ export async function getUsers(
           u.id,
           u.name,
           u.email,
-          u.job_role
+          u.job_role,
+          u.is_active,
+          u.auth_role
         FROM users u
         WHERE u.is_active = 1
           AND NOT EXISTS (
@@ -69,7 +73,9 @@ export async function getUsers(
         id,
         name,
         email,
-        job_role
+        job_role,
+        is_active,
+        auth_role
       FROM users
       WHERE is_active = 1
       ORDER BY name ASC

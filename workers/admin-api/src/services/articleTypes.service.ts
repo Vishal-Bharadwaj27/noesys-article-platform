@@ -1,17 +1,19 @@
 export default async function getArticleTypes(db: D1Database) {
-  const sql = `Select 
-            a.id,
-            a.name,
-            p.content 
-            FROM article_types a
-            INNER JOIN
-            ON
-            prompts p P
-            a.id = p.article_type_id`;
+  const sql = `
+  SELECT
+    a.id,
+    a.name,
+    a.is_active,
+    p.content as prompt
+  FROM article_types a
+  INNER JOIN prompts p
+    ON a.id = p.article_type_id
+`;
 
   const data = await db.prepare(sql).all();
+  console.log(data);
 
-  return { data };
+  return data.results;
 }
 
 export async function getArticleTypeById(
@@ -41,7 +43,6 @@ export async function getArticleTypeById(
 
   return articleType;
 }
-
 export async function createArticleType(
   db: D1Database,
   name: string,
@@ -54,7 +55,7 @@ export async function createArticleType(
       SELECT id
       FROM article_types
       WHERE LOWER(name) = LOWER(?)
-    `,
+      `,
     )
     .bind(name)
     .first();
@@ -65,41 +66,49 @@ export async function createArticleType(
 
   const articleTypeId = crypto.randomUUID();
   const promptId = crypto.randomUUID();
-
   const now = new Date().toISOString();
 
-  const batch = await db.batch([
-    db
+  try {
+    await db
       .prepare(
         `
-        INSERT INTO article_types (
-          id,
-          name,
-          created_by,
-          created_at,
-          updated_at
-        )
-        VALUES (?, ?, ?, ?, ?)
-      `,
+      INSERT INTO article_types (
+        id,
+        name,
+        created_by,
+        created_at,
+        updated_at
       )
-      .bind(articleTypeId, name, createdBy, now, now),
+      VALUES (?, ?, ?, ?, ?)
+    `,
+      )
+      .bind(articleTypeId, name, createdBy, now, now)
+      .run();
+  } catch (err) {
+    console.error("INSERT article_types failed:", err);
+    throw err;
+  }
 
-    db
-      .prepare(
-        `
-        INSERT INTO prompts (
-          id,
-          article_type_id,
-          content,
-          created_by,
-          created_at,
-          updated_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?)
-      `,
+  console.log("article type inserted");
+
+  await db
+    .prepare(
+      `
+      INSERT INTO prompts (
+        id,
+        article_type_id,
+        content,
+        created_by,
+        created_at,
+        updated_at
       )
-      .bind(promptId, articleTypeId, prompt, createdBy, now, now),
-  ]);
+      VALUES (?, ?, ?, ?, ?, ?)
+      `,
+    )
+    .bind(promptId, articleTypeId, prompt, createdBy, now, now)
+    .run();
+
+  console.log("prompt inserted");
 
   return {
     id: articleTypeId,

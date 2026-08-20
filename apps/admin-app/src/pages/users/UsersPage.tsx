@@ -1,84 +1,37 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import UserCard, { User } from "../../components/users/UserCard";
 import { getCurrentMonth } from "../../utils/date";
 import { Calendar, Search } from "lucide-react";
 
-const mockUsers: User[] = [
-  {
-    id: "usr_001",
-    email: "vishal@company.com",
-    name: "Vishal Bharadwaj",
-    auth_role: "super_admin",
-    job_role: "Founder & System Administrator",
-    created_at: "2025-01-15T10:30:00Z",
-    is_active: 1,
-  },
-  {
-    id: "usr_002",
-    email: "sarah.johnson@company.com",
-    name: "Sarah Johnson",
-    auth_role: "admin",
-    job_role: "Content Manager",
-    created_at: "2025-03-12T08:45:00Z",
-    is_active: 1,
-  },
-  {
-    id: "usr_003",
-    email: "rahul.sharma@company.com",
-    name: "Rahul Sharma",
-    auth_role: "admin",
-    job_role: "Technical Lead",
-    created_at: "2025-04-22T14:20:00Z",
-    is_active: 1,
-  },
-  {
-    id: "usr_004",
-    email: "emma.wilson@example.com",
-    name: "Emma Wilson",
-    auth_role: "user",
-    job_role: "Software Engineer",
-    created_at: "2025-05-08T09:10:00Z",
-    is_active: 1,
-  },
-  {
-    id: "usr_005",
-    email: "alex.morgan@example.com",
-    name: "Alex Morgan",
-    auth_role: "user",
-    job_role: "UI/UX Designer",
-    created_at: "2025-06-17T11:55:00Z",
-    is_active: 0,
-  },
-  {
-    id: "usr_006",
-    email: "priya.patel@example.com",
-    name: "Priya Patel",
-    auth_role: "user",
-    job_role: "QA Engineer",
-    created_at: "2025-07-02T16:40:00Z",
-    is_active: 1,
-  },
-  {
-    id: "usr_007",
-    email: "michael.lee@example.com",
-    name: "Michael Lee",
-    auth_role: "user",
-    job_role: "Product Manager",
-    created_at: "2025-07-19T13:25:00Z",
-    is_active: 0,
-  },
-  {
-    id: "usr_008",
-    email: "ananya.reddy@example.com",
-    name: "Ananya Reddy",
-    auth_role: "user",
-    job_role: "Business Analyst",
-    created_at: "2025-08-01T07:15:00Z",
-    is_active: 1,
-  },
-];
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+
+async function fetchUsers(
+  month?: string,
+  submissionStatus?: "not_submitted",
+): Promise<User[]> {
+  const params = new URLSearchParams();
+  if (month && submissionStatus) {
+    params.set("month", month);
+    params.set("submission_status", submissionStatus);
+  }
+
+  const res = await fetch(`${BACKEND_URL}/api/users?${params}`, {
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch users: ${res.status}`);
+  }
+
+  const data = await res.json();
+  return data.data;
+}
 
 const UsersPage = () => {
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [search, setSearch] = useState("");
   const [showNotSubmitted, setShowNotSubmitted] = useState(false);
   const [month, setMonth] = useState(getCurrentMonth());
@@ -87,17 +40,63 @@ const UsersPage = () => {
     setShowNotSubmitted((p) => !p);
   };
 
-  const filteredUsers = useMemo(() => {
-    const newUsers = mockUsers.filter((users) => {
-      return users.name.toLowerCase().includes(search.trim());
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+
+    fetchUsers(
+      showNotSubmitted ? month : undefined,
+      showNotSubmitted ? "not_submitted" : undefined,
+    )
+      .then(setUsers)
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, [showNotSubmitted, month]);
+
+  const handleToggleActive = async (userId: string, nextIsActive: boolean) => {
+    const res = await fetch(`${BACKEND_URL}/api/users/${userId}/status`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ is_active: nextIsActive }),
     });
 
-    return newUsers;
-  }, [search, showNotSubmitted]);
+    if (!res.ok) throw new Error("Failed to update user status");
+
+    setUsers((prev) =>
+      prev.map((u) =>
+        u.id === userId ? { ...u, is_active: nextIsActive ? 1 : 0 } : u,
+      ),
+    );
+  };
+
+  const handleRoleChange = async (
+    userId: string,
+    nextRole: "user" | "admin" | "super_admin",
+  ) => {
+    const res = await fetch(`${BACKEND_URL}/api/users/${userId}/role`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ role: nextRole }),
+    });
+
+    if (!res.ok) throw new Error("Failed to update user role");
+
+    setUsers((prev) =>
+      prev.map((u) => (u.id === userId ? { ...u, auth_role: nextRole } : u)),
+    );
+  };
+
+  const filteredUsers = useMemo(() => {
+    return users.filter((u) =>
+      u.name.toLowerCase().includes(search.trim().toLowerCase()),
+    );
+  }, [users, search]);
 
   return (
     <div className="m-5">
-      <h1 className="text-4xl bold my-4">Users List</h1>
+      <h1 className="text-4xl bold my-4 font-semibold">Users List</h1>
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between my-6">
         {/* Search + toggle */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full max-w-xl">
@@ -148,13 +147,31 @@ const UsersPage = () => {
         )}
       </div>
 
-      <div className="flex items-center justify-center">
+      {loading && <p className="text-sm text-slate-400">Loading users...</p>}
+      {error && <p className="text-sm text-red-600">{error}</p>}
+
+      {/* <div className="flex items-center justify-center">
         <div className="grid lg:grid-cols-3 grid-cols-1 gap-2">
           {filteredUsers.map((m) => (
             <UserCard key={m.id} user={m} />
           ))}
         </div>
-      </div>
+      </div> */}
+
+      {!loading && !error && (
+        <div className="flex items-center justify-center">
+          <div className="grid lg:grid-cols-3 grid-cols-1 gap-2">
+            {filteredUsers.map((u) => (
+              <UserCard
+                key={u.id}
+                user={u}
+                onToggleActive={handleToggleActive}
+                onRoleChange={handleRoleChange}
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

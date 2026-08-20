@@ -6,8 +6,11 @@ import getArticleTypes, {
   getArticleTypeById,
   updateArticleType,
 } from "../services/articleTypes.service";
+import { requiredRole } from "../middleware/requiredRole";
+import { AuthContext } from "../middleware/auth";
 
-const articleTypesRoute = new Hono<{ Bindings: Env }>();
+const articleTypesRoute = new Hono<{ Bindings: Env } & AuthContext>();
+articleTypesRoute.use("*", requiredRole("admin", "super_admin"));
 
 articleTypesRoute.get("/", async (c) => {
   const result = await getArticleTypes(c.env.DB);
@@ -51,9 +54,10 @@ articleTypesRoute.post("/", async (c) => {
     c.env.DB,
     articleType.trim(),
     prompt.trim(),
-    adminName,
+    c.get("user").id,
   );
 
+  console.log(data);
   return c.json(
     {
       message: "Article type created successfully.",

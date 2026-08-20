@@ -1,6 +1,14 @@
 import { useState } from "react";
-import { FileText, Users, Tags, Menu, X, LayoutGrid } from "lucide-react";
-import { NavLink } from "react-router-dom";
+import {
+  FileText,
+  Users,
+  Tags,
+  Menu,
+  X,
+  LayoutGrid,
+  LogOut,
+} from "lucide-react";
+import { NavLink, useNavigate } from "react-router-dom";
 
 type NavItem = {
   key: string;
@@ -17,11 +25,32 @@ const NAV_ITEMS: NavItem[] = [
     icon: Tags,
     to: "/article-types",
   },
-  { key: "users", label: "Users", icon: Users, to: "users" },
+  { key: "users", label: "Users", icon: Users, to: "/users" },
 ];
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 export default function Sidebar() {
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
+
+  async function handleLogout() {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        throw new Error("Logout failed");
+      }
+
+      navigate("/login", { replace: true });
+    } catch (err) {
+      console.error(err);
+      alert("Failed to logout");
+    }
+  }
 
   const NavList = () => (
     <nav className="flex-1 px-3 py-4 space-y-1">
@@ -41,6 +70,11 @@ export default function Sidebar() {
           </NavLink>
         );
       })}
+
+      <button onClick={handleLogout} className="flex items-center gap-2">
+        <LogOut size={18} />
+        Logout
+      </button>
     </nav>
   );
 
