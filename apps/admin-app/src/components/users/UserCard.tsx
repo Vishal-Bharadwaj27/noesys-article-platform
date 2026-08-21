@@ -166,13 +166,13 @@ export default function UserCard({
 
           {user.auth_role === "admin" && (
             <>
-              <button
+              {/* <button
                 onClick={() => openRoleChange("admin")}
                 className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors"
               >
                 <ArrowUpCircle size={14} />
                 Promote to Super Admin
-              </button>
+              </button> */}
               <button
                 onClick={() => openRoleChange("user")}
                 className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium bg-slate-50 text-slate-600 hover:bg-slate-100 transition-colors"

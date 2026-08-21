@@ -68,7 +68,7 @@ authRoutes.post("/otp/request", async (c) => {
       otp,
       c.env.SENDGRID_API_KEY,
       "vishal@noesyssoftware.com",
-      "development",
+      c.env.ENVIRONMENT,
     );
   } catch (error) {
     console.error("Failed to send OTP email:", error);
@@ -162,7 +162,7 @@ authRoutes.post("/otp/verify", async (c) => {
     "Set-Cookie",
     `session=${token}; HttpOnly; ${isProd ? "Secure; SameSite=None" : "SameSite=Lax"}; Path=/; Max-Age=${7 * 24 * 60 * 60}`,
   );
-  
+
   return c.json({
     success: true,
     message: "OTP verified successfully",
