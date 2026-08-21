@@ -1,28 +1,21 @@
-import { createWorkersAI } from "workers-ai-provider";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { generateObject } from "ai";
 import { ArticleEvaluationSchema } from "../schemas/articleEvaluation.schema";
 
 export async function evaluateArticle(
-  ai: Ai,
-  prompt: string,
+  apiKey: string,
+  userPrompt: string,
   title: string,
   content: string,
 ) {
-  const workersai = createWorkersAI({
-    binding: ai,
+  const google = createGoogleGenerativeAI({
+    apiKey: apiKey,
   });
-
   const { object } = await generateObject({
-    model: workersai("@cf/meta/llama-3.1-8b-instruct"),
+    model: google("gemini-3.6-flash"),
     schema: ArticleEvaluationSchema,
-    system: prompt,
-    prompt: `
-Title:
-${title}
-
-Article:
-${content}
-`,
+    system: userPrompt,
+    prompt: `Title: ${title}\n\nArticle: ${content}`,
   });
 
   return object;

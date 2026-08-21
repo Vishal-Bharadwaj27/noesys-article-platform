@@ -1,7 +1,7 @@
 -- Migration number: 0001 	 2026-08-18T06:47:16.289Z
 PRAGMA foreign_keys = ON;
 
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
     email TEXT UNIQUE NOT NULL,
     name TEXT NOT NULL,
@@ -13,7 +13,7 @@ CREATE TABLE users (
     FOREIGN KEY (created_by) REFERENCES users(id)
 );
 
-CREATE TABLE article_types (
+CREATE TABLE IF NOT EXISTS article_types (
     id TEXT PRIMARY KEY,
     name TEXT UNIQUE NOT NULL,
     description TEXT,
@@ -23,7 +23,7 @@ CREATE TABLE article_types (
     FOREIGN KEY (created_by) REFERENCES users(id)
 );
 
-CREATE TABLE articles (
+CREATE TABLE IF NOT EXISTS articles (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,
     article_type_id TEXT NOT NULL,
@@ -40,7 +40,7 @@ CREATE TABLE articles (
     FOREIGN KEY (article_type_id) REFERENCES article_types(id)
 );
 
-CREATE TABLE article_history (
+CREATE TABLE IF NOT EXISTS article_history (
     id TEXT PRIMARY KEY,
     article_id TEXT NOT NULL,
     article_type_id TEXT NOT NULL,
@@ -56,7 +56,7 @@ CREATE TABLE article_history (
     FOREIGN KEY (article_type_id) REFERENCES article_types(id)
 );
 
-CREATE TABLE prompts (
+CREATE TABLE IF NOT EXISTS prompts (
     id TEXT PRIMARY KEY,
     article_type_id TEXT UNIQUE NOT NULL,
     content TEXT NOT NULL,
@@ -67,7 +67,7 @@ CREATE TABLE prompts (
     FOREIGN KEY (created_by) REFERENCES users(id)
 );
 
-CREATE TABLE system_settings (
+CREATE TABLE IF NOT EXISTS system_settings (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL,
     updated_at TEXT
