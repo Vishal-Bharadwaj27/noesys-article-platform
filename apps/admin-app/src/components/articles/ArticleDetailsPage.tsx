@@ -40,7 +40,6 @@ export default function ArticleDetailsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log("HEI")
     async function loadArticle() {
       try {
         const res = await fetch(

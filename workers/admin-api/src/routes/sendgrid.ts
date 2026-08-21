@@ -36,7 +36,7 @@ export async function sendOTPEmail(
     };
 
     await sgMail.send(msg);
-    console.log(`OTP email sent to ${email}`);
+    // console.log(`OTP email sent to ${email}`);
     return true;
   } catch (error: any) {
     console.error(
@@ -60,7 +60,7 @@ export async function sendOTPWithFallback(
   environment: string = "development",
 ): Promise<void> {
   if (environment !== "production") {
-    console.log(`[DEV] OTP for ${email}: ${otp}`);
+    // console.log(`[DEV] OTP for ${email}: ${otp}`);
     return;
   }
 

@@ -118,7 +118,6 @@ const ArticleTypesPage = () => {
     await loadArticleTypes();
   };
 
-  console.log(types)
 
   return (
     <div>

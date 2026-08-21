@@ -23,7 +23,6 @@ app.get("/", (c) => {
   return c.json({
     success: true,
     message: "Backend is working",
-    e: c.env
   });
 });
 
