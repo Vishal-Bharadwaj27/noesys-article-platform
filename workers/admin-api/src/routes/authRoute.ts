@@ -160,9 +160,9 @@ authRoutes.post("/otp/verify", async (c) => {
 
   c.header(
     "Set-Cookie",
-    `session=${token}; HttpOnly; ${isProd ? "Secure; " : ""}SameSite=Lax; Path=/; Max-Age=${7 * 24 * 60 * 60}`,
+    `session=${token}; HttpOnly; ${isProd ? "Secure; SameSite=None" : "SameSite=Lax"}; Path=/; Max-Age=${7 * 24 * 60 * 60}`,
   );
-
+  
   return c.json({
     success: true,
     message: "OTP verified successfully",
@@ -224,7 +224,6 @@ authRoutes.get("/me", async (c) => {
     },
   });
 });
-
 
 authRoutes.post("/logout", (c) => {
   deleteCookie(c, "session", {
