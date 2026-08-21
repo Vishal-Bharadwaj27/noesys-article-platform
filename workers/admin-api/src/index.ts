@@ -13,8 +13,12 @@ const app = new Hono<{ Bindings: Env }>();
 app.use(
   "/api/*",
   cors({
-    origin: "http://localhost:5174",
-    allowMethods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    origin: [
+      "http://localhost:5174",
+      "https://noesys-article-platform-admin.pages.dev",
+    ],
+    allowMethods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowHeaders: ["Content-Type"],
     credentials: true,
   }),
 );

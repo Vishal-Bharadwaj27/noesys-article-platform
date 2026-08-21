@@ -13,7 +13,10 @@ database_id = "83331df4-d437-4c67-92e4-313065a15762"
 #   { pattern = "api.localhost/user/*", zone_name = "localhost" }
 # ]
 
-# [env.production]
-# routes = [
-#   { pattern = "api.example.com/user/*", zone_name = "example.com" }
-# ]
+[env.production]
+routes = [
+  { pattern = "api.example.com/user/*", zone_name = "example.com" }
+]
+
+[ai]
+binding = "AI"
