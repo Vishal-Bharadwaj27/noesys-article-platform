@@ -15,7 +15,7 @@ routes = [
 ]
 
 [vars]
-ENVIRONMENT = "development"
+ENVIRONMENT = "production"
 
 [env.production]
 routes = [
