@@ -25,6 +25,8 @@ app.use(
 
       return "";
     },
+    allowMethods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowHeaders: ["Content-Type"],
     credentials: true,
   }),
 );
