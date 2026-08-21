@@ -243,6 +243,7 @@ articleRoutes.post("/", async (c) => {
     }
 
     const evaluation = await evaluateArticle(
+      c.env.AI,
       prompt,
       title,
       content,

@@ -3,6 +3,7 @@ export type Bindings = {
   JWT_SECRET?: string;
   SENDGRID_API_KEY?: string;
   FROM_EMAIL?: string;
+  AI: Ai;
 };
 
 export type AuthenticatedUser = {

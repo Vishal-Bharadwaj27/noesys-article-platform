@@ -1,14 +1,20 @@
-import { google } from "@ai-sdk/google";
-import { generateText, Output } from "ai";
+import { createWorkersAI } from "workers-ai-provider";
+import { generateObject } from "ai";
 import { ArticleEvaluationSchema } from "../schemas/articleEvaluation.schema";
 
 export async function evaluateArticle(
+  ai: Ai,
   prompt: string,
   title: string,
   content: string,
 ) {
-  const { output } = await generateText({
-    model: google("gemini-2.5-flash"),
+  const workersai = createWorkersAI({
+    binding: ai,
+  });
+
+  const { object } = await generateObject({
+    model: workersai("@cf/meta/llama-3.1-8b-instruct"),
+    schema: ArticleEvaluationSchema,
     system: prompt,
     prompt: `
 Title:
@@ -17,10 +23,7 @@ ${title}
 Article:
 ${content}
 `,
-    output: Output.object({
-      schema: ArticleEvaluationSchema,
-    }),
   });
 
-  return output;
+  return object;
 }

@@ -16,3 +16,6 @@ routes = [
 routes = [
   { pattern = "api.example.com/user/*", zone_name = "example.com" }
 ]
+
+[ai]
+binding = "AI"
