@@ -137,7 +137,7 @@ export default function ArticleTypesManager({
       </div>
 
       {/* List */}
-      <div className="space-y-2 grid grid-cols-2 gap-2">
+      <div className="space-y-2 w-[50vw]">
         {articleTypes.length === 0 && (
           <div className="text-center py-12 border border-dashed border-slate-200 rounded-xl text-slate-400 text-sm">
             No article types yet. Create one to get started.
