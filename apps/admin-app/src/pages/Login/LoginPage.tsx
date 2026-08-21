@@ -115,9 +115,6 @@ export default function LoginPage({
         setError(result.message ?? "Invalid or expired code");
         return;
       }
-      // On success, the parent (via onVerifyOtp) is expected to handle
-      // redirect/session setup — this component doesn't own routing.
-      console.log(result);
     } finally {
       setLoading(false);
     }

@@ -65,7 +65,7 @@ articleRoutes.get("/mine", async (c) => {
         success: false,
         message: "Invalid month format. Expected YYYY-MM.",
       },
-      400
+      400,
     );
   }
 
@@ -77,16 +77,18 @@ articleRoutes.get("/mine", async (c) => {
 
   if (viewAll) {
     page = pageRaw ? Math.max(1, parseInt(pageRaw, 10) || 1) : 1;
-    limit = limitRaw ? Math.min(100, Math.max(1, parseInt(limitRaw, 10) || 10)) : 10;
+    limit = limitRaw
+      ? Math.min(100, Math.max(1, parseInt(limitRaw, 10) || 10))
+      : 10;
   }
 
   const { articles, pagination } = await getArticlesByUser(
     db,
     user.id,
-    viewAll ? undefined : (month || currentMonth()),
+    viewAll ? undefined : month || currentMonth(),
     viewAll,
     page,
-    limit
+    limit,
   );
 
   const data = articles.map((article) =>
@@ -100,7 +102,7 @@ articleRoutes.get("/mine", async (c) => {
       submitted_at: article.submitted_at,
       authorName: user.name,
       authorId: user.id,
-    })
+    }),
   );
 
   return c.json({
@@ -122,7 +124,7 @@ articleRoutes.get("/mine/:id", async (c) => {
         success: false,
         message: "Article not found",
       },
-      404
+      404,
     );
   }
 
@@ -167,19 +169,43 @@ articleRoutes.get("/mine/:id", async (c) => {
 
 articleRoutes.post("/", async (c) => {
   try {
-    const user = c.get("user");
-    const db = c.env.DB;
+    body = await c.req.json();
+  } catch {
+    return c.json(
+      {
+        success: false,
+        message: "Invalid JSON body",
+      },
+      400,
+    );
+  }
 
-    let body: any;
-    try {
-      body = await c.req.json();
-    } catch {
+  const { id: requestedId, article_type_id, title, content } = body;
+  if (!article_type_id || !title || !content) {
+    return c.json(
+      {
+        success: false,
+        message: "Missing required fields: article_type_id, title, content",
+      },
+      400,
+    );
+  }
+
+  const now = new Date().toISOString();
+  const month_year = now.slice(0, 7);
+
+  let articleId: string;
+
+  if (requestedId) {
+    // Rewrite attempt
+    const existingArticle = await getArticleById(db, requestedId, user.id);
+    if (!existingArticle) {
       return c.json(
         {
           success: false,
           message: "Invalid JSON body",
         },
-        400
+        404,
       );
     }
 
@@ -194,78 +220,176 @@ articleRoutes.post("/", async (c) => {
       );
     }
 
-    const now = new Date().toISOString();
-    const month_year = now.slice(0, 7);
+    articleId = requestedId;
+  } else {
+    // New article
+    const newId = "art_" + crypto.randomUUID();
+    await createArticle(db, {
+      id: newId,
+      user_id: user.id,
+      article_type_id,
+      title,
+      content,
+      status: "pending",
+      version: 1,
+      submitted_at: now,
+      month_year,
+      retry_count: 0,
+    });
 
-    if (requestedId) {
-      // Rewrite attempt
-      const existingArticle = await getArticleById(db, requestedId, user.id);
-      if (!existingArticle) {
-        return c.json(
-          {
-            success: false,
-            message: "Article not found or does not belong to user",
-          },
-          404
-        );
-      }
+    articleId = newId;
+  }
 
-      const historyId = "hist_" + crypto.randomUUID();
-      await snapshotArticle(db, requestedId, historyId, now);
-      await updateArticleForRewrite(db, requestedId, title, content);
+  // Evaluation now runs for both new and rewritten articles
+  const prompt = await getPromptForArticleType(db, article_type_id);
 
-      return c.json({
-        message: "Article submitted successfully",
-        data: {
-          id: requestedId,
-          status: "pending",
-        },
-      });
-    } else {
-      // New article
-      const newId = "art_" + crypto.randomUUID();
-      await createArticle(db, {
-        id: newId,
-        user_id: user.id,
-        article_type_id,
-        title,
-        content,
-        status: "pending",
-        version: 1,
-        submitted_at: now,
-        month_year,
-        retry_count: 0,
-      });
+  if (!prompt) {
+    return c.json({ success: false, message: "Some error occurred!" });
+  }
 
-      const prompt = await getPromptForArticleType(db, article_type_id);
 
-    if(!prompt) {
-      return c.json({ success: false, message: "Some error occurred!"})
-    }
-
-    const evaluation = await evaluateArticle(
+  let evaluation;
+  try {
+    evaluation = await evaluateArticle(
+      c.env.GOOGLE_GEMINI_API_KEY,
       prompt,
       title,
       content,
     );
-
-      const status = evaluation.score >= 7 ? "approved" : "rewrite_required";
-
-      await updateEvaluation(db, newId, evaluation.score, evaluation.feedback, status);
-
-      return c.json({
-        message: "Article submitted successfully",
-        data: {
-          id: newId,
-          status: "pending",
-        },
-      });
-    }
   } catch (err) {
-    console.error("Error in POST /articles:", err);
-    return c.json({ success: false, message: "Internal server error" }, 500);
+    console.error("Gemini Error:", err);
+
+    return c.json(
+      {
+        success: false,
+        message: "Evaluation failed",
+        error: err instanceof Error ? err.message : String(err),
+      },
+      500,
+    );
   }
+  const status = evaluation.score >= 7 ? "approved" : "rewrite_required";
+
+  await updateEvaluation(
+    c.env.DB,
+    articleId,
+    evaluation.score,
+    evaluation.feedback,
+    status,
+  );
+  
+  return c.json({
+    message: "Article submitted successfully",
+    data: {
+      id: articleId,
+      status,
+    },
+  });
 });
+
+// articleRoutes.post("/", async (c) => {
+//   const user = c.get("user");
+//   const db = c.env.DB;
+
+//   let body: any;
+//   try {
+//     body = await c.req.json();
+//   } catch {
+//     return c.json(
+//       {
+//         success: false,
+//         message: "Invalid JSON body",
+//       },
+//       400
+//     );
+//   }
+
+//   const { id: requestedId, article_type_id, title, content } = body;
+//   if (!article_type_id || !title || !content) {
+//     return c.json(
+//       {
+//         success: false,
+//         message: "Missing required fields: article_type_id, title, content",
+//       },
+//       400
+//     );
+//   }
+
+//   const now = new Date().toISOString();
+//   const month_year = now.slice(0, 7);
+
+//   if (requestedId) {
+//     // Rewrite attempt
+//     const existingArticle = await getArticleById(db, requestedId, user.id);
+//     if (!existingArticle) {
+//       return c.json(
+//         {
+//           success: false,
+//           message: "Article not found or does not belong to user",
+//         },
+//         404
+//       );
+//     }
+
+//     const historyId = "hist_" + crypto.randomUUID();
+//     await snapshotArticle(db, requestedId, historyId, now);
+//     await updateArticleForRewrite(db, requestedId, title, content);
+
+//     return c.json({
+//       message: "Article submitted successfully",
+//       data: {
+//         id: requestedId,
+//         status: "pending",
+//       },
+//     });
+//   } else {
+//     // New article
+//     const newId = "art_" + crypto.randomUUID();
+//     await createArticle(db, {
+//       id: newId,
+//       user_id: user.id,
+//       article_type_id,
+//       title,
+//       content,
+//       status: "pending",
+//       version: 1,
+//       submitted_at: now,
+//       month_year,
+//       retry_count: 0,
+//     });
+
+//     const prompt = await getPromptForArticleType(db, article_type_id);
+
+//     if(!prompt) {
+//       return c.json({ success: false, message: "Some error occurred!"})
+//     }
+
+//     const evaluation = await evaluateArticle(
+//       c.env.AI,
+//       prompt,
+//       title,
+//       content,
+//     );
+
+//     const status = evaluation.score >= 7 ? "approved" : "rewrite_required";
+
+//     await updateEvaluation(
+//       db,
+//       newId,
+//       evaluation.score,
+//       evaluation.feedback,
+//       status,
+//     );
+
+//     return c.json({
+//       message: "Article submitted successfully",
+//       data: {
+//         id: newId,
+//         status: "pending",
+//       },
+//     });
+//   }
+// });
 
 articleRoutes.get("/article-types", async (c) => {
   const db = c.env.DB;

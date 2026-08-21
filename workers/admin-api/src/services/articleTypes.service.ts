@@ -11,7 +11,6 @@ export default async function getArticleTypes(db: D1Database) {
 `;
 
   const data = await db.prepare(sql).all();
-  console.log(data);
 
   return data.results;
 }
@@ -89,7 +88,6 @@ export async function createArticleType(
     throw err;
   }
 
-  console.log("article type inserted");
 
   await db
     .prepare(
@@ -108,7 +106,6 @@ export async function createArticleType(
     .bind(promptId, articleTypeId, prompt, createdBy, now, now)
     .run();
 
-  console.log("prompt inserted");
 
   return {
     id: articleTypeId,
