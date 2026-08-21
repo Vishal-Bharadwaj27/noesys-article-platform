@@ -132,7 +132,7 @@ export default function LoginPage({
             <LayoutGrid size={18} className="text-white" strokeWidth={2.5} />
           </div>
           <span className="font-semibold text-lg text-slate-900">
-            ArticleAI
+            Article App
           </span>
         </div>
 

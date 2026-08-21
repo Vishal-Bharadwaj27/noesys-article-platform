@@ -31,19 +31,28 @@ const STATUS_LABELS: Record<ArticleStatus, string> = {
 };
 
 function scoreColor(score: number) {
-  if (score >= 80) return { bar: "bg-emerald-500", badge: "bg-emerald-50 text-emerald-700" };
-  if (score >= 60) return { bar: "bg-amber-500", badge: "bg-amber-50 text-amber-700" };
+  if (score >= 8)
+    return { bar: "bg-emerald-500", badge: "bg-emerald-50 text-emerald-700" };
+  if (score >= 6)
+    return { bar: "bg-amber-500", badge: "bg-amber-50 text-amber-700" };
   return { bar: "bg-red-500", badge: "bg-red-50 text-red-600" };
 }
 
 function formatDate(dateStr: string) {
   const d = new Date(dateStr);
   if (Number.isNaN(d.getTime())) return dateStr;
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
+
+
 export default function ArticleRow({ article, onClick }: ArticleRowProps) {
-  const { title, type, version, ai_score, status, created_at, author_name } = article;
+  const { title, type, version, ai_score, status, created_at, author_name } =
+    article;
   const hasScore = ai_score !== null;
   const colors = hasScore ? scoreColor(ai_score) : null;
 
@@ -54,7 +63,9 @@ export default function ArticleRow({ article, onClick }: ArticleRowProps) {
         ${onClick ? "cursor-pointer hover:bg-slate-50" : ""} transition-colors`}
     >
       {/* Title */}
-      <span className="text-indigo-700 font-medium text-sm truncate">{title}</span>
+      <span className="text-indigo-700 font-medium text-sm truncate">
+        {title}
+      </span>
 
       {/* Type */}
       <span className="text-slate-500 text-sm truncate">{type}</span>
@@ -72,10 +83,12 @@ export default function ArticleRow({ article, onClick }: ArticleRowProps) {
             <div className="w-12 h-1.5 rounded-full bg-slate-100 overflow-hidden">
               <div
                 className={`h-full rounded-full ${colors!.bar}`}
-                style={{ width: `${Math.min(ai_score, 100)}%` }}
+                style={{ width: `${(Math.min(ai_score, 10) / 10) * 100}%` }}
               />
             </div>
-            <span className={`text-xs font-semibold rounded-full px-2 py-0.5 ${colors!.badge}`}>
+            <span
+              className={`text-xs font-semibold rounded-full px-2 py-0.5 ${colors!.badge}`}
+            >
               {ai_score}
             </span>
           </>

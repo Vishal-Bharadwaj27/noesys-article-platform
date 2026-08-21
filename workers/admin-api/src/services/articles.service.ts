@@ -16,25 +16,29 @@ export async function getArticles(
   db: D1Database,
   month?: string,
   status?: string,
-): Promise<ArticleListItem[]> {
+) {
   let sql = `
     SELECT
       a.id,
       a.title,
-      a.status,
-      a.ai_score,
-      a.version,
-      a.month_year,
-      a.submitted_at,
 
-      u.id AS user_id,
-      u.name AS user_name,
-      u.email,
-      u.job_role
+      at.name AS type,
+
+      a.version,
+      a.ai_score,
+      a.status,
+
+      a.submitted_at AS created_at,
+
+      u.name AS author_name
 
     FROM articles a
+
     INNER JOIN users u
       ON u.id = a.user_id
+
+    INNER JOIN article_types at
+      ON at.id = a.article_type_id
 
     WHERE 1 = 1
   `;
@@ -52,13 +56,13 @@ export async function getArticles(
   }
 
   sql += `
-    ORDER BY u.name ASC, a.submitted_at DESC
+    ORDER BY a.submitted_at DESC
   `;
 
   const result = await db
     .prepare(sql)
     .bind(...bindings)
-    .all<ArticleListItem>();
+    .all();
 
   return result.results;
 }
@@ -71,7 +75,7 @@ export async function getArticleById(db: D1Database, id: string) {
                 a.*,
 
                 u.name AS author_name,
-                u.email AS author_mail,
+                u.email AS author_email,
                 u.job_role 
 
                 FROM articles a
@@ -113,5 +117,8 @@ export async function getArticleById(db: D1Database, id: string) {
     .bind(id)
     .all();
 
-  return { article, history };
+  return {
+    ...article,
+    history: history.results,
+  };
 }

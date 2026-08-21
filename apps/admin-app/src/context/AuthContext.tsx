@@ -1,4 +1,11 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
+import { useNavigate } from "react-router-dom";
 
 export type AuthUser = {
   id: string;
@@ -8,6 +15,8 @@ export type AuthUser = {
   auth_role: "super_admin" | "admin" | "user";
   is_active: boolean;
 };
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 type AuthContextValue = {
   user: AuthUser | null;
@@ -27,10 +36,13 @@ const AuthContext = createContext<AuthContextValue>({
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   const fetchUser = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/auth/me`, { credentials: "include" });
+      const res = await fetch(`${API_URL}/api/auth/me`, {
+        credentials: "include",
+      });
       if (!res.ok) {
         setUser(null);
         return;
@@ -48,11 +60,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     fetchUser();
   }, []);
 
-  const logout = () => {
-    setUser(null);
-    // adjust to your actual logout endpoint / Access logout URL if applicable
-    window.location.href = "/api/auth/logout";
-  };
+  async function logout() {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        throw new Error("Logout failed");
+      }
+
+      setUser(null);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to logout");
+    }
+  }
 
   return (
     <AuthContext.Provider value={{ user, loading, refetch: fetchUser, logout }}>

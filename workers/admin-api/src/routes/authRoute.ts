@@ -225,9 +225,8 @@ authRoutes.get("/me", async (c) => {
   });
 });
 
-const authRoute = new Hono();
 
-authRoute.post("/logout", (c) => {
+authRoutes.post("/logout", (c) => {
   deleteCookie(c, "session", {
     path: "/",
   });

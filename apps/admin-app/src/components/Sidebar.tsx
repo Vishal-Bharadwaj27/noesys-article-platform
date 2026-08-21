@@ -9,6 +9,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 type NavItem = {
   key: string;
@@ -28,28 +29,14 @@ const NAV_ITEMS: NavItem[] = [
   { key: "users", label: "Users", icon: Users, to: "/users" },
 ];
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
-
 export default function Sidebar() {
   const [open, setOpen] = useState(false);
+  const { logout } = useAuth();
   const navigate = useNavigate();
 
   async function handleLogout() {
-    try {
-      const res = await fetch(`${BACKEND_URL}/api/auth/logout`, {
-        method: "POST",
-        credentials: "include",
-      });
-
-      if (!res.ok) {
-        throw new Error("Logout failed");
-      }
-
-      navigate("/login", { replace: true });
-    } catch (err) {
-      console.error(err);
-      alert("Failed to logout");
-    }
+    await logout();
+    navigate("/login", { replace: true });
   }
 
   const NavList = () => (
@@ -71,7 +58,10 @@ export default function Sidebar() {
         );
       })}
 
-      <button onClick={handleLogout} className="flex items-center gap-2">
+      <button
+        onClick={handleLogout}
+        className="w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100"
+      >
         <LogOut size={18} />
         Logout
       </button>
@@ -86,7 +76,7 @@ export default function Sidebar() {
           <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
             <LayoutGrid size={16} className="text-white" strokeWidth={2.5} />
           </div>
-          <span className="font-semibold text-slate-900">ArticleAI</span>
+          <span className="font-semibold text-slate-900">Article App</span>
           <span className="ml-1 text-[11px] font-medium text-indigo-600 bg-indigo-50 rounded-full px-2 py-0.5">
             Admin
           </span>
@@ -119,7 +109,7 @@ export default function Sidebar() {
             <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
               <LayoutGrid size={16} className="text-white" strokeWidth={2.5} />
             </div>
-            <span className="font-semibold text-slate-900">ArticleAI</span>
+            <span className="font-semibold text-slate-900">Article App</span>
           </div>
           <button
             onClick={() => setOpen(false)}
