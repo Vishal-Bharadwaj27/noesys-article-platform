@@ -12,6 +12,7 @@ export type Article = {
   scored_at: string | null;
   month_year: string;
   retry_count: number;
+  ai_feedback: string | null;
 };
 
 const ARTICLE_COLUMNS = `
@@ -27,7 +28,8 @@ const ARTICLE_COLUMNS = `
   a.submitted_at,
   a.scored_at,
   a.month_year,
-  a.retry_count
+  a.retry_count,
+  a.ai_feedback
 `;
 
 export type ArticlePagination = {

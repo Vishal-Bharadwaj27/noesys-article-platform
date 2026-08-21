@@ -132,7 +132,8 @@ articleRoutes.get("/mine/:id", async (c) => {
   }
 
   const currentFeedback =
-    history.length > 0 ? history[history.length - 1].ai_feedback : "";
+    article.ai_feedback ||
+    (history.length > 0 ? history[history.length - 1].ai_feedback : "");
 
   return c.json({
     message: "Article fetched successfully",
@@ -145,6 +146,8 @@ articleRoutes.get("/mine/:id", async (c) => {
         article_type_name: article.article_type_name,
         status: article.status,
         version: article.version,
+        ai_score: article.ai_score,
+        ai_feedback: article.ai_feedback || null,
       },
       current_feedback: currentFeedback,
       current_score: article.ai_score,
@@ -157,6 +160,7 @@ articleRoutes.get("/mine/:id", async (c) => {
           article_id: item.article_id,
           version: item.version,
           score: item.ai_score,
+          feedback: item.ai_feedback || null,
           status,
           submitted_at: item.submitted_at,
         };
@@ -244,6 +248,7 @@ articleRoutes.post("/", async (c) => {
     }
 
     const evaluation = await evaluateArticle(
+      c.env.GOOGLE_GENERATIVE_AI_API_KEY,
       prompt,
       title,
       content,

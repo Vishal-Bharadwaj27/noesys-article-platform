@@ -69,7 +69,7 @@ export async function snapshotArticle(
           id,
           article_type_id,
           title,
-          '',
+          ai_feedback,
           content,
           ai_score,
           version,
@@ -100,6 +100,7 @@ export async function updateArticleForRewrite(
           version = version + 1,
           status = 'pending',
           ai_score = NULL,
+          ai_feedback = NULL,
           scored_at = NULL,
           retry_count = retry_count + 1
         WHERE id = ?
