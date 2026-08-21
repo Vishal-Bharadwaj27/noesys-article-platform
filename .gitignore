@@ -51,3 +51,5 @@ coverage/
 *.temp
 
 **/.dev.vars
+
+workers/admin-api/wrangler.toml
