@@ -13,21 +13,50 @@ import { getArticleTypes, updateEvaluation } from "../db/articleTypes";
 import type { AppEnv } from "../types";
 import { getPromptForArticleType } from "../db/prompts.service";
 import { evaluateArticle } from "../db/ai.service";
+import { authMiddleware } from "../middleware/auth";
 
 const articleRoutes = new Hono<AppEnv>();
+
+articleRoutes.use("*", authMiddleware);
+
+function currentMonth(): string {
+  return new Date().toISOString().slice(0, 7);
+}
+
+function toListItem(article: {
+  id: string;
+  title: string;
+  article_type_name: string;
+  version: number;
+  ai_score: number | null;
+  status: string;
+  submitted_at: string;
+  authorName: string;
+  authorId: string;
+}) {
+  return {
+    article: {
+      id: article.id,
+      title: article.title,
+      type: article.article_type_name,
+      version: article.version,
+      ai_score: article.ai_score,
+      status: article.status,
+      created: article.submitted_at,
+    },
+    author: {
+      id: article.authorId,
+      name: article.authorName,
+    },
+  };
+}
 
 articleRoutes.get("/mine", async (c) => {
   const user = c.get("user");
   const db = c.env.DB;
-  if (!user) {
-    return c.json(
-      {
-        success: false,
-        message: "Unauthorized",
-      },
-      401,
-    );
-  }
+
+  const viewAllRaw = c.req.query("viewAll");
+  const viewAll = viewAllRaw === "true" || viewAllRaw === "1";
 
   const month = c.req.query("month");
   if (month && !/^\d{4}-\d{2}$/.test(month)) {
@@ -36,26 +65,48 @@ articleRoutes.get("/mine", async (c) => {
         success: false,
         message: "Invalid month format. Expected YYYY-MM.",
       },
-      400,
+      400
     );
   }
 
-  const articles = await getArticlesByUser(db, user.id, month);
+  const pageRaw = c.req.query("page");
+  const limitRaw = c.req.query("limit");
+
+  let page: number | undefined;
+  let limit: number | undefined;
+
+  if (viewAll) {
+    page = pageRaw ? Math.max(1, parseInt(pageRaw, 10) || 1) : 1;
+    limit = limitRaw ? Math.min(100, Math.max(1, parseInt(limitRaw, 10) || 10)) : 10;
+  }
+
+  const { articles, pagination } = await getArticlesByUser(
+    db,
+    user.id,
+    viewAll ? undefined : (month || currentMonth()),
+    viewAll,
+    page,
+    limit
+  );
+
+  const data = articles.map((article) =>
+    toListItem({
+      id: article.id,
+      title: article.title,
+      article_type_name: article.article_type_name,
+      version: article.version,
+      ai_score: article.ai_score,
+      status: article.status,
+      submitted_at: article.submitted_at,
+      authorName: user.name,
+      authorId: user.id,
+    })
+  );
 
   return c.json({
     success: true,
-    data: articles.map((article) => ({
-      article: {
-        id: article.id,
-        title: article.title,
-        version: article.version,
-        ai_score: article.ai_score,
-      },
-      author: {
-        id: user.id,
-        name: user.name,
-      },
-    })),
+    data,
+    ...(pagination ? { pagination } : {}),
   });
 });
 
@@ -64,16 +115,6 @@ articleRoutes.get("/mine/:id", async (c) => {
   const db = c.env.DB;
   const articleId = c.req.param("id");
 
-  if (!user) {
-    return c.json(
-      {
-        success: false,
-        message: "Unauthorized",
-      },
-      401,
-    );
-  }
-
   const article = await getArticleById(db, articleId, user.id);
   if (!article) {
     return c.json(
@@ -81,7 +122,7 @@ articleRoutes.get("/mine/:id", async (c) => {
         success: false,
         message: "Article not found",
       },
-      404,
+      404
     );
   }
 
@@ -90,6 +131,9 @@ articleRoutes.get("/mine/:id", async (c) => {
     history.sort((a, b) => a.version - b.version);
   }
 
+  const currentFeedback =
+    history.length > 0 ? history[history.length - 1].ai_feedback : "";
+
   return c.json({
     message: "Article fetched successfully",
     data: {
@@ -97,14 +141,26 @@ articleRoutes.get("/mine/:id", async (c) => {
         id: article.id,
         title: article.title,
         content: article.content,
-      },
-      current_feedback: "",
-      current_score: article.ai_score,
-      history: history.map((item) => ({
-        article_id: item.article_id,
-        score: item.ai_score,
+        article_type_id: article.article_type_id,
+        article_type_name: article.article_type_name,
         status: article.status,
-      })),
+        version: article.version,
+      },
+      current_feedback: currentFeedback,
+      current_score: article.ai_score,
+      history: history.map((item) => {
+        let status = "pending";
+        if (item.ai_score !== null) {
+          status = item.ai_score >= 7 ? "approved" : "rewrite_required";
+        }
+        return {
+          article_id: item.article_id,
+          version: item.version,
+          score: item.ai_score,
+          status,
+          submitted_at: item.submitted_at,
+        };
+      }),
     },
   });
 });
@@ -112,15 +168,6 @@ articleRoutes.get("/mine/:id", async (c) => {
 articleRoutes.post("/", async (c) => {
   const user = c.get("user");
   const db = c.env.DB;
-  if (!user) {
-    return c.json(
-      {
-        success: false,
-        message: "Unauthorized",
-      },
-      401,
-    );
-  }
 
   let body: any;
   try {
@@ -131,7 +178,7 @@ articleRoutes.post("/", async (c) => {
         success: false,
         message: "Invalid JSON body",
       },
-      400,
+      400
     );
   }
 
@@ -142,7 +189,7 @@ articleRoutes.post("/", async (c) => {
         success: false,
         message: "Missing required fields: article_type_id, title, content",
       },
-      400,
+      400
     );
   }
 
@@ -158,7 +205,7 @@ articleRoutes.post("/", async (c) => {
           success: false,
           message: "Article not found or does not belong to user",
         },
-        404,
+        404
       );
     }
 

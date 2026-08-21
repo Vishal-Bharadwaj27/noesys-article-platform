@@ -1,5 +1,8 @@
 export type Bindings = {
   DB: D1Database;
+  JWT_SECRET?: string;
+  SENDGRID_API_KEY?: string;
+  FROM_EMAIL?: string;
 };
 
 export type AuthenticatedUser = {
