@@ -1,7 +1,18 @@
 import { Hono } from "hono";
-import { getArticlesByUser, getArticleById, createArticle } from "../db/articles";
-import { getArticleHistory, snapshotArticle, updateArticleForRewrite } from "../db/articleHistory";
+import {
+  getArticlesByUser,
+  getArticleById,
+  createArticle,
+} from "../db/articles";
+import {
+  getArticleHistory,
+  snapshotArticle,
+  updateArticleForRewrite,
+} from "../db/articleHistory";
+import { getArticleTypes, updateEvaluation } from "../db/articleTypes";
 import type { AppEnv } from "../types";
+import { getPromptForArticleType } from "../db/prompts.service";
+import { evaluateArticle } from "../db/ai.service";
 import { authMiddleware } from "../middleware/auth";
 
 const articleRoutes = new Hono<AppEnv>();
@@ -225,6 +236,28 @@ articleRoutes.post("/", async (c) => {
       retry_count: 0,
     });
 
+    const prompt = await getPromptForArticleType(db, article_type_id);
+
+    if(!prompt) {
+      return c.json({ success: false, message: "Some error occurred!"})
+    }
+
+    const evaluation = await evaluateArticle(
+      prompt,
+      title,
+      content,
+    );
+
+    const status = evaluation.score >= 7 ? "approved" : "rewrite_required";
+
+    await updateEvaluation(
+      db,
+      newId,
+      evaluation.score,
+      evaluation.feedback,
+      status,
+    );
+
     return c.json({
       message: "Article submitted successfully",
       data: {
@@ -233,6 +266,19 @@ articleRoutes.post("/", async (c) => {
       },
     });
   }
+});
+
+articleRoutes.get("/article-types", async (c) => {
+  const db = c.env.DB;
+  const types = await getArticleTypes(db);
+  return c.json({
+    message: "Article types fetched successfully",
+    data: types.map((t) => ({
+      id: t.id,
+      name: t.name,
+      description: t.description,
+    })),
+  });
 });
 
 export default articleRoutes;

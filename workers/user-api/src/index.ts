@@ -15,9 +15,12 @@ app.get("/", (c) => {
 });
 
 app.get("/health", (c) => {
-  return c.json({
-    message: "Service is healthy",
-  }, 200);
+  return c.json(
+    {
+      message: "Service is healthy",
+    },
+    200,
+  );
 });
 
 app.route("/auth", authRoutes);
@@ -34,6 +37,15 @@ app.get("/article-types", authMiddleware, async (c) => {
       description: t.description,
     })),
   });
+});
+
+app.onError((err, c) => {
+  return c.json(
+    {
+      message: err.message,
+    },
+    500,
+  );
 });
 
 export default app;
