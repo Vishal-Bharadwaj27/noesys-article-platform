@@ -59,6 +59,7 @@ articleRoutes.get("/mine", async (c) => {
   const viewAll = viewAllRaw === "true" || viewAllRaw === "1";
 
   const month = c.req.query("month");
+
   if (month && !/^\d{4}-\d{2}$/.test(month)) {
     return c.json(
       {
@@ -118,6 +119,7 @@ articleRoutes.get("/mine/:id", async (c) => {
   const articleId = c.req.param("id");
 
   const article = await getArticleById(db, articleId, user.id);
+
   if (!article) {
     return c.json(
       {
@@ -129,6 +131,7 @@ articleRoutes.get("/mine/:id", async (c) => {
   }
 
   const history = await getArticleHistory(db, articleId);
+
   if (history.length > 0) {
     history.sort((a, b) => a.version - b.version);
   }
@@ -155,9 +158,11 @@ articleRoutes.get("/mine/:id", async (c) => {
       current_score: article.ai_score,
       history: history.map((item) => {
         let status = "pending";
+
         if (item.ai_score !== null) {
           status = item.ai_score >= 7 ? "approved" : "rewrite_required";
         }
+
         return {
           article_id: item.article_id,
           version: item.version,
@@ -172,8 +177,20 @@ articleRoutes.get("/mine/:id", async (c) => {
 });
 
 articleRoutes.post("/", async (c) => {
+  const user = c.get("user");
+  const db = c.env.DB;
+
+  type CreateArticleBody = {
+    id?: string;
+    article_type_id?: string;
+    title?: string;
+    content?: string;
+  };
+
+  let body: CreateArticleBody;
+
   try {
-    body = await c.req.json();
+    body = await c.req.json<CreateArticleBody>();
   } catch {
     return c.json(
       {
@@ -184,7 +201,13 @@ articleRoutes.post("/", async (c) => {
     );
   }
 
-  const { id: requestedId, article_type_id, title, content } = body;
+  const {
+    id: requestedId,
+    article_type_id,
+    title,
+    content,
+  } = body;
+
   if (!article_type_id || !title || !content) {
     return c.json(
       {
@@ -202,32 +225,43 @@ articleRoutes.post("/", async (c) => {
 
   if (requestedId) {
     // Rewrite attempt
-    const existingArticle = await getArticleById(db, requestedId, user.id);
+    const existingArticle = await getArticleById(
+      db,
+      requestedId,
+      user.id,
+    );
+
     if (!existingArticle) {
       return c.json(
         {
           success: false,
-          message: "Invalid JSON body",
+          message: "Article not found or does not belong to user",
         },
         404,
       );
     }
 
-    const { id: requestedId, article_type_id, title, content } = body;
-    if (!article_type_id || !title || !content) {
-      return c.json(
-        {
-          success: false,
-          message: "Missing required fields: article_type_id, title, content",
-        },
-        400
-      );
-    }
+    const historyId = "hist_" + crypto.randomUUID();
+
+    await snapshotArticle(
+      db,
+      requestedId,
+      historyId,
+      now,
+    );
+
+    await updateArticleForRewrite(
+      db,
+      requestedId,
+      title,
+      content,
+    );
 
     articleId = requestedId;
   } else {
     // New article
     const newId = "art_" + crypto.randomUUID();
+
     await createArticle(db, {
       id: newId,
       user_id: user.id,
@@ -244,19 +278,25 @@ articleRoutes.post("/", async (c) => {
     articleId = newId;
   }
 
-  // Evaluation now runs for both new and rewritten articles
-  const prompt = await getPromptForArticleType(db, article_type_id);
+  const prompt = await getPromptForArticleType(
+    db,
+    article_type_id,
+  );
 
   if (!prompt) {
-    return c.json({ success: false, message: "Some error occurred!" });
+    return c.json(
+      {
+        success: false,
+        message: "Some error occurred!",
+      },
+      500,
+    );
   }
 
+  let evaluation;
 
-    if(!prompt) {
-      return c.json({ success: false, message: "Some error occurred!"})
-    }
-
-    const evaluation = await evaluateArticle(
+  try {
+    evaluation = await evaluateArticle(
       c.env.GOOGLE_GENERATIVE_AI_API_KEY,
       prompt,
       title,
@@ -274,16 +314,18 @@ articleRoutes.post("/", async (c) => {
       500,
     );
   }
-  const status = evaluation.score >= 7 ? "approved" : "rewrite_required";
+
+  const status =
+    evaluation.score >= 7 ? "approved" : "rewrite_required";
 
   await updateEvaluation(
-    c.env.DB,
+    db,
     articleId,
     evaluation.score,
     evaluation.feedback,
     status,
   );
-  
+
   return c.json({
     message: "Article submitted successfully",
     data: {
@@ -293,113 +335,11 @@ articleRoutes.post("/", async (c) => {
   });
 });
 
-// articleRoutes.post("/", async (c) => {
-//   const user = c.get("user");
-//   const db = c.env.DB;
-
-//   let body: any;
-//   try {
-//     body = await c.req.json();
-//   } catch {
-//     return c.json(
-//       {
-//         success: false,
-//         message: "Invalid JSON body",
-//       },
-//       400
-//     );
-//   }
-
-//   const { id: requestedId, article_type_id, title, content } = body;
-//   if (!article_type_id || !title || !content) {
-//     return c.json(
-//       {
-//         success: false,
-//         message: "Missing required fields: article_type_id, title, content",
-//       },
-//       400
-//     );
-//   }
-
-//   const now = new Date().toISOString();
-//   const month_year = now.slice(0, 7);
-
-//   if (requestedId) {
-//     // Rewrite attempt
-//     const existingArticle = await getArticleById(db, requestedId, user.id);
-//     if (!existingArticle) {
-//       return c.json(
-//         {
-//           success: false,
-//           message: "Article not found or does not belong to user",
-//         },
-//         404
-//       );
-//     }
-
-//     const historyId = "hist_" + crypto.randomUUID();
-//     await snapshotArticle(db, requestedId, historyId, now);
-//     await updateArticleForRewrite(db, requestedId, title, content);
-
-//     return c.json({
-//       message: "Article submitted successfully",
-//       data: {
-//         id: requestedId,
-//         status: "pending",
-//       },
-//     });
-//   } else {
-//     // New article
-//     const newId = "art_" + crypto.randomUUID();
-//     await createArticle(db, {
-//       id: newId,
-//       user_id: user.id,
-//       article_type_id,
-//       title,
-//       content,
-//       status: "pending",
-//       version: 1,
-//       submitted_at: now,
-//       month_year,
-//       retry_count: 0,
-//     });
-
-//     const prompt = await getPromptForArticleType(db, article_type_id);
-
-//     if(!prompt) {
-//       return c.json({ success: false, message: "Some error occurred!"})
-//     }
-
-//     const evaluation = await evaluateArticle(
-//       c.env.AI,
-//       prompt,
-//       title,
-//       content,
-//     );
-
-//     const status = evaluation.score >= 7 ? "approved" : "rewrite_required";
-
-//     await updateEvaluation(
-//       db,
-//       newId,
-//       evaluation.score,
-//       evaluation.feedback,
-//       status,
-//     );
-
-//     return c.json({
-//       message: "Article submitted successfully",
-//       data: {
-//         id: newId,
-//         status: "pending",
-//       },
-//     });
-//   }
-// });
-
 articleRoutes.get("/article-types", async (c) => {
   const db = c.env.DB;
+
   const types = await getArticleTypes(db);
+
   return c.json({
     message: "Article types fetched successfully",
     data: types.map((t) => ({
