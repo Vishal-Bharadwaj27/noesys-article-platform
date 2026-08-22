@@ -57,7 +57,7 @@ export async function sendOTPWithFallback(
   otp: string,
   apiKey: string,
   fromEmail: string,
-  environment: string = "development",
+  environment: string,
 ): Promise<void> {
   if (environment !== "production") {
     console.log(`[DEV] OTP for ${email}: ${otp}`);

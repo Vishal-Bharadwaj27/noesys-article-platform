@@ -2,7 +2,7 @@ export type Env = {
   DB: D1Database;
   DEV_EMAIL?: string;
   JWT_SECRET: string;
-  ENVIRONMENT?: string;
+  ENVIRONMENT: string;
   SENDGRID_API_KEY: string;
   FROM_EMAIL: string;
 };
