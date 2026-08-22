@@ -1,4 +1,4 @@
-import { Spin } from "antd";
+import { Loader2 } from "lucide-react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuth } from "./contexts/AuthContext";
 import Login from "./pages/Login";
@@ -12,8 +12,8 @@ function Protected({ children }: { children: ReactNode }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 via-white to-gray-100">
-        <Spin size="large" />
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <Loader2 size={28} className="animate-spin text-slate-400" />
       </div>
     );
   }
@@ -29,30 +29,9 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
-      <Route
-        path="/"
-        element={
-          <Protected>
-            <MyArticles />
-          </Protected>
-        }
-      />
-      <Route
-        path="/articles/new"
-        element={
-          <Protected>
-            <ArticleCreation />
-          </Protected>
-        }
-      />
-      <Route
-        path="/articles/:id"
-        element={
-          <Protected>
-            <ArticleDetail />
-          </Protected>
-        }
-      />
+      <Route path="/" element={<Protected><MyArticles /></Protected>} />
+      <Route path="/articles/new" element={<Protected><ArticleCreation /></Protected>} />
+      <Route path="/articles/:id" element={<Protected><ArticleDetail /></Protected>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

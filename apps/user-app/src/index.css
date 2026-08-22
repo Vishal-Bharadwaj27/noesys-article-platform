@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 html,
 body,
@@ -14,28 +12,4 @@ body {
     Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  color: #1f2937;
-}
-
-/* Ant Design monochrome tuning */
-.ant-btn-primary {
-  background-color: #1f2937 !important;
-  border-color: #1f2937 !important;
-}
-
-.ant-btn-primary:hover,
-.ant-btn-primary:focus {
-  background-color: #111827 !important;
-  border-color: #111827 !important;
-}
-
-.ant-table-thead > tr > th {
-  background-color: #f9fafb !important;
-  color: #4b5563 !important;
-  font-weight: 600 !important;
-}
-
-.ant-tag {
-  border-radius: 9999px;
-  font-weight: 500;
 }

@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 import authRoutes from "./routes/auth";
 import articleRoutes from "./routes/articles";
 import { getArticleTypes } from "./db/articleTypes";
@@ -6,6 +7,16 @@ import { authMiddleware } from "./middleware/auth";
 import type { AppEnv } from "./types";
 
 const app = new Hono<AppEnv>();
+
+app.use(
+  "*",
+  cors({
+    origin: ["https://noesys-article-platform.pages.dev"],
+    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  })
+);
 
 app.get("/", (c) => {
   return c.json({
