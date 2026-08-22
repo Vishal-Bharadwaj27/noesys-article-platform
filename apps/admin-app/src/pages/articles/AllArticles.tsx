@@ -92,6 +92,8 @@ const AllArticles = () => {
           <option value="">All</option>
           <option value="approved">Approved</option>
           <option value="rewrite_required">Rewrite Required</option>
+          <option value="pending">Pending</option>
+          
         </select>
       </div>
       <div>

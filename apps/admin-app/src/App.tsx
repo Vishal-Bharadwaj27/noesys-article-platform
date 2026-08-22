@@ -9,6 +9,7 @@ import AllArticles from "./pages/articles/AllArticles";
 import LoginPage from "./pages/Login/LoginPage";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import ArticleDetailsPage from "./components/articles/ArticleDetailsPage";
+import UserArticlesPage from "./components/users/UserArticlesPage";
 const API_URL = import.meta.env.VITE_BACKEND_URL;
 
 function ProtectedLayout() {
@@ -43,6 +44,7 @@ function ProtectedLayout() {
 
           <Route path="/users" element={<UsersLayout />}>
             <Route index element={<UsersPage />} />
+            <Route path="/users/:id/articles" element={<UserArticlesPage />} />
           </Route>
         </Routes>
       </div>

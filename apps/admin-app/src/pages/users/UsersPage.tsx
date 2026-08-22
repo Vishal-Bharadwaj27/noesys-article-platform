@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import UserCard, { User } from "../../components/users/UserCard";
 import { getCurrentMonth } from "../../utils/date";
 import { Calendar, Search } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
@@ -35,6 +36,8 @@ const UsersPage = () => {
   const [search, setSearch] = useState("");
   const [showNotSubmitted, setShowNotSubmitted] = useState(false);
   const [month, setMonth] = useState(getCurrentMonth());
+
+  const navigate = useNavigate();
 
   const handleToggleNotSubmitted = () => {
     setShowNotSubmitted((p) => !p);
@@ -164,6 +167,7 @@ const UsersPage = () => {
             {filteredUsers.map((u) => (
               <UserCard
                 key={u.id}
+                onUserClick={(id) => navigate(`/users/${id}/articles`)}
                 user={u}
                 onToggleActive={handleToggleActive}
                 onRoleChange={handleRoleChange}

@@ -89,8 +89,6 @@ export async function getUsers(
 
 // single user function - fetch a user by id
 export async function getUserById(db: D1Database, id: string) {
-
-
   return db
     .prepare(
       `
@@ -133,15 +131,18 @@ export async function updateUser(
     .run();
 }
 
-
-export async function updateUserAuthRole(db: D1Database, id: string, role: string) {
+export async function updateUserAuthRole(
+  db: D1Database,
+  id: string,
+  role: string,
+) {
   const allowedRoles = ["user", "admin"];
 
   if (!allowedRoles.includes(role)) {
     throw new Error("Invalid role");
   }
 
-  if(role === "super_admin") {
+  if (role === "super_admin") {
     throw new Error("Cannot change super_admin role");
   }
 
@@ -160,31 +161,38 @@ export async function updateUserAuthRole(db: D1Database, id: string, role: strin
     throw new Error("Some error occurred. Couldn't update the user's role.");
   }
 }
-
-export async function getUserArticles(
-  db: D1Database,
-  userId: string,
-) {
+export async function getUserArticles(db: D1Database, userId: string) {
   const result = await db
-    .prepare(`
+    .prepare(
+      `
       SELECT
         a.id,
         a.title,
-        a.status,
-        a.ai_score,
-        a.version,
-        a.submitted_at,
 
-        at.name AS article_type
+        at.name AS type,
+
+        a.version,
+        a.ai_score,
+        a.status,
+
+        a.submitted_at AS created_at,
+
+        u.name AS author_name,
+        u.email AS author_email
 
       FROM articles a
+
+      INNER JOIN users u
+        ON u.id = a.user_id
+
       INNER JOIN article_types at
         ON at.id = a.article_type_id
 
       WHERE a.user_id = ?
 
       ORDER BY a.submitted_at DESC
-    `)
+      `,
+    )
     .bind(userId)
     .all();
 
