@@ -32,6 +32,7 @@ type UserCardProps = {
     nextIsActive: boolean,
   ) => void | Promise<void>;
   onRoleChange?: (userId: string, nextRole: AuthRole) => void | Promise<void>; // NEW
+  onUserClick?: (userId: string) => void;
 };
 
 const ROLE_STYLES: Record<AuthRole, string> = {
@@ -57,6 +58,7 @@ export default function UserCard({
   user,
   submissionStatus,
   onToggleActive,
+  onUserClick,
   onRoleChange,
 }: UserCardProps) {
   const [modalOpen, setModalOpen] = useState(false);
@@ -151,6 +153,12 @@ export default function UserCard({
           >
             {isActive ? <UserX size={14} /> : <UserCheck size={14} />}
             {isActive ? "Deactivate" : "Activate"}
+          </button>
+
+          <button 
+          className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium bg-indigo-50 text-indigo-700 hover:bg"
+           onClick={() => onUserClick?.(user.id)} >
+                view user articles
           </button>
 
           {/* promote/demote, hidden entirely for super_admin */}
