@@ -36,7 +36,7 @@ export async function sendOTPEmail(
     };
 
     await sgMail.send(msg);
-    console.log(`OTP email sent to ${email}`);
+    // console.log(`OTP email sent to ${email}`);
     return true;
   } catch (error: any) {
     console.error(

@@ -57,7 +57,6 @@ articleTypesRoute.post("/", async (c) => {
     c.get("user").id,
   );
 
-  console.log(data);
   return c.json(
     {
       message: "Article type created successfully.",
