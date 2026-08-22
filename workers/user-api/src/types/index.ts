@@ -3,8 +3,7 @@ export type Bindings = {
   JWT_SECRET?: string;
   SENDGRID_API_KEY?: string;
   FROM_EMAIL?: string;
-  GOOGLE_GEMINI_API_KEY: string;
-  AI: Ai;
+  GOOGLE_GENERATIVE_AI_API_KEY: string;
 };
 
 export type AuthenticatedUser = {

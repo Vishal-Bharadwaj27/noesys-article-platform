@@ -1,66 +1,43 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { App, Button, Card, Form, Input, Select, Spin, Alert } from "antd";
-import { ArrowLeftOutlined, SendOutlined } from "@ant-design/icons";
+import { ArrowLeft, Send, Loader2 } from "lucide-react";
 import { api } from "../http-client";
 
-type ArticleType = {
-  id: string;
-  name: string;
-  description: string | null;
-};
-
-type ArticleTypesResponse = ArticleType[];
-
-type CreateResponse = {
-  id: string;
-  status: string;
-};
-
-type FormValues = {
-  article_type_id: string;
-  title: string;
-  content: string;
-};
+type ArticleType = { id: string; name: string; description: string | null };
+type CreateResponse = { id: string; status: string };
+type FormValues = { article_type_id: string; title: string; content: string };
 
 export default function ArticleCreation() {
-  const { message } = App.useApp();
   const navigate = useNavigate();
-  const [form] = Form.useForm<FormValues>();
-
   const [types, setTypes] = useState<ArticleType[]>([]);
   const [loadingTypes, setLoadingTypes] = useState(true);
   const [typesError, setTypesError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [values, setValues] = useState<FormValues>({ article_type_id: "", title: "", content: "" });
 
   useEffect(() => {
     let active = true;
     async function loadTypes() {
-      setLoadingTypes(true);
       try {
-        const result = await api<ArticleTypesResponse>("/article-types");
-        if (active) {
-          setTypes(result);
-        }
+        const result = await api<ArticleType[]>("/article-types");
+        if (active) setTypes(result);
       } catch (err) {
-        if (active) {
-          setTypesError(
-            err instanceof Error ? err.message : "Failed to load article types"
-          );
-        }
+        if (active) setTypesError(err instanceof Error ? err.message : "Failed to load article types");
       } finally {
-        if (active) {
-          setLoadingTypes(false);
-        }
+        if (active) setLoadingTypes(false);
       }
     }
     loadTypes();
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, []);
 
-  async function handleSubmit(values: FormValues) {
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (!values.article_type_id) { setError("Please select an article type"); return; }
+    if (!values.title.trim()) { setError("Please enter a title"); return; }
+    if (!values.content.trim()) { setError("Please enter content"); return; }
     setSubmitting(true);
     try {
       const result = await api<CreateResponse>("/articles", {
@@ -71,99 +48,90 @@ export default function ArticleCreation() {
           content: values.content.trim(),
         }),
       });
-      message.success("Article submitted successfully");
       navigate(`/articles/${result.id}`);
     } catch (err) {
-      message.error(err instanceof Error ? err.message : "Failed to submit article");
+      setError(err instanceof Error ? err.message : "Failed to submit article");
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-100">
+    <div className="min-h-screen bg-slate-50">
       <div className="max-w-3xl mx-auto px-4 py-8">
-        <Button
-          type="text"
-          icon={<ArrowLeftOutlined />}
+        <button
           onClick={() => navigate("/")}
-          className="text-gray-600 hover:text-gray-900 !-ml-2 mb-6"
+          className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-6"
         >
+          <ArrowLeft size={14} />
           Back to Articles
-        </Button>
+        </button>
 
-        <h1 className="text-2xl font-semibold text-gray-800 mb-6">
-          Create New Article
-        </h1>
+        <h1 className="text-2xl font-semibold text-slate-900 mb-6">Create New Article</h1>
 
-        <Card className="!rounded-2xl border-gray-200 shadow-sm">
+        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
           {typesError && (
-            <Alert
-              type="error"
-              message={typesError}
-              showIcon
-              className="mb-4"
-            />
+            <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600">
+              {typesError}
+            </div>
           )}
 
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={handleSubmit}
-            requiredMark={false}
-            className="space-y-2"
-          >
-            <Form.Item
-              name="article_type_id"
-              label={<span className="text-gray-700">Article Type</span>}
-              rules={[{ required: true, message: "Please select an article type" }]}
-            >
-              <Select
-                placeholder="Select an article type"
-                loading={loadingTypes}
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                Article Type
+              </label>
+              <select
+                value={values.article_type_id}
+                onChange={(e) => setValues({ ...values, article_type_id: e.target.value })}
                 disabled={loadingTypes}
-                options={types.map((t) => ({
-                  value: t.id,
-                  label: t.description
-                    ? `${t.name} — ${t.description}`
-                    : t.name,
-                }))}
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="title"
-              label={<span className="text-gray-700">Title</span>}
-              rules={[{ required: true, message: "Please enter a title" }]}
-            >
-              <Input placeholder="Enter article title" />
-            </Form.Item>
-
-            <Form.Item
-              name="content"
-              label={<span className="text-gray-700">Content</span>}
-              rules={[{ required: true, message: "Please enter article content" }]}
-            >
-              <Input.TextArea
-                rows={12}
-                placeholder="Write your article content here..."
-              />
-            </Form.Item>
-
-            <Form.Item className="mb-0">
-              <Button
-                type="primary"
-                htmlType="submit"
-                icon={<SendOutlined />}
-                loading={submitting}
-                block
-                size="large"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
               >
-                Submit Article
-              </Button>
-            </Form.Item>
-          </Form>
-        </Card>
+                <option value="">Select an article type</option>
+                {types.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.description ? `${t.name} — ${t.description}` : t.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Title</label>
+              <input
+                type="text"
+                value={values.title}
+                onChange={(e) => setValues({ ...values, title: e.target.value })}
+                placeholder="Enter article title"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Content</label>
+              <textarea
+                rows={12}
+                value={values.content}
+                onChange={(e) => setValues({ ...values, content: e.target.value })}
+                placeholder="Write your article content here..."
+                className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y"
+              />
+            </div>
+
+            {error && (
+              <p className="text-sm text-red-600">{error}</p>
+            )}
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-medium rounded-lg py-2.5 transition-colors"
+            >
+              {submitting ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
+              {submitting ? "Submitting..." : "Submit Article"}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );

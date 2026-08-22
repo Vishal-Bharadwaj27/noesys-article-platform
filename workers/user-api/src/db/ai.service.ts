@@ -1,22 +1,37 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { generateObject } from "ai";
+import { generateText, Output } from "ai";
 import { ArticleEvaluationSchema } from "../schemas/articleEvaluation.schema";
 
 export async function evaluateArticle(
   apiKey: string,
-  userPrompt: string,
+  prompt: string,
   title: string,
   content: string,
 ) {
+  if (!apiKey) {
+    throw new Error("Google Generative AI API key is missing.");
+  }
+
   const google = createGoogleGenerativeAI({
-    apiKey: apiKey,
-  });
-  const { object } = await generateObject({
-    model: google("gemini-3.6-flash"),
-    schema: ArticleEvaluationSchema,
-    system: userPrompt,
-    prompt: `Title: ${title}\n\nArticle: ${content}`,
+    apiKey,
   });
 
-  return object;
+  const { output } = await generateText({
+   model: google("gemini-3.6-flash"),
+    system: prompt,
+    prompt: `
+Title:
+
+${title}
+
+Article:
+
+${content}
+`,
+    output: Output.object({
+      schema: ArticleEvaluationSchema,
+    }),
+  });
+
+  return output;
 }
