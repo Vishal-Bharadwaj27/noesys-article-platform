@@ -4,6 +4,8 @@ import { Clock, Plus, LogOut, LayoutGrid, ChevronLeft, ChevronRight } from "luci
 import dayjs from "dayjs";
 import { useMyArticles, type ArticleListItem } from "../hooks/useMyArticles";
 import { useAuth } from "../contexts/AuthContext";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
 
 type ArticleStatus = "approved" | "rewrite_required" | "pending";
 
@@ -97,13 +99,35 @@ export default function MyArticles() {
 
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-3 mb-6">
-          <input
-            type="month"
-            value={month}
-            onChange={(e) => setMonth(e.target.value)}
-            disabled={viewAll}
-            className="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
-          />
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="justify-start text-left font-normal w-[160px]"
+                disabled={viewAll}
+              >
+                {dayjs(month).format("MMMM YYYY")}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 p-2">
+              <div className="grid grid-cols-3 gap-2">
+                {Array.from({ length: 12 }).map((_, i) => {
+                  const m = dayjs().month(i).format("YYYY-MM");
+                  return (
+                    <Button
+                      key={i}
+                      variant="ghost"
+                      onClick={() => { setMonth(m); }}
+                      className="text-xs"
+                    >
+                      {dayjs().month(i).format("MMM")}
+                    </Button>
+                  );
+                })}
+              </div>
+            </PopoverContent>
+          </Popover>
+
           <button
             onClick={() => { setViewAll((p) => !p); setCurrentPage(1); }}
             className="text-sm font-medium text-slate-600 border border-slate-200 rounded-lg px-3 py-2 hover:bg-slate-100 transition-colors"
