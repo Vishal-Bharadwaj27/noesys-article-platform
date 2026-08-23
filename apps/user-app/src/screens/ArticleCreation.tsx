@@ -84,7 +84,7 @@ export default function ArticleCreation() {
                 </label>
                 <Select
                   value={values.article_type_id}
-                  onValueChange={(value) => setValues({ ...values, article_type_id: value })}
+                  onValueChange={(value: string) => setValues({ ...values, article_type_id: value })}
                   disabled={loadingTypes}
                 >
                   <SelectTrigger className="w-full">
