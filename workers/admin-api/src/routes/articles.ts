@@ -12,7 +12,7 @@ articlesRoute.get("/", async (c) => {
     return c.json({ message: "Invalid month format. Expected YYYY-MM" }, 400);
   }
 
-  const allowedStatuses = ["approved", "rewrite_required"];
+  const allowedStatuses = ["approved", "rewrite_required", "pending"];
 
   if (status && !allowedStatuses.includes(status)) {
     return c.json({ message: "Invalid status" }, 400);

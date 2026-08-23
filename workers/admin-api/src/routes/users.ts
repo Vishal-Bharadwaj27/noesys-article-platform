@@ -37,8 +37,7 @@ usersRoute.get("/:id/articles", async (c) => {
     return c.json({ message: "Invalid id" }, 400);
   }
 
-  const data = getUserArticles(db, id);
-
+  const data = await getUserArticles(db, id);
   return c.json({ message: "User articles fetched successfully", data });
 });
 
