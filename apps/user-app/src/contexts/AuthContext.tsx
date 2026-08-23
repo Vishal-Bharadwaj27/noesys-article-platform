@@ -15,7 +15,7 @@ export type AuthUser = {
   name: string;
   email: string;
   job_role: string;
-  auth_role: string;
+  auth_role: "super_admin" | "admin" | "user";
 };
 
 type RequestOtpResponse = {
@@ -121,7 +121,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       tokenStorage.set(result.token);
       setToken(result.token);
       setUser(result.user);
-      navigate("/", { replace: true });
+      
+      // Redirect based on role
+      if (result.user.auth_role === "admin" || result.user.auth_role === "super_admin") {
+        navigate("/admin/articles", { replace: true });
+      } else {
+        navigate("/", { replace: true });
+      }
     },
     [navigate]
   );
