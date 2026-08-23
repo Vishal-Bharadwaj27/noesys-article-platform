@@ -6,6 +6,10 @@ import MyArticles from "./screens/MyArticles";
 import ArticleCreation from "./screens/ArticleCreation";
 import ArticleDetail from "./screens/ArticleDetail";
 import type { ReactNode } from "react";
+import { RoleBasedRoute } from "./components/RoleBasedRoute";
+import AllArticles from "./admin/pages/articles/AllArticles";
+import UsersPage from "./admin/pages/users/UsersPage";
+import ArticleTypesPage from "./admin/pages/articleTypes/ArticleTypesPage";
 
 function Protected({ children }: { children: ReactNode }) {
   const { isAuthenticated, loading } = useAuth();
@@ -32,6 +36,12 @@ export default function App() {
       <Route path="/" element={<Protected><MyArticles /></Protected>} />
       <Route path="/articles/new" element={<Protected><ArticleCreation /></Protected>} />
       <Route path="/articles/:id" element={<Protected><ArticleDetail /></Protected>} />
+      
+      {/* Admin Routes */}
+      <Route path="/admin/articles" element={<RoleBasedRoute allowedRoles={["admin", "super_admin"]}><AllArticles /></RoleBasedRoute>} />
+      <Route path="/admin/users" element={<RoleBasedRoute allowedRoles={["super_admin"]}><UsersPage /></RoleBasedRoute>} />
+      <Route path="/admin/article-types" element={<RoleBasedRoute allowedRoles={["admin", "super_admin"]}><ArticleTypesPage /></RoleBasedRoute>} />
+      
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

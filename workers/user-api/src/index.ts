@@ -11,10 +11,11 @@ const app = new Hono<AppEnv>();
 app.use(
   "*",
   cors({
-    origin: ["https://noesys-article-platform.pages.dev"],
+    origin: ["https://noesys-article-platform.pages.dev", "https://article-platform-router.vishal-97a.workers.dev"],
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
     credentials: true,
+    exposeHeaders: ["Set-Cookie"],
   })
 );
 
