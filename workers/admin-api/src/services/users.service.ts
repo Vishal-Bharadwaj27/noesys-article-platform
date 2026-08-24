@@ -161,40 +161,73 @@ export async function updateUserAuthRole(
     throw new Error("Some error occurred. Couldn't update the user's role.");
   }
 }
-export async function getUserArticles(db: D1Database, userId: string) {
+
+export async function getUserArticles(
+  db: D1Database,
+  userId: string,
+  month?: string,
+  status?: string,
+) {
+  const user = await db
+    .prepare(
+      `
+      SELECT
+        id,
+        name,
+        email,
+        job_role,
+        auth_role
+      FROM users
+      WHERE id = ?
+      `,
+    )
+    .bind(userId)
+    .first();
+
+  if (!user) {
+    return null;
+  }
+
+  const conditions = ["a.user_id = ?"];
+  const bindings: (string | number)[] = [userId];
+
+  if (status) {
+    conditions.push("a.status = ?");
+    bindings.push(status);
+  }
+
+  if (month) {
+    conditions.push("strftime('%Y-%m', a.submitted_at) = ?");
+    bindings.push(month);
+  }
+
   const result = await db
     .prepare(
       `
       SELECT
         a.id,
         a.title,
-
         at.name AS type,
-
         a.version,
         a.ai_score,
         a.status,
-
         a.submitted_at AS created_at,
-
         u.name AS author_name,
         u.email AS author_email
-
       FROM articles a
-
       INNER JOIN users u
         ON u.id = a.user_id
-
       INNER JOIN article_types at
         ON at.id = a.article_type_id
-
-      WHERE a.user_id = ?
-
+      WHERE ${conditions.join(" AND ")}
       ORDER BY a.submitted_at DESC
       `,
     )
-    .bind(userId)
+    .bind(...bindings)
     .all();
 
-  return result.results;
+  return {
+    user,
+    articles: result.results,
+  };
 }

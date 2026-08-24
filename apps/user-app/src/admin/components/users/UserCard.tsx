@@ -31,7 +31,8 @@ type UserCardProps = {
     userId: string,
     nextIsActive: boolean,
   ) => void | Promise<void>;
-  onRoleChange?: (userId: string, nextRole: AuthRole) => void | Promise<void>; // NEW
+  onRoleChange?: (userId: string, nextRole: AuthRole) => void | Promise<void>;
+  onUserClick?: (userId: string) => void;
 };
 
 const ROLE_STYLES: Record<AuthRole, string> = {
@@ -58,6 +59,7 @@ export default function UserCard({
   submissionStatus,
   onToggleActive,
   onRoleChange,
+  onUserClick,
 }: UserCardProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [roleModalOpen, setRoleModalOpen] = useState(false);
@@ -131,14 +133,12 @@ export default function UserCard({
               <Mail size={13} className="text-slate-400 shrink-0" />
               <span className="truncate">{user.email}</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <Briefcase size={13} className="text-slate-400 shrink-0" />
-              <span className="truncate">{user.job_role}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Calendar size={13} className="text-slate-400 shrink-0" />
-              <span>Joined {formatDate(user.created_at)}</span>
-            </div>
+            {user.job_role && (
+              <div className="flex items-center gap-1.5">
+                <Briefcase size={13} className="text-slate-400 shrink-0" />
+                <span className="truncate">{user.job_role}</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -163,6 +163,13 @@ export default function UserCard({
               Promote to Admin
             </button>
           )}
+
+          <button
+            className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium bg-indigo-50 text-indigo-700 hover:bg"
+            onClick={() => onUserClick?.(user.id)}
+          >
+            View user articles
+          </button>
 
           {user.auth_role === "admin" && (
             <>

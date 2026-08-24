@@ -7,6 +7,7 @@ import type { Env } from "./types";
 import articlesRoute from "./routes/articles";
 import articleTypesRoute from "./routes/articleTypes";
 import authRoutes from "./routes/authRoute";
+import parametersRoute from "./routes/parameters";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -18,6 +19,7 @@ app.use(
 
       if (
         origin === "http://localhost:5174" ||
+        origin === "http://localhost:5173" ||
         origin.endsWith("noesys-article-platform-admin.pages.dev")
       ) {
         return origin;
@@ -49,6 +51,8 @@ app.route("/api/articles", articlesRoute);
 
 // article types route
 app.route("/api/article-types", articleTypesRoute);
+
+app.route("/article-types/:articleTypeId/parameters", parametersRoute);
 
 app.get("/api/health", (c) => {
   return c.json({

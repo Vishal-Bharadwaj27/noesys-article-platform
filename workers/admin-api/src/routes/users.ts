@@ -11,7 +11,7 @@ import { AuthContext, authMiddleware } from "../middleware/auth";
 import { requiredRole } from "../middleware/requiredRole";
 
 const usersRoute = new Hono<{ Bindings: Env } & AuthContext>();
-usersRoute.use("*", requiredRole("admin", "super_admin"));
+// usersRoute.use("*", requiredRole("admin", "super_admin"));
 
 // get users based on submission_status and month_year
 usersRoute.get("/", async (c) => {
@@ -32,13 +32,29 @@ usersRoute.get("/:id/articles", async (c) => {
   const db = c.env.DB;
 
   const id = c.req.param("id");
+  const month = c.req.query("month");
+  const status = c.req.query("status");
 
   if (!id || id.trim() === "") {
     return c.json({ message: "Invalid id" }, 400);
   }
 
-  const data = await getUserArticles(db, id);
-  return c.json({ message: "User articles fetched successfully", data });
+  const data = await getUserArticles(
+    db,
+    id,
+    month || undefined,
+    status || undefined,
+  );
+
+  if (!data) {
+    return c.json({ message: "User not found" }, 404);
+  }
+
+  return c.json({
+    message: "User articles fetched successfully",
+    user: data.user,
+    data: data.articles,
+  });
 });
 
 // update a specific user's role
