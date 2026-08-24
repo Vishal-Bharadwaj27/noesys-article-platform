@@ -14,6 +14,7 @@ import dayjs from "dayjs";
 import { useArticle, type HistoryItem } from "../hooks/useArticle";
 import { api } from "../http-client";
 import ReactMarkdown from "react-markdown";
+import { formatFeedbackAsMarkdown } from "../utils/formatFeedback";
 
 function scoreColor(score: number) {
   if (score >= 8) {
@@ -168,6 +169,8 @@ function RewriteContentEditor({
 }
 
 function FeedbackBlock({ feedback }: { feedback: string }) {
+  const formattedFeedback = formatFeedbackAsMarkdown(feedback);
+
   return (
     <div className="prose prose-sm prose-slate max-w-none">
       <ReactMarkdown
@@ -241,7 +244,7 @@ function FeedbackBlock({ feedback }: { feedback: string }) {
           ),
         }}
       >
-        {feedback || "No feedback available yet."}
+        {formattedFeedback}
       </ReactMarkdown>
     </div>
   );
