@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Header from "../components/Header";
-import { ChevronLeft, Edit3, X, Check, Clock, Loader2 } from "lucide-react";
+import { ChevronLeft, Edit3, X, Check, Clock, Loader2, Copy } from "lucide-react";
 import dayjs from "dayjs";
 import { useArticle, type HistoryItem } from "../hooks/useArticle";
 import { api } from "../http-client";
+import ReactMarkdown from "react-markdown";
 
 function scoreColor(score: number) {
   if (score >= 8) return { bar: "bg-emerald-500", badge: "bg-emerald-50 text-emerald-700" };
@@ -16,7 +17,63 @@ const STATUS_STYLES: Record<string, string> = {
   approved: "bg-indigo-50 text-indigo-700",
   rewrite_required: "bg-red-50 text-red-600",
   pending: "bg-amber-50 text-amber-700",
+  processing: "bg-blue-50 text-blue-700",
+  failed: "bg-slate-100 text-slate-600",
 };
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <button
+      onClick={handleCopy}
+      className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-colors"
+      title="Copy to clipboard"
+    >
+      {copied ? <Check size={16} className="text-emerald-600" /> : <Copy size={16} />}
+    </button>
+  );
+}
+
+function ContentBlock({ content }: { content: string }) {
+  const [view, setView] = useState<"rendered" | "raw">("rendered");
+  return (
+    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+      <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
+        <h2 className="font-semibold text-slate-900">Content</h2>
+        <div className="flex items-center gap-2">
+          <div className="flex bg-slate-100 rounded-lg p-0.5">
+            {(["rendered", "raw"] as const).map((v) => (
+              <button
+                key={v}
+                onClick={() => setView(v)}
+                className={`px-3 py-1 text-xs font-medium rounded-md capitalize ${view === v ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
+          <CopyButton text={content} />
+        </div>
+      </div>
+      <div className="px-5 py-4">
+        {view === "rendered" ? (
+          <div className="prose prose-sm prose-slate max-w-none">
+            <ReactMarkdown>{content}</ReactMarkdown>
+          </div>
+        ) : (
+          <pre className="bg-slate-50 p-4 rounded-lg text-xs text-slate-700 whitespace-pre-wrap font-mono">
+            {content}
+          </pre>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function ArticleDetail() {
   const { id } = useParams<{ id: string }>();
@@ -139,34 +196,35 @@ export default function ArticleDetail() {
         </div>
 
         <div className="space-y-6">
-          {/* Article card */}
-          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-              <h2 className="font-semibold text-slate-900">Article</h2>
-              {article && (
-                <span className="text-xs font-medium text-slate-600 bg-slate-100 rounded-full px-2.5 py-1">
-                  {article.article_type_name}
-                </span>
-              )}
-            </div>
-            <div className="px-5 py-4">
-              {editing ? (
-                <textarea
-                  rows={10}
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  placeholder="Article content"
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y"
-                />
-              ) : (
-                <p className="whitespace-pre-wrap text-slate-700 text-sm leading-relaxed">
-                  {article?.content}
-                </p>
-              )}
+              {/* Article card */}
+              <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+                  <h2 className="font-semibold text-slate-900">Article</h2>
+                  <div className="flex items-center gap-2">
+                    {article && (
+                      <span className="text-xs font-medium text-slate-600 bg-slate-100 rounded-full px-2.5 py-1">
+                        {article.article_type_name}
+                      </span>
+                    )}
+                    <CopyButton text={article?.content ?? ""} />
+                  </div>
+                </div>
+                <div className="px-5 py-4">
+                  {editing ? (
+                    <textarea
+                      rows={10}
+                      value={content}
+                      onChange={(e) => setContent(e.target.value)}
+                      placeholder="Article content"
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y"
+                    />
+                  ) : (
+                    <ContentBlock content={article?.content ?? ""} />
+                  )}
 
-              {submitError && (
-                <p className="mt-3 text-sm text-red-600">{submitError}</p>
-              )}
+                  {submitError && (
+                    <p className="mt-3 text-sm text-red-600">{submitError}</p>
+                  )}
 
               <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
@@ -187,7 +245,10 @@ export default function ArticleDetail() {
                   </div>
                 </div>
                 <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                  <p className="text-xs uppercase tracking-wide text-slate-400 mb-1">Feedback</p>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-xs uppercase tracking-wide text-slate-400">Feedback</p>
+                    {currentFeedback && <CopyButton text={currentFeedback} />}
+                  </div>
                   <p className="text-slate-700 text-sm leading-relaxed">
                     {currentFeedback || "No feedback available yet."}
                   </p>
