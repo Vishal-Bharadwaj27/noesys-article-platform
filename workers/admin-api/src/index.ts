@@ -20,7 +20,8 @@ app.use(
       if (
         origin === "http://localhost:5174" ||
         origin === "http://localhost:5173" ||
-        origin.endsWith("noesys-article-platform-admin.pages.dev")
+        origin.endsWith("noesys-article-platform-admin.pages.dev") ||
+        origin === "https://noesys-article-platform.pages.dev"
       ) {
         return origin;
       }
