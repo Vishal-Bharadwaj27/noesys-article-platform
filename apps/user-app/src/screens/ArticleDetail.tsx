@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Edit3, X, Check, Clock, Loader2 } from "lucide-react";
+import { useParams, useNavigate } from "react-router-dom";
+import Header from "../components/Header";
+import { ChevronLeft, Edit3, X, Check, Clock, Loader2 } from "lucide-react";
 import dayjs from "dayjs";
 import { useArticle, type HistoryItem } from "../hooks/useArticle";
 import { api } from "../http-client";
@@ -84,12 +85,13 @@ export default function ArticleDetail() {
 
   return (
     <div className="min-h-screen bg-slate-50">
+      <Header />
       <div className="max-w-4xl mx-auto px-4 py-8">
         <button
           onClick={() => navigate("/")}
           className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-6"
         >
-          <ArrowLeft size={14} />
+          <ChevronLeft size={14} />
           Back to Articles
         </button>
 

@@ -1,8 +1,9 @@
+import Header from "../components/Header";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Send, Loader2 } from "lucide-react";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from "@/components/ui/select";
+import { ChevronLeft, Send, Loader2 } from "lucide-react";
 import { api } from "../http-client";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 type ArticleType = { id: string; name: string; description: string | null };
 type CreateResponse = { id: string; status: string };
@@ -59,12 +60,13 @@ export default function ArticleCreation() {
 
   return (
     <div className="min-h-screen bg-slate-50">
+      <Header />
       <div className="max-w-3xl mx-auto px-4 py-8">
         <button
           onClick={() => navigate("/")}
           className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-6"
         >
-          <ArrowLeft size={14} />
+          <ChevronLeft size={14} />
           Back to Articles
         </button>
 

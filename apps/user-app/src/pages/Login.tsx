@@ -1,7 +1,8 @@
 import { useState, useRef, KeyboardEvent, ClipboardEvent } from "react";
-import { LayoutGrid, Mail, ArrowLeft, Loader2 } from "lucide-react";
+import { Mail, ChevronLeft, Loader2 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { Navigate } from "react-router-dom";
+import logoImage from "../Logo/Noesys_logo.avif";
 
 type Stage = "email" | "otp";
 const OTP_LENGTH = 6;
@@ -94,10 +95,10 @@ export default function Login() {
       <div className="w-full max-w-sm">
         {/* Brand */}
         <div className="flex items-center justify-center gap-2 mb-8">
-          <div className="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center">
-            <LayoutGrid size={18} className="text-white" strokeWidth={2.5} />
-          </div>
-          <span className="font-semibold text-lg text-slate-900">Article App</span>
+          <img src={logoImage} alt="Noesys Article Platform" className="h-9 w-9 rounded-lg" />
+          <span className="font-semibold text-lg text-slate-900">
+            Noesys Article Platform
+          </span>
         </div>
 
         <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
@@ -141,7 +142,7 @@ export default function Login() {
                 onClick={() => { setStage("email"); setError(null); }}
                 className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-4"
               >
-                <ArrowLeft size={14} />
+                <ChevronLeft size={14} />
                 Back
               </button>
 

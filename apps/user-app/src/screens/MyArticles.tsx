@@ -1,6 +1,7 @@
+import Header from "../components/Header";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Clock, Plus, LogOut, LayoutGrid, ChevronLeft, ChevronRight } from "lucide-react";
+import { Clock, Plus, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import dayjs from "dayjs";
 import { useMyArticles, type ArticleListItem } from "../hooks/useMyArticles";
 import { useAuth } from "../contexts/AuthContext";
@@ -33,6 +34,7 @@ export default function MyArticles() {
 
   const currentMonth = dayjs().format("YYYY-MM");
   const [month, setMonth] = useState(currentMonth);
+  const [focusedYear, setFocusedYear] = useState(dayjs().year());
   const [viewAll, setViewAll] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -43,41 +45,11 @@ export default function MyArticles() {
     limit: 10,
   });
 
-  function handleLogout() {
-    if (window.confirm("Are you sure you want to log out?")) {
-      logout();
-    }
-  }
-
   const totalPages = pagination.totalPages || 1;
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Top bar */}
-      <div className="sticky top-0 z-10 bg-white border-b border-slate-200">
-        <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
-              <LayoutGrid size={16} className="text-white" strokeWidth={2.5} />
-            </div>
-            <span className="font-semibold text-slate-900">Article App</span>
-          </div>
-          <div className="flex items-center gap-3">
-            {user && (
-              <span className="text-sm text-slate-500 hidden sm:block">
-                {user.name}
-              </span>
-            )}
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-1.5 text-sm text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors"
-            >
-              <LogOut size={15} />
-              Logout
-            </button>
-          </div>
-        </div>
-      </div>
+      <Header />
 
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Header */}
@@ -103,24 +75,45 @@ export default function MyArticles() {
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
-                className="justify-start text-left font-normal w-[160px]"
+                className="justify-between font-normal w-[180px]"
                 disabled={viewAll}
               >
                 {dayjs(month).format("MMMM YYYY")}
+                <Calendar className="h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-64 p-2">
+            <PopoverContent className="w-64 p-3">
+              <div className="flex items-center justify-between mb-3">
+                <Button
+                  variant="ghost"
+                  className="h-7 w-7 p-0 opacity-50 hover:opacity-100"
+                  onClick={() => setFocusedYear((y) => y - 1)}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <div className="font-bold text-sm">{focusedYear}</div>
+                <Button
+                  variant="ghost"
+                  className="h-7 w-7 p-0 opacity-50 hover:opacity-100"
+                  onClick={() => setFocusedYear((y) => y + 1)}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
               <div className="grid grid-cols-3 gap-2">
                 {Array.from({ length: 12 }).map((_, i) => {
-                  const m = dayjs().month(i).format("YYYY-MM");
+                  const m = dayjs().year(focusedYear).month(i).format("YYYY-MM");
+                  const isSelected = month === m;
+                  const isCurrent = dayjs().format("YYYY-MM") === m;
                   return (
                     <Button
                       key={i}
-                      variant="ghost"
-                      onClick={() => { setMonth(m); }}
-                      className="text-xs"
+                      variant={isSelected ? "default" : "ghost"}
+                      onClick={() => setMonth(m)}
+                      className={`h-9 text-sm ${isSelected ? "" : "hover:bg-accent hover:text-accent-foreground"}`}
                     >
                       {dayjs().month(i).format("MMM")}
+                      {isCurrent && <span className="absolute top-1 right-1 h-1 w-1 rounded-full bg-primary" />}
                     </Button>
                   );
                 })}
