@@ -259,6 +259,62 @@ articleRoutes.post("/", async (c) => {
     );
 
     articleId = requestedId;
+
+    c.executionCtx.waitUntil(
+      (async () => {
+        const prompt = await getPromptForArticleType(
+          db,
+          article_type_id,
+        );
+
+        if (!prompt) {
+          await updateArticleStatus(
+            db,
+            articleId,
+            "failed",
+          );
+          return;
+        }
+
+        try {
+          const evaluation = await evaluateArticle(
+            c.env.GOOGLE_GENERATIVE_AI_API_KEY,
+            prompt,
+            title,
+            content,
+          );
+
+          const status =
+            evaluation.score >= 7
+              ? "approved"
+              : "rewrite_required";
+
+          await updateEvaluation(
+            db,
+            articleId,
+            evaluation.score,
+            evaluation.feedback,
+            status,
+          );
+        } catch (err) {
+          console.error("Gemini Error:", err);
+
+          await updateArticleStatus(
+            db,
+            articleId,
+            "failed",
+          );
+        }
+      })(),
+    );
+
+    return c.json({
+      message: "Article rewrite submitted successfully",
+      data: {
+        id: articleId,
+        status: "pending",
+      },
+    });
   } else {
     // New article
     const newId = "art_" + crypto.randomUUID();
@@ -280,9 +336,17 @@ articleRoutes.post("/", async (c) => {
 
     c.executionCtx.waitUntil(
       (async () => {
-        const prompt = await getPromptForArticleType(db, article_type_id);
+        const prompt = await getPromptForArticleType(
+          db,
+          article_type_id,
+        );
+
         if (!prompt) {
-          await updateArticleStatus(db, articleId, "failed");
+          await updateArticleStatus(
+            db,
+            articleId,
+            "failed",
+          );
           return;
         }
 
@@ -291,21 +355,31 @@ articleRoutes.post("/", async (c) => {
             c.env.GOOGLE_GENERATIVE_AI_API_KEY,
             prompt,
             title,
-            content
+            content,
           );
-          const status = evaluation.score >= 7 ? "approved" : "rewrite_required";
+
+          const status =
+            evaluation.score >= 7
+              ? "approved"
+              : "rewrite_required";
+
           await updateEvaluation(
             db,
             articleId,
             evaluation.score,
             evaluation.feedback,
-            status
+            status,
           );
         } catch (err) {
           console.error("Gemini Error:", err);
-          await updateArticleStatus(db, articleId, "failed");
+
+          await updateArticleStatus(
+            db,
+            articleId,
+            "failed",
+          );
         }
-      })()
+      })(),
     );
 
     return c.json({

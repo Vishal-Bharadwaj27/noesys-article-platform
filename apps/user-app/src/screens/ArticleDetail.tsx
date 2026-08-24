@@ -23,47 +23,64 @@ const STATUS_STYLES: Record<string, string> = {
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
+
   const handleCopy = () => {
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
   return (
     <button
       onClick={handleCopy}
       className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-colors"
       title="Copy to clipboard"
     >
-      {copied ? <Check size={16} className="text-emerald-600" /> : <Copy size={16} />}
+      {copied ? (
+        <Check size={16} className="text-emerald-600" />
+      ) : (
+        <Copy size={16} />
+      )}
     </button>
   );
 }
 
 function ContentBlock({ content }: { content: string }) {
   const [view, setView] = useState<"rendered" | "raw">("rendered");
+
   return (
     <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
       <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
         <h2 className="font-semibold text-slate-900">Content</h2>
+
         <div className="flex items-center gap-2">
           <div className="flex bg-slate-100 rounded-lg p-0.5">
             {(["rendered", "raw"] as const).map((v) => (
               <button
                 key={v}
                 onClick={() => setView(v)}
-                className={`px-3 py-1 text-xs font-medium rounded-md capitalize ${view === v ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                className={`px-3 py-1 text-xs font-medium rounded-md capitalize ${view === v
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                  }`}
               >
                 {v}
               </button>
             ))}
           </div>
+
           <CopyButton text={content} />
         </div>
       </div>
+
       <div className="px-5 py-4">
         {view === "rendered" ? (
           <div className="prose prose-sm prose-slate max-w-none">
-            <ReactMarkdown>{content}</ReactMarkdown>
+            {content.split("\n\n").map((paragraph, index) => (
+              <ReactMarkdown key={index}>
+                {paragraph}
+              </ReactMarkdown>
+            ))}
           </div>
         ) : (
           <pre className="bg-slate-50 p-4 rounded-lg text-xs text-slate-700 whitespace-pre-wrap font-mono">
@@ -75,12 +92,71 @@ function ContentBlock({ content }: { content: string }) {
   );
 }
 
+function RewriteContentEditor({
+  content,
+  onChange,
+}: {
+  content: string;
+  onChange: (value: string) => void;
+}) {
+  const [view, setView] = useState<"rendered" | "raw">("raw");
+
+  return (
+    <div className="border border-slate-200 rounded-lg overflow-hidden">
+      <div className="flex items-center justify-between px-3 py-2 bg-slate-50 border-b border-slate-200">
+        <span className="text-xs font-medium text-slate-500">
+          Article Content
+        </span>
+
+        <div className="flex bg-slate-200 rounded-lg p-0.5">
+          {(["rendered", "raw"] as const).map((v) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => setView(v)}
+              className={`px-3 py-1 text-xs font-medium rounded-md capitalize ${view === v
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+                }`}
+            >
+              {v}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="p-3">
+        {view === "rendered" ? (
+          <div className="min-h-[250px] prose prose-sm prose-slate max-w-none px-1 py-1">
+            <ReactMarkdown>{content || "No content available."}</ReactMarkdown>
+          </div>
+        ) : (
+          <textarea
+            rows={10}
+            value={content}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder="Article content"
+            className="w-full min-h-[250px] rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y"
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function ArticleDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const { article, history, currentScore, currentFeedback, loading, error, refetch } =
-    useArticle(id ?? "");
+  const {
+    article,
+    history,
+    currentScore,
+    currentFeedback,
+    loading,
+    error,
+    refetch,
+  } = useArticle(id ?? "");
 
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState("");
@@ -89,14 +165,23 @@ export default function ArticleDetail() {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (article) { setTitle(article.title); setContent(article.content); }
+    if (article) {
+      setTitle(article.title);
+      setContent(article.content);
+    }
   }, [article]);
 
   async function handleSubmitRewrite() {
     if (!article) return;
-    if (!title.trim() || !content.trim()) { setSubmitError("Title and content are required"); return; }
+
+    if (!title.trim() || !content.trim()) {
+      setSubmitError("Title and content are required");
+      return;
+    }
+
     setSubmitError(null);
     setSubmitting(true);
+
     try {
       await api(`/articles`, {
         method: "POST",
@@ -107,10 +192,12 @@ export default function ArticleDetail() {
           content: content.trim(),
         }),
       });
-      setEditing(false);
-      refetch();
+
+      navigate("/my-articles");
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : "Failed to submit rewrite");
+      setSubmitError(
+        err instanceof Error ? err.message : "Failed to submit rewrite"
+      );
     } finally {
       setSubmitting(false);
     }
@@ -129,7 +216,10 @@ export default function ArticleDetail() {
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="text-center">
           <p className="text-slate-500 mb-4">{error}</p>
-          <button onClick={() => navigate("/")} className="text-sm text-indigo-600 hover:underline">
+          <button
+            onClick={() => navigate("/")}
+            className="text-sm text-indigo-600 hover:underline"
+          >
             Back to Articles
           </button>
         </div>
@@ -143,6 +233,7 @@ export default function ArticleDetail() {
   return (
     <div className="min-h-screen bg-slate-50">
       <Header />
+
       <div className="max-w-4xl mx-auto px-4 py-8">
         <button
           onClick={() => navigate("/")}
@@ -152,7 +243,6 @@ export default function ArticleDetail() {
           Back to Articles
         </button>
 
-        {/* Title + action */}
         <div className="flex items-start justify-between gap-4 mb-6">
           {editing ? (
             <input
@@ -163,24 +253,38 @@ export default function ArticleDetail() {
               className="flex-1 text-lg font-medium rounded-lg border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           ) : (
-            <h1 className="text-2xl font-semibold text-slate-900 leading-snug">{article?.title}</h1>
+            <h1 className="text-2xl font-semibold text-slate-900 leading-snug">
+              {article?.title}
+            </h1>
           )}
 
           {editing ? (
             <div className="flex items-center gap-2 shrink-0">
               <button
-                onClick={() => { setEditing(false); if (article) { setTitle(article.title); setContent(article.content); } setSubmitError(null); }}
+                onClick={() => {
+                  setEditing(false);
+                  if (article) {
+                    setTitle(article.title);
+                    setContent(article.content);
+                  }
+                  setSubmitError(null);
+                }}
                 className="flex items-center gap-1.5 text-sm text-slate-600 border border-slate-200 rounded-lg px-3 py-2 hover:bg-slate-100 transition-colors"
               >
                 <X size={14} />
                 Cancel
               </button>
+
               <button
                 onClick={handleSubmitRewrite}
                 disabled={submitting}
                 className="flex items-center gap-1.5 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white rounded-lg px-3 py-2 transition-colors"
               >
-                {submitting ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                {submitting ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <Check size={14} />
+                )}
                 Submit Rewrite
               </button>
             </div>
@@ -196,84 +300,109 @@ export default function ArticleDetail() {
         </div>
 
         <div className="space-y-6">
-              {/* Article card */}
-              <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-                <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-                  <h2 className="font-semibold text-slate-900">Article</h2>
-                  <div className="flex items-center gap-2">
-                    {article && (
-                      <span className="text-xs font-medium text-slate-600 bg-slate-100 rounded-full px-2.5 py-1">
-                        {article.article_type_name}
-                      </span>
-                    )}
-                    <CopyButton text={article?.content ?? ""} />
-                  </div>
-                </div>
-                <div className="px-5 py-4">
-                  {editing ? (
-                    <textarea
-                      rows={10}
-                      value={content}
-                      onChange={(e) => setContent(e.target.value)}
-                      placeholder="Article content"
-                      className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y"
-                    />
-                  ) : (
-                    <ContentBlock content={article?.content ?? ""} />
-                  )}
+          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <h2 className="font-semibold text-slate-900">Article</h2>
 
-                  {submitError && (
-                    <p className="mt-3 text-sm text-red-600">{submitError}</p>
-                  )}
+              <div className="flex items-center gap-2">
+                {article && (
+                  <span className="text-xs font-medium text-slate-600 bg-slate-100 rounded-full px-2.5 py-1">
+                    {article.article_type_name}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="px-5 py-4">
+              {editing ? (
+                <RewriteContentEditor
+                  content={content}
+                  onChange={setContent}
+                />
+              ) : (
+                <ContentBlock content={article?.content ?? ""} />
+              )}
+
+              {submitError && (
+                <p className="mt-3 text-sm text-red-600">{submitError}</p>
+              )}
 
               <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                  <p className="text-xs uppercase tracking-wide text-slate-400 mb-1">Current Score</p>
+                  <p className="text-xs uppercase tracking-wide text-slate-400 mb-1">
+                    Current Score
+                  </p>
+
                   <div className="flex items-center gap-3">
                     <p className="text-3xl font-semibold text-slate-900">
                       {hasScore ? currentScore!.toFixed(1) : "—"}
-                      <span className="text-base text-slate-400 font-normal"> / 10</span>
+                      <span className="text-base text-slate-400 font-normal">
+                        {" "}
+                        / 10
+                      </span>
                     </p>
+
                     {hasScore && (
                       <div className="flex-1 h-2 rounded-full bg-slate-200 overflow-hidden">
                         <div
                           className={`h-full rounded-full ${colors!.bar}`}
-                          style={{ width: `${(Math.min(currentScore!, 10) / 10) * 100}%` }}
+                          style={{
+                            width: `${(Math.min(currentScore!, 10) / 10) * 100
+                              }%`,
+                          }}
                         />
                       </div>
                     )}
                   </div>
                 </div>
+
                 <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
                   <div className="flex items-center justify-between mb-1">
-                    <p className="text-xs uppercase tracking-wide text-slate-400">Feedback</p>
-                    {currentFeedback && <CopyButton text={currentFeedback} />}
+                    <p className="text-xs uppercase tracking-wide text-slate-400">
+                      Feedback
+                    </p>
+
+                    {currentFeedback && (
+                      <CopyButton text={currentFeedback} />
+                    )}
                   </div>
-                  <p className="text-slate-700 text-sm leading-relaxed">
-                    {currentFeedback || "No feedback available yet."}
-                  </p>
+
+                  <div className="prose prose-sm prose-slate max-w-none">
+                    <ReactMarkdown>
+                      {currentFeedback || "No feedback available yet."}
+                    </ReactMarkdown>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* History card */}
           <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
             <div className="px-5 py-4 border-b border-slate-100">
-              <h2 className="font-semibold text-slate-900">Scoring History</h2>
+              <h2 className="font-semibold text-slate-900">
+                Scoring History
+              </h2>
             </div>
-            {/* Column headers */}
+
             <div className="hidden md:grid grid-cols-4 gap-3 px-5 py-2.5 bg-slate-50 border-b border-slate-100">
               {["VERSION", "SCORE", "STATUS", "SUBMITTED"].map((col) => (
-                <span key={col} className="text-[11px] font-medium text-slate-400 tracking-wide">
+                <span
+                  key={col}
+                  className="text-[11px] font-medium text-slate-400 tracking-wide"
+                >
                   {col}
                 </span>
               ))}
             </div>
+
             {history.length === 0 ? (
-              <div className="py-10 text-center text-slate-400 text-sm">No scoring history yet.</div>
+              <div className="py-10 text-center text-slate-400 text-sm">
+                No scoring history yet.
+              </div>
             ) : (
-              history.map((item) => <HistoryRow key={item.version} item={item} />)
+              history.map((item) => (
+                <HistoryRow key={item.version} item={item} />
+              ))
             )}
           </div>
         </div>
@@ -288,22 +417,31 @@ function HistoryRow({ item }: { item: HistoryItem }) {
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 px-5 py-3.5 border-b border-slate-100 last:border-b-0 items-center">
-      <span className="font-medium text-slate-700 text-sm">v{item.version}</span>
+      <span className="font-medium text-slate-700 text-sm">
+        v{item.version}
+      </span>
+
       <div className="flex items-center gap-2">
         {hasScore ? (
-          <span className={`text-xs font-semibold rounded-full px-2 py-0.5 ${colors!.badge}`}>
+          <span
+            className={`text-xs font-semibold rounded-full px-2 py-0.5 ${colors!.badge}`}
+          >
             {item.score!.toFixed(1)}
           </span>
         ) : (
           <span className="text-slate-300 text-sm">—</span>
         )}
       </div>
+
       <span
-        className={`inline-flex w-fit items-center gap-1 text-xs font-medium rounded-full px-2.5 py-1 ${STATUS_STYLES[item.status] ?? "bg-slate-100 text-slate-600"}`}
+        className={`inline-flex w-fit items-center gap-1 text-xs font-medium rounded-full px-2.5 py-1 ${STATUS_STYLES[item.status] ??
+          "bg-slate-100 text-slate-600"
+          }`}
       >
         {item.status === "pending" && <Clock size={11} />}
         {item.status}
       </span>
+
       <span className="text-slate-400 text-sm">
         {dayjs(item.submitted_at).format("MMM D, YYYY h:mm A")}
       </span>
