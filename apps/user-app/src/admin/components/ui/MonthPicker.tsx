@@ -50,7 +50,7 @@ export function MonthPicker({ value, onChange }: MonthPickerProps) {
         <div className="flex items-center justify-between mb-3">
           <Button
             variant="ghost"
-            size="icon-sm"
+            size="icon"
             onClick={() => setViewYear((y) => y - 1)}
           >
             <ChevronLeft className="h-4 w-4" />
@@ -60,7 +60,7 @@ export function MonthPicker({ value, onChange }: MonthPickerProps) {
 
           <Button
             variant="ghost"
-            size="icon-sm"
+            size="icon"
             onClick={() => setViewYear((y) => y + 1)}
           >
             <ChevronRight className="h-4 w-4" />
