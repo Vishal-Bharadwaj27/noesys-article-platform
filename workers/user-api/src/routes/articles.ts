@@ -3,6 +3,7 @@ import {
   getArticlesByUser,
   getArticleById,
   createArticle,
+  updateArticleStatus,
 } from "../db/articles";
 import {
   getArticleHistory,
@@ -268,7 +269,7 @@ articleRoutes.post("/", async (c) => {
       article_type_id,
       title,
       content,
-      status: "pending",
+      status: "processing",
       version: 1,
       submitted_at: now,
       month_year,
@@ -276,63 +277,45 @@ articleRoutes.post("/", async (c) => {
     });
 
     articleId = newId;
-  }
 
-  const prompt = await getPromptForArticleType(
-    db,
-    article_type_id,
-  );
+    c.executionCtx.waitUntil(
+      (async () => {
+        const prompt = await getPromptForArticleType(db, article_type_id);
+        if (!prompt) {
+          await updateArticleStatus(db, articleId, "failed");
+          return;
+        }
 
-  if (!prompt) {
-    return c.json(
-      {
-        success: false,
-        message: "Some error occurred!",
+        try {
+          const evaluation = await evaluateArticle(
+            c.env.GOOGLE_GENERATIVE_AI_API_KEY,
+            prompt,
+            title,
+            content
+          );
+          const status = evaluation.score >= 7 ? "approved" : "rewrite_required";
+          await updateEvaluation(
+            db,
+            articleId,
+            evaluation.score,
+            evaluation.feedback,
+            status
+          );
+        } catch (err) {
+          console.error("Gemini Error:", err);
+          await updateArticleStatus(db, articleId, "failed");
+        }
+      })()
+    );
+
+    return c.json({
+      message: "Article submitted successfully",
+      data: {
+        id: articleId,
+        status: "processing",
       },
-      500,
-    );
+    });
   }
-
-  let evaluation;
-
-  try {
-    evaluation = await evaluateArticle(
-      c.env.GOOGLE_GENERATIVE_AI_API_KEY,
-      prompt,
-      title,
-      content,
-    );
-  } catch (err) {
-    console.error("Gemini Error:", err);
-
-    return c.json(
-      {
-        success: false,
-        message: "Evaluation failed",
-        error: err instanceof Error ? err.message : String(err),
-      },
-      500,
-    );
-  }
-
-  const status =
-    evaluation.score >= 7 ? "approved" : "rewrite_required";
-
-  await updateEvaluation(
-    db,
-    articleId,
-    evaluation.score,
-    evaluation.feedback,
-    status,
-  );
-
-  return c.json({
-    message: "Article submitted successfully",
-    data: {
-      id: articleId,
-      status,
-    },
-  });
 });
 
 articleRoutes.get("/article-types", async (c) => {
