@@ -1,16 +1,29 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Header from "../components/Header";
-import { ChevronLeft, Edit3, X, Check, Clock, Loader2, Copy } from "lucide-react";
+import {  ChevronLeft,  Edit3,  X,Check,  Clock,  Loader2,  Copy} from "lucide-react";
 import dayjs from "dayjs";
 import { useArticle, type HistoryItem } from "../hooks/useArticle";
 import { api } from "../http-client";
 import ReactMarkdown from "react-markdown";
 
 function scoreColor(score: number) {
-  if (score >= 8) return { bar: "bg-emerald-500", badge: "bg-emerald-50 text-emerald-700" };
-  if (score >= 6) return { bar: "bg-amber-500", badge: "bg-amber-50 text-amber-700" };
-  return { bar: "bg-red-500", badge: "bg-red-50 text-red-600" };
+  if (score >= 8)
+    return {
+      bar: "bg-emerald-500",
+      badge: "bg-emerald-50 text-emerald-700",
+    };
+
+  if (score >= 6)
+    return {
+      bar: "bg-amber-500",
+      badge: "bg-amber-50 text-amber-700",
+    };
+
+  return {
+    bar: "bg-red-500",
+    badge: "bg-red-50 text-red-600",
+  };
 }
 
 const STATUS_STYLES: Record<string, string> = {
@@ -59,10 +72,11 @@ function ContentBlock({ content }: { content: string }) {
               <button
                 key={v}
                 onClick={() => setView(v)}
-                className={`px-3 py-1 text-xs font-medium rounded-md capitalize ${view === v
+                className={`px-3 py-1 text-xs font-medium rounded-md capitalize ${
+                  view === v
                     ? "bg-white text-slate-900 shadow-sm"
                     : "text-slate-500 hover:text-slate-700"
-                  }`}
+                }`}
               >
                 {v}
               </button>
@@ -76,11 +90,7 @@ function ContentBlock({ content }: { content: string }) {
       <div className="px-5 py-4">
         {view === "rendered" ? (
           <div className="prose prose-sm prose-slate max-w-none">
-            {content.split("\n\n").map((paragraph, index) => (
-              <ReactMarkdown key={index}>
-                {paragraph}
-              </ReactMarkdown>
-            ))}
+            <ReactMarkdown>{content}</ReactMarkdown>
           </div>
         ) : (
           <pre className="bg-slate-50 p-4 rounded-lg text-xs text-slate-700 whitespace-pre-wrap font-mono">
@@ -114,10 +124,11 @@ function RewriteContentEditor({
               key={v}
               type="button"
               onClick={() => setView(v)}
-              className={`px-3 py-1 text-xs font-medium rounded-md capitalize ${view === v
+              className={`px-3 py-1 text-xs font-medium rounded-md capitalize ${
+                view === v
                   ? "bg-white text-slate-900 shadow-sm"
                   : "text-slate-500 hover:text-slate-700"
-                }`}
+              }`}
             >
               {v}
             </button>
@@ -144,6 +155,41 @@ function RewriteContentEditor({
   );
 }
 
+function FeedbackBlock({ feedback }: { feedback: string }) {
+  return (
+    <div className="prose prose-sm prose-slate max-w-none">
+      <ReactMarkdown
+        components={{
+          h3: ({ children }) => (
+            <h3 className="text-base font-semibold text-slate-900 mt-6 mb-3 first:mt-0">
+              {children}
+            </h3>
+          ),
+          p: ({ children }) => (
+            <p className="mb-4 leading-6 text-slate-700">{children}</p>
+          ),
+          ul: ({ children }) => (
+            <ul className="mb-4 space-y-2 pl-5">{children}</ul>
+          ),
+          ol: ({ children }) => (
+            <ol className="mb-4 space-y-2 pl-5 list-decimal">{children}</ol>
+          ),
+          li: ({ children }) => (
+            <li className="text-slate-700 leading-6">{children}</li>
+          ),
+          strong: ({ children }) => (
+            <strong className="font-semibold text-slate-900">
+              {children}
+            </strong>
+          ),
+        }}
+      >
+        {feedback || "No feedback available yet."}
+      </ReactMarkdown>
+    </div>
+  );
+}
+
 export default function ArticleDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -155,7 +201,6 @@ export default function ArticleDetail() {
     currentFeedback,
     loading,
     error,
-    refetch,
   } = useArticle(id ?? "");
 
   const [editing, setEditing] = useState(false);
@@ -263,10 +308,12 @@ export default function ArticleDetail() {
               <button
                 onClick={() => {
                   setEditing(false);
+
                   if (article) {
                     setTitle(article.title);
                     setContent(article.content);
                   }
+
                   setSubmitError(null);
                 }}
                 className="flex items-center gap-1.5 text-sm text-slate-600 border border-slate-200 rounded-lg px-3 py-2 hover:bg-slate-100 transition-colors"
@@ -327,7 +374,7 @@ export default function ArticleDetail() {
                 <p className="mt-3 text-sm text-red-600">{submitError}</p>
               )}
 
-              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="mt-6 space-y-4">
                 <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
                   <p className="text-xs uppercase tracking-wide text-slate-400 mb-1">
                     Current Score
@@ -347,8 +394,9 @@ export default function ArticleDetail() {
                         <div
                           className={`h-full rounded-full ${colors!.bar}`}
                           style={{
-                            width: `${(Math.min(currentScore!, 10) / 10) * 100
-                              }%`,
+                            width: `${
+                              (Math.min(currentScore!, 10) / 10) * 100
+                            }%`,
                           }}
                         />
                       </div>
@@ -367,11 +415,11 @@ export default function ArticleDetail() {
                     )}
                   </div>
 
-                  <div className="prose prose-sm prose-slate max-w-none">
-                    <ReactMarkdown>
-                      {currentFeedback || "No feedback available yet."}
-                    </ReactMarkdown>
-                  </div>
+                  <FeedbackBlock
+                    feedback={
+                      currentFeedback || "No feedback available yet."
+                    }
+                  />
                 </div>
               </div>
             </div>
@@ -434,9 +482,10 @@ function HistoryRow({ item }: { item: HistoryItem }) {
       </div>
 
       <span
-        className={`inline-flex w-fit items-center gap-1 text-xs font-medium rounded-full px-2.5 py-1 ${STATUS_STYLES[item.status] ??
+        className={`inline-flex w-fit items-center gap-1 text-xs font-medium rounded-full px-2.5 py-1 ${
+          STATUS_STYLES[item.status] ??
           "bg-slate-100 text-slate-600"
-          }`}
+        }`}
       >
         {item.status === "pending" && <Clock size={11} />}
         {item.status}
