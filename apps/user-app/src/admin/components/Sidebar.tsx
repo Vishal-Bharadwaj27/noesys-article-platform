@@ -86,7 +86,7 @@ export default function Sidebar() {
           <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
             <LayoutGrid size={16} className="text-white" strokeWidth={2.5} />
           </div>
-          <span className="font-semibold text-slate-900">Article App</span>
+          <span className="font-semibold text-slate-900">Noesys Article Platform</span>
           <span className="ml-1 text-[11px] font-medium text-indigo-600 bg-indigo-50 rounded-full px-2 py-0.5">
             Admin
           </span>
@@ -119,7 +119,7 @@ export default function Sidebar() {
             <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
               <LayoutGrid size={16} className="text-white" strokeWidth={2.5} />
             </div>
-            <span className="font-semibold text-slate-900">Article App</span>
+            <span className="font-semibold text-slate-900">Noesys Article Platform</span>
           </div>
           <button
             onClick={() => setOpen(false)}
@@ -141,7 +141,7 @@ export default function Sidebar() {
           <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
             <LayoutGrid size={16} className="text-white" strokeWidth={2.5} />
           </div>
-          <span className="font-semibold text-slate-900">Article App</span>
+          <span className="font-semibold text-slate-900">Noesys Article Platform</span>
           <span className="ml-auto text-[11px] font-medium text-indigo-600 bg-indigo-50 rounded-full px-2 py-0.5">
             Admin
           </span>

@@ -1,22 +1,29 @@
+import Header from "../components/Header";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Clock, Plus, LogOut, LayoutGrid, ChevronLeft, ChevronRight } from "lucide-react";
+import { Clock, Plus, ChevronLeft, ChevronRight, Calendar, Loader2 } from "lucide-react";
 import dayjs from "dayjs";
 import { useMyArticles, type ArticleListItem } from "../hooks/useMyArticles";
 import { useAuth } from "../contexts/AuthContext";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
 
-type ArticleStatus = "approved" | "rewrite_required" | "pending";
+type ArticleStatus = "approved" | "rewrite_required" | "pending" | "processing" | "failed";
 
 const STATUS_STYLES: Record<string, string> = {
   approved: "bg-indigo-50 text-indigo-700",
   rewrite_required: "bg-red-50 text-red-600",
   pending: "bg-amber-50 text-amber-700",
+  processing: "bg-blue-50 text-blue-700",
+  failed: "bg-slate-100 text-slate-600",
 };
 
 const STATUS_LABELS: Record<string, string> = {
   approved: "Scored",
   rewrite_required: "Rewrite",
   pending: "Pending",
+  processing: "Processing...",
+  failed: "Failed",
 };
 
 function scoreColor(score: number) {
@@ -31,6 +38,7 @@ export default function MyArticles() {
 
   const currentMonth = dayjs().format("YYYY-MM");
   const [month, setMonth] = useState(currentMonth);
+  const [focusedYear, setFocusedYear] = useState(dayjs().year());
   const [viewAll, setViewAll] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -41,41 +49,11 @@ export default function MyArticles() {
     limit: 10,
   });
 
-  function handleLogout() {
-    if (window.confirm("Are you sure you want to log out?")) {
-      logout();
-    }
-  }
-
   const totalPages = pagination.totalPages || 1;
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Top bar */}
-      <div className="sticky top-0 z-10 bg-white border-b border-slate-200">
-        <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
-              <LayoutGrid size={16} className="text-white" strokeWidth={2.5} />
-            </div>
-            <span className="font-semibold text-slate-900">Article App</span>
-          </div>
-          <div className="flex items-center gap-3">
-            {user && (
-              <span className="text-sm text-slate-500 hidden sm:block">
-                {user.name}
-              </span>
-            )}
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-1.5 text-sm text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors"
-            >
-              <LogOut size={15} />
-              Logout
-            </button>
-          </div>
-        </div>
-      </div>
+      <Header />
 
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Header */}
@@ -97,13 +75,56 @@ export default function MyArticles() {
 
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-3 mb-6">
-          <input
-            type="month"
-            value={month}
-            onChange={(e) => setMonth(e.target.value)}
-            disabled={viewAll}
-            className="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
-          />
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="justify-between font-normal w-[180px]"
+                disabled={viewAll}
+              >
+                {dayjs(month).format("MMMM YYYY")}
+                <Calendar className="h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 p-3">
+              <div className="flex items-center justify-between mb-3">
+                <Button
+                  variant="ghost"
+                  className="h-7 w-7 p-0 opacity-50 hover:opacity-100"
+                  onClick={() => setFocusedYear((y) => y - 1)}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <div className="font-bold text-sm">{focusedYear}</div>
+                <Button
+                  variant="ghost"
+                  className="h-7 w-7 p-0 opacity-50 hover:opacity-100"
+                  onClick={() => setFocusedYear((y) => y + 1)}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {Array.from({ length: 12 }).map((_, i) => {
+                  const m = dayjs().year(focusedYear).month(i).format("YYYY-MM");
+                  const isSelected = month === m;
+                  const isCurrent = dayjs().format("YYYY-MM") === m;
+                  return (
+                    <Button
+                      key={i}
+                      variant={isSelected ? "default" : "ghost"}
+                      onClick={() => setMonth(m)}
+                      className={`h-9 text-sm ${isSelected ? "" : "hover:bg-accent hover:text-accent-foreground"}`}
+                    >
+                      {dayjs().month(i).format("MMM")}
+                      {isCurrent && <span className="absolute top-1 right-1 h-1 w-1 rounded-full bg-primary" />}
+                    </Button>
+                  );
+                })}
+              </div>
+            </PopoverContent>
+          </Popover>
+
           <button
             onClick={() => { setViewAll((p) => !p); setCurrentPage(1); }}
             className="text-sm font-medium text-slate-600 border border-slate-200 rounded-lg px-3 py-2 hover:bg-slate-100 transition-colors"
@@ -219,6 +240,7 @@ function ArticleRow({ article, onClick }: { article: ArticleListItem; onClick: (
         className={`inline-flex w-fit items-center gap-1 text-xs font-medium rounded-full px-2.5 py-1 ${STATUS_STYLES[status] ?? "bg-slate-100 text-slate-600"}`}
       >
         {status === "pending" && <Clock size={11} />}
+        {status === "processing" && <Loader2 size={11} className="animate-spin" />}
         {STATUS_LABELS[status] ?? status}
       </span>
 

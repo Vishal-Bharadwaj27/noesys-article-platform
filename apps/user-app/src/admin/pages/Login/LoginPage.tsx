@@ -129,7 +129,7 @@ export default function LoginPage({
             <LayoutGrid size={18} className="text-white" strokeWidth={2.5} />
           </div>
           <span className="font-semibold text-lg text-slate-900">
-            Article App
+            Noesys Article Platform
           </span>
         </div>
 

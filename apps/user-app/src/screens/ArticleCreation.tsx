@@ -1,6 +1,8 @@
+import Header from "../components/Header";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Send, Loader2 } from "lucide-react";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from "@/components/ui/select";
+import { ChevronLeft, Send, Loader2 } from "lucide-react";
 import { api } from "../http-client";
 
 type ArticleType = { id: string; name: string; description: string | null };
@@ -58,12 +60,13 @@ export default function ArticleCreation() {
 
   return (
     <div className="min-h-screen bg-slate-50">
+      <Header />
       <div className="max-w-3xl mx-auto px-4 py-8">
         <button
           onClick={() => navigate("/")}
           className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-6"
         >
-          <ArrowLeft size={14} />
+          <ChevronLeft size={14} />
           Back to Articles
         </button>
 
@@ -76,25 +79,29 @@ export default function ArticleCreation() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                Article Type
-              </label>
-              <select
-                value={values.article_type_id}
-                onChange={(e) => setValues({ ...values, article_type_id: e.target.value })}
-                disabled={loadingTypes}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
-              >
-                <option value="">Select an article type</option>
-                {types.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.description ? `${t.name} — ${t.description}` : t.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Article Type
+                </label>
+                <Select
+                  value={values.article_type_id}
+                  onValueChange={(value: string) => setValues({ ...values, article_type_id: value })}
+                  disabled={loadingTypes}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select an article type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {types.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.description ? `${t.name} — ${t.description}` : t.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">Title</label>

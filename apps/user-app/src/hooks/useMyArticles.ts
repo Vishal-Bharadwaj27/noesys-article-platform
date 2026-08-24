@@ -90,5 +90,16 @@ export function useMyArticles(options: UseMyArticlesOptions = {}) {
     fetchArticles();
   }, [fetchArticles]);
 
+  useEffect(() => {
+    const hasProcessing = articles.some(
+      (a) => a.status === "processing" || a.status === "pending"
+    );
+
+    if (!hasProcessing) return;
+
+    const interval = setInterval(fetchArticles, 3000);
+    return () => clearInterval(interval);
+  }, [articles, fetchArticles]);
+
   return { articles, loading, error, pagination, refetch: fetchArticles };
 }
