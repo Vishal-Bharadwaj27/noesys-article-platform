@@ -1,24 +1,34 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Header from "../components/Header";
-import {  ChevronLeft,  Edit3,  X,Check,  Clock,  Loader2,  Copy} from "lucide-react";
+import {
+  ChevronLeft,
+  Edit3,
+  X,
+  Check,
+  Clock,
+  Loader2,
+  Copy,
+} from "lucide-react";
 import dayjs from "dayjs";
 import { useArticle, type HistoryItem } from "../hooks/useArticle";
 import { api } from "../http-client";
 import ReactMarkdown from "react-markdown";
 
 function scoreColor(score: number) {
-  if (score >= 8)
+  if (score >= 8) {
     return {
       bar: "bg-emerald-500",
       badge: "bg-emerald-50 text-emerald-700",
     };
+  }
 
-  if (score >= 6)
+  if (score >= 6) {
     return {
       bar: "bg-amber-500",
       badge: "bg-amber-50 text-amber-700",
     };
+  }
 
   return {
     bar: "bg-red-500",
@@ -139,7 +149,9 @@ function RewriteContentEditor({
       <div className="p-3">
         {view === "rendered" ? (
           <div className="min-h-[250px] prose prose-sm prose-slate max-w-none px-1 py-1">
-            <ReactMarkdown>{content || "No content available."}</ReactMarkdown>
+            <ReactMarkdown>
+              {content || "No content available."}
+            </ReactMarkdown>
           </div>
         ) : (
           <textarea
@@ -160,27 +172,72 @@ function FeedbackBlock({ feedback }: { feedback: string }) {
     <div className="prose prose-sm prose-slate max-w-none">
       <ReactMarkdown
         components={{
+          h1: ({ children }) => (
+            <h1 className="text-lg font-semibold text-slate-900 mt-6 mb-3 first:mt-0">
+              {children}
+            </h1>
+          ),
+
+          h2: ({ children }) => (
+            <h2 className="text-base font-semibold text-slate-900 mt-6 mb-3 first:mt-0">
+              {children}
+            </h2>
+          ),
+
           h3: ({ children }) => (
-            <h3 className="text-base font-semibold text-slate-900 mt-6 mb-3 first:mt-0">
+            <h3 className="text-sm font-semibold text-slate-900 mt-6 mb-3 first:mt-0">
               {children}
             </h3>
           ),
+
           p: ({ children }) => (
-            <p className="mb-4 leading-6 text-slate-700">{children}</p>
+            <p className="text-sm text-slate-600 leading-6 mb-4 last:mb-0">
+              {children}
+            </p>
           ),
+
           ul: ({ children }) => (
-            <ul className="mb-4 space-y-2 pl-5">{children}</ul>
+            <ul className="list-disc pl-5 space-y-2 mb-4 text-sm text-slate-600">
+              {children}
+            </ul>
           ),
+
           ol: ({ children }) => (
-            <ol className="mb-4 space-y-2 pl-5 list-decimal">{children}</ol>
+            <ol className="list-decimal pl-5 space-y-2 mb-4 text-sm text-slate-600">
+              {children}
+            </ol>
           ),
+
           li: ({ children }) => (
-            <li className="text-slate-700 leading-6">{children}</li>
+            <li className="leading-6 pl-1">
+              {children}
+            </li>
           ),
+
           strong: ({ children }) => (
-            <strong className="font-semibold text-slate-900">
+            <strong className="font-semibold text-slate-800">
               {children}
             </strong>
+          ),
+
+          em: ({ children }) => <em className="italic">{children}</em>,
+
+          blockquote: ({ children }) => (
+            <blockquote className="border-l-4 border-slate-200 pl-4 my-4 text-slate-500">
+              {children}
+            </blockquote>
+          ),
+
+          code: ({ children }) => (
+            <code className="bg-slate-100 text-slate-700 rounded px-1.5 py-0.5 text-xs font-mono">
+              {children}
+            </code>
+          ),
+
+          pre: ({ children }) => (
+            <pre className="bg-slate-50 border border-slate-200 rounded-lg p-4 overflow-x-auto text-xs font-mono mb-4">
+              {children}
+            </pre>
           ),
         }}
       >
@@ -261,6 +318,7 @@ export default function ArticleDetail() {
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="text-center">
           <p className="text-slate-500 mb-4">{error}</p>
+
           <button
             onClick={() => navigate("/")}
             className="text-sm text-indigo-600 hover:underline"
@@ -383,6 +441,7 @@ export default function ArticleDetail() {
                   <div className="flex items-center gap-3">
                     <p className="text-3xl font-semibold text-slate-900">
                       {hasScore ? currentScore!.toFixed(1) : "—"}
+
                       <span className="text-base text-slate-400 font-normal">
                         {" "}
                         / 10
@@ -405,7 +464,7 @@ export default function ArticleDetail() {
                 </div>
 
                 <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                  <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center justify-between mb-3">
                     <p className="text-xs uppercase tracking-wide text-slate-400">
                       Feedback
                     </p>
@@ -483,8 +542,7 @@ function HistoryRow({ item }: { item: HistoryItem }) {
 
       <span
         className={`inline-flex w-fit items-center gap-1 text-xs font-medium rounded-full px-2.5 py-1 ${
-          STATUS_STYLES[item.status] ??
-          "bg-slate-100 text-slate-600"
+          STATUS_STYLES[item.status] ?? "bg-slate-100 text-slate-600"
         }`}
       >
         {item.status === "pending" && <Clock size={11} />}
