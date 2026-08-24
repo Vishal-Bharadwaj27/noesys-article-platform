@@ -19,7 +19,7 @@ export interface HistoryItem {
   submitted_at: string;
 }
 
-interface ArticleDetailResponse {
+export interface ArticleDetailResponse {
   article: ArticleDetail;
   current_feedback: string;
   current_score: number | null;
