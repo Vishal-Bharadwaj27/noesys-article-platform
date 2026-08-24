@@ -138,7 +138,7 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
       title: "Version",
       dataIndex: "version",
       key: "version",
-      width: 90,
+      width: 95,
       render: (v: number) => <Text type="secondary">v{v}</Text>,
       sorter: (a, b) => a.version - b.version,
     },
@@ -188,6 +188,11 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
       dataIndex: "status",
       key: "status",
       width: 150,
+      filters: [
+        { text: "Approved", value: "approved" },
+        { text: "Rewrite required", value: "rewrite_required" },
+        { text: "Pending", value: "pending" },
+      ],
       render: (status: ArticleStatus) => {
         const cfg = STATUS_CONFIG[status];
         return (
@@ -215,17 +220,17 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
 
   const handleResize =
     (index: number) =>
-    (
-      _: React.SyntheticEvent<Element>,
-      { size }: { size: { width: number; height: number } },
-    ) => {
-      const nextColumns = [...columns];
-      nextColumns[index] = {
-        ...nextColumns[index],
-        width: size.width,
+      (
+        _: React.SyntheticEvent<Element>,
+        { size }: { size: { width: number; height: number } },
+      ) => {
+        const nextColumns = [...columns];
+        nextColumns[index] = {
+          ...nextColumns[index],
+          width: size.width,
+        };
+        setColumns(nextColumns);
       };
-      setColumns(nextColumns);
-    };
 
   const mergedColumns = columns.map((col, index) => ({
     ...col,

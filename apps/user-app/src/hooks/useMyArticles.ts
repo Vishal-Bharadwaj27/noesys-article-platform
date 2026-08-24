@@ -94,46 +94,58 @@ export function useMyArticles(options: UseMyArticlesOptions = {}) {
     fetchArticles();
   }, [fetchArticles]);
 
-  useEffect(() => {
-    const interval = setInterval(async () => {
-      if (isPollingRef.current) return;
-      
-      const processingArticles = latestArticlesRef.current.filter(
-        (a) => a.status === "processing" || a.status === "pending"
-      );
+useEffect(() => {
+  const interval = setInterval(async () => {
+    if (isPollingRef.current) return;
 
-      if (processingArticles.length === 0) return;
+    const processingArticles = latestArticlesRef.current.filter(
+      (article) =>
+        article.status === "processing" ||
+        article.status === "pending"
+    );
 
-      isPollingRef.current = true;
-      for (const article of processingArticles) {
-        try {
-          const res = await api<ArticleDetailResponse>(`/articles/mine/${article.id}`);
-          const updatedArticle = res.article;
+    if (processingArticles.length === 0) return;
 
-          if (updatedArticle.status !== "processing" && updatedArticle.status !== "pending") {
+    isPollingRef.current = true;
+
+    try {
+      await Promise.all(
+        processingArticles.map(async (article) => {
+          try {
+            const res = await api<ArticleDetailResponse>(
+              `/articles/mine/${article.id}`
+            );
+
+            const updatedArticle = res.article;
+
             setArticles((prev) =>
-              prev.map((a) =>
-                a.id === updatedArticle.id
+              prev.map((currentArticle) =>
+                currentArticle.id === updatedArticle.id
                   ? {
-                      ...a,
+                      ...currentArticle,
                       status: updatedArticle.status,
                       ai_score: res.current_score,
                       ai_feedback: res.current_feedback,
                       version: updatedArticle.version,
                     }
-                  : a
+                  : currentArticle
               )
             );
+          } catch (error) {
+            console.error(
+              `Failed to poll article ${article.id}:`,
+              error
+            );
           }
-        } catch (e) {
-          console.error("Polling error", e);
-        }
-      }
+        })
+      );
+    } finally {
       isPollingRef.current = false;
-    }, 3000);
+    }
+  }, 3000);
 
-    return () => clearInterval(interval);
-  }, []);
+  return () => clearInterval(interval);
+}, []);
 
 
   return { articles, loading, error, pagination, refetch: fetchArticles };
