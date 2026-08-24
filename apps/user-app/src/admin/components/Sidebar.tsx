@@ -18,15 +18,25 @@ type NavItem = {
   to: string;
 };
 
-const NAV_ITEMS: NavItem[] = [
-  { key: "articles", label: "Articles", icon: FileText, to: "/articles" },
+const NAV_ITEMS = [
+  {
+    key: "articles",
+    label: "Articles",
+    icon: FileText,
+    to: "/admin/articles",
+  },
   {
     key: "article-types",
     label: "Article Types",
     icon: Tags,
-    to: "/article-types",
+    to: "/admin/article-types",
   },
-  { key: "users", label: "Users", icon: Users, to: "/users" },
+  {
+    key: "users",
+    label: "Users",
+    icon: Users,
+    to: "/admin/users",
+  },
 ];
 
 export default function Sidebar() {

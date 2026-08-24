@@ -1,16 +1,18 @@
 import React, { useEffect, useState } from "react";
 import ArticlesTable from "../../components/articles/ArticlesTable";
 import { ArticleSummary } from "../../components/articles/ArticlesRow";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import { DatePicker } from "antd";
+import type { Dayjs } from "dayjs";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 const AllArticles = () => {
   const [articles, setArticles] = useState<ArticleSummary[]>([]);
-  const [loading, setLoading] = useState(false);
+  const { id } = useParams();
+  const [userName, setUserName] = useState<string>("");
 
-  const [month, setMonth] = useState("");
-  const [status, setStatus] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState<Dayjs | null>(null);
   const navigate = useNavigate();
 
   async function fetchArticles(
@@ -23,7 +25,9 @@ const AllArticles = () => {
     if (status) params.set("status", status);
 
     const res = await fetch(
-      `${BACKEND_URL}/api/articles?${params.toString()}`,
+      !id
+        ? `${BACKEND_URL}/api/articles?${params.toString()}`
+        : `${BACKEND_URL}/api/users/${id}/articles?${params.toString()}`,
       {
         credentials: "include",
       },
@@ -34,70 +38,48 @@ const AllArticles = () => {
     }
 
     const json = await res.json();
-    return json.data;
-  }
 
-  async function fetchArticle(id: string) {
-    const res = await fetch(`${BACKEND_URL}/api/articles/${id}`, {
-      credentials: "include",
-    });
-
-    if (!res.ok) {
-      throw new Error("Failed to fetch article");
+    if (json.user) {
+      setUserName(json.user.name);
     }
-
-    const json = await res.json();
     return json.data;
   }
 
   const loadArticles = async () => {
-    try {
-      setLoading(true);
+    const monthString = selectedMonth
+      ? selectedMonth.format("YYYY-MM")
+      : undefined;
 
-      const data = await fetchArticles(month || undefined, status || undefined);
+    const data = await fetchArticles(monthString, status || undefined);
 
-      setArticles(data);
-    } finally {
-      setLoading(false);
-    }
+    setArticles(data);
   };
 
   useEffect(() => {
     loadArticles();
-  }, [month, status]);
-
-  if (loading) {
-    return <div>Loading...</div>;
-  }
+  }, [selectedMonth, id]);
 
   return (
     <div className="m-5">
       <div className="text-3xl font-semibold mb-3">
-        <h1>All Articles</h1>
+        <div className="text-3xl font-semibold mb-3">
+          {id ? <h1>{userName}'s Articles</h1> : <h1>All Articles</h1>}
+        </div>
       </div>
 
       <div className="flex gap-3 mb-4">
-        <input
-          type="month"
-          value={month}
-          onChange={(e) => setMonth(e.target.value)}
-          className="border rounded-lg px-3 py-2"
+        <DatePicker
+          picker="month"
+          value={selectedMonth}
+          onChange={(date) => setSelectedMonth(date)}
+          placeholder="Select month"
+          className="w-[220px]"
         />
-
-        <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-          className="border rounded-lg px-3 py-2"
-        >
-          <option value="">All</option>
-          <option value="approved">Approved</option>
-          <option value="rewrite_required">Rewrite Required</option>
-        </select>
       </div>
       <div>
         <ArticlesTable
           articles={articles}
-          onRowClick={(id) => navigate(`/articles/${id}`)}
+          onRowClick={(id) => navigate(`/admin/articles/${id}`)}
         />
       </div>
     </div>

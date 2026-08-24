@@ -1,14 +1,17 @@
 export default async function getArticleTypes(db: D1Database) {
   const sql = `
-  SELECT
-    a.id,
-    a.name,
-    a.is_active,
-    p.content as prompt
-  FROM article_types a
-  INNER JOIN prompts p
-    ON a.id = p.article_type_id
-`;
+    SELECT
+      id,
+      name,
+      description,
+      pass_threshold,
+      score_prompt,
+      score_min,
+      score_max,
+      is_active
+    FROM article_types
+    WHERE is_active = 1
+  `;
 
   const data = await db.prepare(sql).all();
 
@@ -23,14 +26,17 @@ export async function getArticleTypeById(
     .prepare(
       `
       SELECT
-        a.id,
-        a.name AS article_type,
-        p.content AS prompt
-      FROM article_types a
-      INNER JOIN prompts p
-        ON a.id = p.article_type_id
-      WHERE a.id = ?
-        AND a.is_active = 1
+        id,
+        name,
+        description,
+        pass_threshold,
+        score_prompt,
+        score_min,
+        score_max,
+        is_active
+      FROM article_types
+      WHERE id = ?
+        AND is_active = 1
     `,
     )
     .bind(articleTypeId)
@@ -42,10 +48,19 @@ export async function getArticleTypeById(
 
   return articleType;
 }
+
+export interface ArticleTypeInput {
+  name: string;
+  description?: string;
+  passThreshold: number;
+  scorePrompt: string;
+  scoreMin: number;
+  scoreMax: number;
+}
+
 export async function createArticleType(
   db: D1Database,
-  name: string,
-  prompt: string,
+  input: ArticleTypeInput,
   createdBy: string,
 ) {
   const existing = await db
@@ -54,62 +69,147 @@ export async function createArticleType(
       SELECT id
       FROM article_types
       WHERE LOWER(name) = LOWER(?)
-      `,
+        AND is_active = 1
+    `,
     )
-    .bind(name)
+    .bind(input.name)
     .first();
 
   if (existing) {
     throw new Error("Article type already exists");
   }
 
+  if (input.scoreMax <= input.scoreMin) {
+    throw new Error("score_max must be greater than score_min");
+  }
+
+  if (
+    input.passThreshold < input.scoreMin ||
+    input.passThreshold > input.scoreMax
+  ) {
+    throw new Error("pass_threshold must fall within score_min and score_max");
+  }
+
   const articleTypeId = crypto.randomUUID();
-  const promptId = crypto.randomUUID();
   const now = new Date().toISOString();
 
   try {
     await db
       .prepare(
         `
-      INSERT INTO article_types (
-        id,
-        name,
-        created_by,
-        created_at,
-        updated_at
+        INSERT INTO article_types (
+          id,
+          name,
+          description,
+          pass_threshold,
+          score_prompt,
+          score_min,
+          score_max,
+          created_by,
+          created_at,
+          updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
       )
-      VALUES (?, ?, ?, ?, ?)
-    `,
+      .bind(
+        articleTypeId,
+        input.name,
+        input.description ?? null,
+        input.passThreshold,
+        input.scorePrompt,
+        input.scoreMin,
+        input.scoreMax,
+        createdBy,
+        now,
+        now,
       )
-      .bind(articleTypeId, name, createdBy, now, now)
       .run();
   } catch (err) {
     console.error("INSERT article_types failed:", err);
     throw err;
   }
 
+  return { id: articleTypeId };
+}
+
+export async function updateArticleType(
+  db: D1Database,
+  articleTypeId: string,
+  input: ArticleTypeInput,
+) {
+  const existing = await db
+    .prepare(
+      `
+      SELECT id
+      FROM article_types
+      WHERE id = ?
+        AND is_active = 1
+    `,
+    )
+    .bind(articleTypeId)
+    .first();
+
+  if (!existing) {
+    throw new Error("Article type not found");
+  }
+
+  const duplicate = await db
+    .prepare(
+      `
+      SELECT id
+      FROM article_types
+      WHERE LOWER(name) = LOWER(?)
+        AND id != ?
+        AND is_active = 1
+    `,
+    )
+    .bind(input.name, articleTypeId)
+    .first();
+
+  if (duplicate) {
+    throw new Error("Article type already exists");
+  }
+
+  if (input.scoreMax <= input.scoreMin) {
+    throw new Error("score_max must be greater than score_min");
+  }
+
+  if (
+    input.passThreshold < input.scoreMin ||
+    input.passThreshold > input.scoreMax
+  ) {
+    throw new Error("pass_threshold must fall within score_min and score_max");
+  }
+
+  const now = new Date().toISOString();
 
   await db
     .prepare(
       `
-      INSERT INTO prompts (
-        id,
-        article_type_id,
-        content,
-        created_by,
-        created_at,
-        updated_at
-      )
-      VALUES (?, ?, ?, ?, ?, ?)
-      `,
+      UPDATE article_types
+      SET
+        name = ?,
+        description = ?,
+        pass_threshold = ?,
+        score_prompt = ?,
+        score_min = ?,
+        score_max = ?,
+        updated_at = ?
+      WHERE id = ?
+    `,
     )
-    .bind(promptId, articleTypeId, prompt, createdBy, now, now)
+    .bind(
+      input.name,
+      input.description ?? null,
+      input.passThreshold,
+      input.scorePrompt,
+      input.scoreMin,
+      input.scoreMax,
+      now,
+      articleTypeId,
+    )
     .run();
-
-
-  return {
-    id: articleTypeId,
-  };
 }
 
 export async function deactivateArticleType(
@@ -144,72 +244,4 @@ export async function deactivateArticleType(
     )
     .bind(new Date().toISOString(), articleTypeId)
     .run();
-}
-
-export async function updateArticleType(
-  db: D1Database,
-  articleTypeId: string,
-  articleType: string,
-  prompt: string,
-) {
-  const existing = await db
-    .prepare(
-      `
-      SELECT id
-      FROM article_types
-      WHERE id = ?
-        AND is_active = 1
-    `,
-    )
-    .bind(articleTypeId)
-    .first();
-
-  if (!existing) {
-    throw new Error("Article type not found");
-  }
-
-  const duplicate = await db
-    .prepare(
-      `
-      SELECT id
-      FROM article_types
-      WHERE LOWER(name) = LOWER(?)
-        AND id != ?
-        AND is_active = 1
-    `,
-    )
-    .bind(articleType, articleTypeId)
-    .first();
-
-  if (duplicate) {
-    throw new Error("Article type already exists");
-  }
-
-  const now = new Date().toISOString();
-
-  await db.batch([
-    db
-      .prepare(
-        `
-        UPDATE article_types
-        SET
-          name = ?,
-          updated_at = ?
-        WHERE id = ?
-      `,
-      )
-      .bind(articleType, now, articleTypeId),
-
-    db
-      .prepare(
-        `
-        UPDATE prompts
-        SET
-          content = ?,
-          updated_at = ?
-        WHERE article_type_id = ?
-      `,
-      )
-      .bind(prompt, now, articleTypeId),
-  ]);
 }
