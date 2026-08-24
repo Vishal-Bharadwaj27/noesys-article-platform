@@ -1,25 +1,29 @@
 import Header from "../components/Header";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Clock, Plus, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
+import { Clock, Plus, ChevronLeft, ChevronRight, Calendar, Loader2 } from "lucide-react";
 import dayjs from "dayjs";
 import { useMyArticles, type ArticleListItem } from "../hooks/useMyArticles";
 import { useAuth } from "../contexts/AuthContext";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 
-type ArticleStatus = "approved" | "rewrite_required" | "pending";
+type ArticleStatus = "approved" | "rewrite_required" | "pending" | "processing" | "failed";
 
 const STATUS_STYLES: Record<string, string> = {
   approved: "bg-indigo-50 text-indigo-700",
   rewrite_required: "bg-red-50 text-red-600",
   pending: "bg-amber-50 text-amber-700",
+  processing: "bg-blue-50 text-blue-700",
+  failed: "bg-slate-100 text-slate-600",
 };
 
 const STATUS_LABELS: Record<string, string> = {
   approved: "Scored",
   rewrite_required: "Rewrite",
   pending: "Pending",
+  processing: "Processing...",
+  failed: "Failed",
 };
 
 function scoreColor(score: number) {
@@ -236,6 +240,7 @@ function ArticleRow({ article, onClick }: { article: ArticleListItem; onClick: (
         className={`inline-flex w-fit items-center gap-1 text-xs font-medium rounded-full px-2.5 py-1 ${STATUS_STYLES[status] ?? "bg-slate-100 text-slate-600"}`}
       >
         {status === "pending" && <Clock size={11} />}
+        {status === "processing" && <Loader2 size={11} className="animate-spin" />}
         {STATUS_LABELS[status] ?? status}
       </span>
 
