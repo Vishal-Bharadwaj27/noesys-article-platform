@@ -1,5 +1,6 @@
-import { useEffect, useState, useCallback } from "react";
-import { apiFull } from "../http-client";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { api, apiFull } from "../http-client";
+import { type ArticleDetail, type ArticleDetailResponse } from "./useArticle";
 
 export interface ArticleListItem {
   id: string;
@@ -7,6 +8,7 @@ export interface ArticleListItem {
   type: string;
   version: number;
   ai_score: number | null;
+  ai_feedback?: string | null;
   status: string;
   created: string;
   authorName?: string;
@@ -31,15 +33,13 @@ interface ArticleRow {
   author?: { id: string; name: string };
 }
 
-interface ListResponse {
-  data: ArticleRow[];
-  pagination?: PaginationInfo;
-}
-
 export function useMyArticles(options: UseMyArticlesOptions = {}) {
   const { month, viewAll = false, page, limit = 10 } = options;
 
   const [articles, setArticles] = useState<ArticleListItem[]>([]);
+  const latestArticlesRef = useRef<ArticleListItem[]>([]);
+  const isPollingRef = useRef(false);
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState<PaginationInfo>({
@@ -48,6 +48,10 @@ export function useMyArticles(options: UseMyArticlesOptions = {}) {
     total: 0,
     totalPages: 0,
   });
+
+  useEffect(() => {
+    latestArticlesRef.current = articles;
+  }, [articles]);
 
   const fetchArticles = useCallback(async () => {
     setLoading(true);
@@ -91,15 +95,46 @@ export function useMyArticles(options: UseMyArticlesOptions = {}) {
   }, [fetchArticles]);
 
   useEffect(() => {
-    const hasProcessing = articles.some(
-      (a) => a.status === "processing" || a.status === "pending"
-    );
+    const interval = setInterval(async () => {
+      if (isPollingRef.current) return;
+      
+      const processingArticles = latestArticlesRef.current.filter(
+        (a) => a.status === "processing" || a.status === "pending"
+      );
 
-    if (!hasProcessing) return;
+      if (processingArticles.length === 0) return;
 
-    const interval = setInterval(fetchArticles, 3000);
+      isPollingRef.current = true;
+      for (const article of processingArticles) {
+        try {
+          const res = await api<ArticleDetailResponse>(`/articles/mine/${article.id}`);
+          const updatedArticle = res.article;
+
+          if (updatedArticle.status !== "processing" && updatedArticle.status !== "pending") {
+            setArticles((prev) =>
+              prev.map((a) =>
+                a.id === updatedArticle.id
+                  ? {
+                      ...a,
+                      status: updatedArticle.status,
+                      ai_score: res.current_score,
+                      ai_feedback: res.current_feedback,
+                      version: updatedArticle.version,
+                    }
+                  : a
+              )
+            );
+          }
+        } catch (e) {
+          console.error("Polling error", e);
+        }
+      }
+      isPollingRef.current = false;
+    }, 3000);
+
     return () => clearInterval(interval);
-  }, [articles, fetchArticles]);
+  }, []);
+
 
   return { articles, loading, error, pagination, refetch: fetchArticles };
 }
