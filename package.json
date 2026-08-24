@@ -15,12 +15,15 @@
     "lint": "npm run lint --workspaces"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^5.20260818.1"
+    "@cloudflare/workers-types": "^5.20260818.1",
+    "@types/react-syntax-highlighter": "^15.5.13"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
     "lucide-react": "^1.33.0",
     "react-markdown": "^10.1.0",
+    "react-syntax-highlighter": "^16.1.1",
+    "remark-gfm": "^4.0.1",
     "tailwindcss": "^4.3.3",
     "workers-ai-provider": "^4.0.0"
   }
