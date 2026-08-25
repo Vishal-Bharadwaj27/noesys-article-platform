@@ -1,6 +1,5 @@
-import { useEffect, useState, useCallback, useRef } from "react";
-import { api, apiFull } from "../http-client";
-import { type ArticleDetail, type ArticleDetailResponse } from "./useArticle";
+import { useEffect, useState, useCallback } from "react";
+import { apiFull } from "../http-client";
 
 export interface ArticleListItem {
   id: string;
@@ -37,9 +36,7 @@ export function useMyArticles(options: UseMyArticlesOptions = {}) {
   const { month, viewAll = false, page, limit = 10 } = options;
 
   const [articles, setArticles] = useState<ArticleListItem[]>([]);
-  const latestArticlesRef = useRef<ArticleListItem[]>([]);
-  const isPollingRef = useRef(false);
-  
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState<PaginationInfo>({
@@ -48,10 +45,6 @@ export function useMyArticles(options: UseMyArticlesOptions = {}) {
     total: 0,
     totalPages: 0,
   });
-
-  useEffect(() => {
-    latestArticlesRef.current = articles;
-  }, [articles]);
 
   const fetchArticles = useCallback(async () => {
     setLoading(true);
@@ -93,60 +86,6 @@ export function useMyArticles(options: UseMyArticlesOptions = {}) {
   useEffect(() => {
     fetchArticles();
   }, [fetchArticles]);
-
-useEffect(() => {
-  const interval = setInterval(async () => {
-    if (isPollingRef.current) return;
-
-    const processingArticles = latestArticlesRef.current.filter(
-      (article) =>
-        article.status === "processing" ||
-        article.status === "pending"
-    );
-
-    if (processingArticles.length === 0) return;
-
-    isPollingRef.current = true;
-
-    try {
-      await Promise.all(
-        processingArticles.map(async (article) => {
-          try {
-            const res = await api<ArticleDetailResponse>(
-              `/articles/mine/${article.id}`
-            );
-
-            const updatedArticle = res.article;
-
-            setArticles((prev) =>
-              prev.map((currentArticle) =>
-                currentArticle.id === updatedArticle.id
-                  ? {
-                      ...currentArticle,
-                      status: updatedArticle.status,
-                      ai_score: res.current_score,
-                      ai_feedback: res.current_feedback,
-                      version: updatedArticle.version,
-                    }
-                  : currentArticle
-              )
-            );
-          } catch (error) {
-            console.error(
-              `Failed to poll article ${article.id}:`,
-              error
-            );
-          }
-        })
-      );
-    } finally {
-      isPollingRef.current = false;
-    }
-  }, 3000);
-
-  return () => clearInterval(interval);
-}, []);
-
 
   return { articles, loading, error, pagination, refetch: fetchArticles };
 }
