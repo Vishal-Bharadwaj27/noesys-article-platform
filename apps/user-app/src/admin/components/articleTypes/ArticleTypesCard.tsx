@@ -1,4 +1,11 @@
-import { ChevronDown, Clock, FileText, Pencil, Tag, Trash2 } from "lucide-react";
+import {
+  ChevronDown,
+  Clock,
+  FileText,
+  Pencil,
+  Tag,
+  Trash2,
+} from "lucide-react";
 import { ArticleTypeWithPrompt } from "../../pages/articleTypes/ArticleTypesManager";
 import { formatDate } from "../../utils/date";
 import Badge from "../ui/Badge";
@@ -64,6 +71,7 @@ function ArticleTypesCard({
   onEdit,
   onDelete,
 }: ArticleTypesCardProps) {
+  console.log(type.parameters);
   return (
     <div className="group">
       <button
@@ -79,8 +87,16 @@ function ArticleTypesCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-medium text-slate-900">{type.name}</span>
-            {!type.is_active && <Badge variant="danger" dot>Inactive</Badge>}
-            {!type.prompt && <Badge variant="warning" dot>No prompt set</Badge>}
+            {!type.is_active && (
+              <Badge variant="danger" dot>
+                Inactive
+              </Badge>
+            )}
+            {!type.score_prompt && (
+              <Badge variant="warning" dot>
+                No prompt set
+              </Badge>
+            )}
           </div>
           {type.description && (
             <p className="text-sm text-slate-500 truncate mt-0.5">
@@ -125,13 +141,48 @@ function ArticleTypesCard({
                 <FileText size={13} />
                 Scoring Prompt
               </div>
-              {type.prompt ? (
+              {type.score_prompt ? (
                 <pre className="whitespace-pre-wrap text-sm text-slate-700 font-sans leading-relaxed bg-white border border-slate-200 rounded-lg p-3 max-h-56 overflow-y-auto shadow-sm">
-                  {type.prompt}
+                  {type.score_prompt}
                 </pre>
               ) : (
                 <p className="text-sm text-slate-400 italic">
                   No prompt has been configured for this type yet.
+                </p>
+              )}
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500 mb-2">
+                <Tag size={13} />
+                Parameters
+              </div>
+
+              {type.parameters.length > 0 ? (
+                <div className="space-y-2">
+                  {type.parameters.map((param: any) => (
+                    <div
+                      key={param.id}
+                      className="bg-white border border-slate-200 rounded-lg p-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-slate-900">
+                          {param.name}
+                        </span>
+
+                        <Badge variant="indigo">{param.scopeType}</Badge>
+                      </div>
+
+                      {param.options && (
+                        <div className="mt-2 text-sm text-slate-500">
+                          Options: {param.options}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-400 italic">
+                  No parameters configured.
                 </p>
               )}
             </div>

@@ -12,7 +12,7 @@ import { requiredRole } from "../middleware/requiredRole";
 import { AuthContext } from "../middleware/auth";
 
 const parametersRoute = new Hono<{ Bindings: Env } & AuthContext>();
-parametersRoute.use("*", requiredRole("admin", "super_admin"));
+// parametersRoute.use("*", requiredRole("admin", "super_admin"));
 
 function parseParameterBody(body: any): ParameterInput | { error: string } {
   const name = body.name;
@@ -35,7 +35,7 @@ function parseParameterBody(body: any): ParameterInput | { error: string } {
   };
 }
 
-parametersRoute.get("/", async (c) => {
+parametersRoute.get("/:articleTypeId/parameters", async (c) => {
   const articleTypeId = c.req.param("articleTypeId");
   const result = await getParametersByArticleType(c.env.DB, articleTypeId);
   return c.json({
@@ -44,7 +44,7 @@ parametersRoute.get("/", async (c) => {
   });
 });
 
-parametersRoute.get("/:id", async (c) => {
+parametersRoute.get("/:articleTypeId/parameters/:id", async (c) => {
   const id = c.req.param("id");
   const data = await getParameterById(c.env.DB, id);
   return c.json({
@@ -53,8 +53,10 @@ parametersRoute.get("/:id", async (c) => {
   });
 });
 
-parametersRoute.post("/", async (c) => {
+parametersRoute.post("/:articleTypeId/parameters", async (c) => {
+  
   const articleTypeId = c.req.param("articleTypeId");
+
   const body = await c.req.json();
   const parsed = parseParameterBody(body);
 
@@ -62,7 +64,7 @@ parametersRoute.post("/", async (c) => {
     return c.json({ message: parsed.error }, 400);
   }
 
-  const data = await createParameter(c.env.DB, articleTypeId, parsed, c.get("user").id);
+  const data = await createParameter(c.env.DB, parsed, c.get("user").id, articleTypeId);
 
   return c.json(
     { message: "Parameter created successfully.", data },
@@ -70,7 +72,7 @@ parametersRoute.post("/", async (c) => {
   );
 });
 
-parametersRoute.patch("/:id", async (c) => {
+parametersRoute.patch("/:articleTypeId/parameters/:id", async (c) => {
   const id = c.req.param("id");
   const body = await c.req.json();
   const parsed = parseParameterBody(body);
@@ -84,7 +86,7 @@ parametersRoute.patch("/:id", async (c) => {
   return c.json({ message: "Parameter updated successfully" });
 });
 
-parametersRoute.delete("/:id", async (c) => {
+parametersRoute.delete("/:articleTypeId/parameters/:id", async (c) => {
   const id = c.req.param("id");
   await deactivateParameter(c.env.DB, id);
   return c.json({ message: "Parameter deleted successfully" });

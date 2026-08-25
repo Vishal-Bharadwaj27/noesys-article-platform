@@ -14,7 +14,19 @@ type AuthRole = "super_admin" | "admin";
 
 export function requiredRole(...allowedRoles: AuthRole[]) {
   return async (c: Context<{ Bindings: Env } & AuthContext>, next: Next) => {
-    const token = getCookie(c, "session");
+    const header = c.req.header("Authorization");
+
+    if (!header || !header.startsWith("Bearer ")) {
+      return c.json(
+        {
+          success: false,
+          message: "Unauthorized: Missing token",
+        },
+        401,
+      );
+    }
+
+    const token = header.slice("Bearer ".length).trim();
 
     if (!token) {
       return c.json({ message: "Unauthorized" }, 401);
@@ -38,6 +50,7 @@ export function requiredRole(...allowedRoles: AuthRole[]) {
       if (!allowedRoles.includes(payload.role as AuthRole)) {
         return c.json({ message: "Forbidden" }, 403);
       }
+
       c.set("user", user);
       await next();
     } catch {

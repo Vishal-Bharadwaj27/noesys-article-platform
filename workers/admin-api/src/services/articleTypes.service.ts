@@ -1,21 +1,43 @@
 export default async function getArticleTypes(db: D1Database) {
   const sql = `
-    SELECT
-      id,
-      name,
-      description,
-      pass_threshold,
-      score_prompt,
-      score_min,
-      score_max,
-      is_active
-    FROM article_types
-    WHERE is_active = 1
-  `;
+   
+  SELECT
+  at.id,
+  at.name,
+  at.description,
+  at.pass_threshold,
+  at.score_prompt,
+  at.score_max,
+  at.is_active,
+  json_group_array(
+    json_object(
+      'id', p.id,
+      'name', p.name,
+      'scopeType', p.scope_type,
+      'options', p.options
+    )
+  ) AS parameters
+FROM article_types at
+LEFT JOIN parameters p
+  ON p.article_type_id = at.id
+  AND p.is_active = 1
+WHERE at.is_active = 1
+GROUP BY
+  at.id,
+  at.name,
+  at.description,
+  at.pass_threshold,
+  at.score_prompt,
+  at.score_max,
+  at.is_active;`;
 
   const data = await db.prepare(sql).all();
+  console.log(data.results);
+  return data.results.map((row: any) => ({
+    ...row,
 
-  return data.results;
+    parameters: JSON.parse(row.parameters ?? "[]").filter((p: any) => p?.id),
+  }));
 }
 
 export async function getArticleTypeById(
@@ -74,7 +96,6 @@ export async function createArticleType(
     )
     .bind(input.name)
     .first();
-
   if (existing) {
     throw new Error("Article type already exists");
   }

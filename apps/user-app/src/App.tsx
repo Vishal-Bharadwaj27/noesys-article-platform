@@ -13,6 +13,7 @@ import ArticleTypesPage from "./admin/pages/articleTypes/ArticleTypesPage";
 
 import Sidebar from "./admin/components/Sidebar";
 import ArticleDetailsPage from "./admin/components/articles/ArticleDetailsPage";
+import ArticleTypesForm from "./admin/components/articleTypes/ArticleTypesForm";
 
 function AdminLayout({ children }: { children: ReactNode }) {
   return (
@@ -119,6 +120,28 @@ export default function App() {
           <RoleBasedRoute allowedRoles={["admin", "super_admin"]}>
             <AdminLayout>
               <ArticleTypesPage />
+            </AdminLayout>
+          </RoleBasedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/article-types/new"
+        element={
+          <RoleBasedRoute allowedRoles={["admin", "super_admin"]}>
+            <AdminLayout>
+              <ArticleTypesForm />
+            </AdminLayout>
+          </RoleBasedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/article-types/:id/edit"
+        element={
+          <RoleBasedRoute allowedRoles={["admin", "super_admin"]}>
+            <AdminLayout>
+              <ArticleTypesForm />
             </AdminLayout>
           </RoleBasedRoute>
         }
