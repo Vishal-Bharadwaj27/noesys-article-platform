@@ -2,12 +2,189 @@ import Header from "../components/Header";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from "@/components/ui/select";
-import { ChevronLeft, Send, Loader2 } from "lucide-react";
+import { ChevronLeft, Send, Loader2, Copy, Check } from "lucide-react";
 import { api } from "../http-client";
+import ReactMarkdown, { type Components } from "react-markdown";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import type { CSSProperties } from "react";
 
 type ArticleType = { id: string; name: string; description: string | null };
 type CreateResponse = { id: string; status: string };
 type FormValues = { article_type_id: string; title: string; content: string };
+
+const syntaxTheme = oneDark as { [key: string]: CSSProperties };
+
+// Enhanced MarkdownCode component - better syntax highlighting
+const MarkdownCode: Components["code"] = ({ className, children, ...props }) => {
+  const match = /language-(\w+)/.exec(className || "");
+  
+  if (match) {
+    return (
+      <SyntaxHighlighter
+        style={syntaxTheme}
+        language={match[1]}
+        PreTag="div"
+      >
+        {String(children).replace(/\n$/, "")}
+      </SyntaxHighlighter>
+    );
+  }
+  
+  return (
+    <code className={className} {...props}>
+      {children}
+    </code>
+  );
+};
+
+// Shared markdown components for consistent styling
+const sharedMarkdownComponents: Components = {
+  h1: ({ children, ...props }) => (
+    <h1 style={{ fontSize: "1.875rem", fontWeight: 700, marginTop: "1.5rem", marginBottom: "1rem" }} {...props}>
+      {children}
+    </h1>
+  ),
+  h2: ({ children, ...props }) => (
+    <h2 style={{ fontSize: "1.5rem", fontWeight: 600, marginTop: "1.5rem", marginBottom: "0.75rem" }} {...props}>
+      {children}
+    </h2>
+  ),
+  h3: ({ children, ...props }) => (
+    <h3 style={{ fontSize: "1.25rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }} {...props}>
+      {children}
+    </h3>
+  ),
+  p: ({ children, ...props }) => (
+    <p style={{ marginBottom: "1rem", lineHeight: 1.6 }} {...props}>
+      {children}
+    </p>
+  ),
+  ul: ({ children, ...props }) => (
+    <ul style={{ marginLeft: "1.5rem", marginBottom: "1rem", listStyleType: "disc" }} {...props}>
+      {children}
+    </ul>
+  ),
+  ol: ({ children, ...props }) => (
+    <ol style={{ marginLeft: "1.5rem", marginBottom: "1rem", listStyleType: "decimal" }} {...props}>
+      {children}
+    </ol>
+  ),
+  li: ({ children, ...props }) => (
+    <li style={{ marginBottom: "0.5rem" }} {...props}>
+      {children}
+    </li>
+  ),
+  strong: ({ children, ...props }) => (
+    <strong style={{ fontWeight: 600 }} {...props}>
+      {children}
+    </strong>
+  ),
+  em: ({ children, ...props }) => (
+    <em style={{ fontStyle: "italic" }} {...props}>
+      {children}
+    </em>
+  ),
+  blockquote: ({ children, ...props }) => (
+    <blockquote style={{ borderLeft: "4px solid #d9d9d9", paddingLeft: "1rem", marginLeft: 0, marginBottom: "1rem", color: "#666", fontStyle: "italic" }} {...props}>
+      {children}
+    </blockquote>
+  ),
+  pre: ({ children, ...props }) => (
+    <pre style={{ background: "#1e1e1e", border: "1px solid #444", borderRadius: 6, padding: 12, fontSize: 13, overflow: "auto", marginBottom: "1rem" }} {...props}>
+      {children}
+    </pre>
+  ),
+  a: ({ href, children, ...props }) => (
+    <a href={href} style={{ color: "#1890ff", textDecoration: "underline" }} target="_blank" rel="noopener noreferrer" {...props}>
+      {children}
+    </a>
+  ),
+  code: MarkdownCode,
+};
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <button
+      onClick={handleCopy}
+      className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-colors"
+      title="Copy to clipboard"
+    >
+      {copied ? (
+        <Check size={16} className="text-emerald-600" />
+      ) : (
+        <Copy size={16} />
+      )}
+    </button>
+  );
+}
+
+function ContentEditor({
+  content,
+  onChange,
+}: {
+  content: string;
+  onChange: (value: string) => void;
+}) {
+  const [view, setView] = useState<"rendered" | "raw">("rendered");
+
+  return (
+    <div className="border border-slate-200 rounded-lg overflow-hidden">
+      <div className="flex items-center justify-between px-3 py-2 bg-slate-50 border-b border-slate-200">
+        <span className="text-xs font-medium text-slate-500">
+          Article Content
+        </span>
+
+        <div className="flex items-center gap-2">
+          <div className="flex bg-slate-200 rounded-lg p-0.5">
+            {(["rendered", "raw"] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setView(v)}
+                className={`px-3 py-1 text-xs font-medium rounded-md capitalize ${
+                  view === v
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
+
+          <CopyButton text={content} />
+        </div>
+      </div>
+
+      <div className="p-3">
+        {view === "rendered" ? (
+          <div className="min-h-[250px] prose prose-sm prose-slate max-w-none px-1 py-1">
+            <ReactMarkdown components={sharedMarkdownComponents}>
+              {content || "No content available."}
+            </ReactMarkdown>
+          </div>
+        ) : (
+          <textarea
+            rows={10}
+            value={content}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder="Write your article content here..."
+            className="w-full min-h-[250px] rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y"
+          />
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function ArticleCreation() {
   const navigate = useNavigate();
@@ -116,12 +293,9 @@ export default function ArticleCreation() {
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">Content</label>
-              <textarea
-                rows={12}
-                value={values.content}
-                onChange={(e) => setValues({ ...values, content: e.target.value })}
-                placeholder="Write your article content here..."
-                className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y"
+              <ContentEditor
+                content={values.content}
+                onChange={(content) => setValues({ ...values, content })}
               />
             </div>
 
