@@ -29,7 +29,7 @@ app.use(
       return "";
     },
     allowMethods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowHeaders: ["Content-Type"],
+    allowHeaders: ["Content-Type", "Authorization", "Cookie"],
     credentials: true,
   }),
 );
@@ -53,7 +53,7 @@ app.route("/api/articles", articlesRoute);
 // article types route
 app.route("/api/article-types", articleTypesRoute);
 
-app.route("/article-types/:articleTypeId/parameters", parametersRoute);
+app.route("/api/article-types/:articleTypeId/parameters", parametersRoute);
 
 app.get("/api/health", (c) => {
   return c.json({
