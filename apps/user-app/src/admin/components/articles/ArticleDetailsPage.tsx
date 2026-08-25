@@ -26,6 +26,7 @@ import {
   SortDescendingOutlined,
 } from "@ant-design/icons";
 import ReactMarkdown, { type Components } from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import type { CSSProperties } from "react";
@@ -219,7 +220,7 @@ function ContentBlock({ content }: { content: string }) {
     >
       {view === "rendered" ? (
         <div className="markdown-body">
-          <ReactMarkdown
+          <ReactMarkdown remarkPlugins={[remarkGfm]}
             components={{
               code: MarkdownCode,
 
@@ -358,6 +359,16 @@ function ContentBlock({ content }: { content: string }) {
                 </pre>
               ),
 
+              table: ({ children }) => (
+                <div style={{ overflowX: "auto", marginBottom: "1rem", maxWidth: "100%" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }}>{children}</table>
+                </div>
+              ),
+              thead: ({ children }) => <thead style={{ background: "#f8fafc" }}>{children}</thead>,
+              tbody: ({ children }) => <tbody>{children}</tbody>,
+              tr: ({ children }) => <tr>{children}</tr>,
+              th: ({ children }) => <th style={{ border: "1px solid #e2e8f0", padding: "8px 12px", fontWeight: 600, textAlign: "left", background: "#f8fafc" }}>{children}</th>,
+              td: ({ children }) => <td style={{ border: "1px solid #e2e8f0", padding: "8px 12px" }}>{children}</td>,
               a: ({ href, children }) => (
                 <a
                   href={href}
@@ -591,7 +602,7 @@ export default function ArticleDetailsPage() {
           }
         >
           <div style={{ marginBottom: 0 }}>
-            <ReactMarkdown
+            <ReactMarkdown remarkPlugins={[remarkGfm]}
               components={{
                 code: MarkdownCode,
 
@@ -680,6 +691,16 @@ export default function ArticleDetailsPage() {
                     {children}
                   </strong>
                 ),
+                table: ({ children }) => (
+                  <div style={{ overflowX: "auto", marginBottom: "0.75rem", maxWidth: "100%" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }}>{children}</table>
+                  </div>
+                ),
+                thead: ({ children }) => <thead style={{ background: "#f8fafc" }}>{children}</thead>,
+                tbody: ({ children }) => <tbody>{children}</tbody>,
+                tr: ({ children }) => <tr>{children}</tr>,
+                th: ({ children }) => <th style={{ border: "1px solid #e2e8f0", padding: "8px 12px", fontWeight: 600, textAlign: "left", background: "#f8fafc" }}>{children}</th>,
+                td: ({ children }) => <td style={{ border: "1px solid #e2e8f0", padding: "8px 12px" }}>{children}</td>,
               }}
             >
               {article.ai_feedback ?? "No feedback available"}
@@ -839,7 +860,7 @@ export default function ArticleDetailsPage() {
               {selectedVersion.ai_feedback && (
                 <Card size="small" title="Feedback">
                   <div>
-                    <ReactMarkdown
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}
                       components={{
                         code: MarkdownCode,
 
@@ -928,6 +949,16 @@ export default function ArticleDetailsPage() {
                             {children}
                           </strong>
                         ),
+                        table: ({ children }) => (
+                          <div style={{ overflowX: "auto", marginBottom: "0.75rem", maxWidth: "100%" }}>
+                            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }}>{children}</table>
+                          </div>
+                        ),
+                        thead: ({ children }) => <thead style={{ background: "#f8fafc" }}>{children}</thead>,
+                        tbody: ({ children }) => <tbody>{children}</tbody>,
+                        tr: ({ children }) => <tr>{children}</tr>,
+                        th: ({ children }) => <th style={{ border: "1px solid #e2e8f0", padding: "8px 12px", fontWeight: 600, textAlign: "left", background: "#f8fafc" }}>{children}</th>,
+                        td: ({ children }) => <td style={{ border: "1px solid #e2e8f0", padding: "8px 12px" }}>{children}</td>,
                       }}
                     >
                       {selectedVersion.ai_feedback}
