@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { Env } from "../types";
 import { getArticleById, getArticles } from "../services/articles.service";
+import { getParameterResults, storeParameterResults } from "../services/articleParameterResults.service";
 
 const articlesRoute = new Hono<{ Bindings: Env }>();
 
@@ -39,6 +40,20 @@ articlesRoute.get("/:id", async (c) => {
     message: "Article fetched successfully",
     data: article,
   });
+});
+
+articlesRoute.get("/:id/parameter-results", async (c) => {
+  const id = c.req.param("id");
+  const data = await getParameterResults(c.env.DB, id);
+  return c.json({ message: "Parameter results fetched", data });
+});
+
+articlesRoute.post("/:id/parameter-results", async (c) => {
+  const id = c.req.param("id");
+  const body = await c.req.json();
+  if (!Array.isArray(body.results)) return c.json({ message: "results array required" }, 400);
+  const data = await storeParameterResults(c.env.DB, id, body.results, body.ai_score, body.ai_feedback);
+  return c.json({ message: "Parameter results stored", data }, 201);
 });
 
 export default articlesRoute;
