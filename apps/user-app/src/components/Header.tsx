@@ -6,7 +6,7 @@ export default function Header() {
   const { user, logout } = useAuth();
   return (
     <header className="bg-white border-b border-slate-200">
-      <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+      <div className="w-full px-4 md:px-8 h-14 flex items-center justify-between">
         <div className="flex items-center gap-2">
             <img src={logoImage} alt="Logo" className="h-8 w-8 rounded-lg" />
             <span className="font-semibold text-slate-900">Noesys Article Platform</span>
