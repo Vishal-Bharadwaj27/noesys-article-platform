@@ -1,10 +1,11 @@
 import Header from "../components/Header";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, } from "@/components/ui/select";
 import { ChevronLeft, Send, Loader2, Copy, Check } from "lucide-react";
 import { api } from "../http-client";
 import ReactMarkdown, { type Components } from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import type { CSSProperties } from "react";
@@ -17,7 +18,7 @@ const syntaxTheme = oneDark as { [key: string]: CSSProperties };
 
 const MarkdownCode: Components["code"] = ({ className, children, ...props }) => {
   const match = /language-(\w+)/.exec(className || "");
-  
+
   if (match) {
     return (
       <SyntaxHighlighter
@@ -29,7 +30,7 @@ const MarkdownCode: Components["code"] = ({ className, children, ...props }) => 
       </SyntaxHighlighter>
     );
   }
-  
+
   return (
     <code className={className} {...props}>
       {children}
@@ -99,6 +100,14 @@ const sharedMarkdownComponents: Components = {
     </a>
   ),
   code: MarkdownCode,
+  table: ({ children, ...props }) => (
+    <div style={{ overflowX: "auto", marginBottom: "1rem", maxWidth: "100%" }}><table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }} {...props}>{children}</table></div>
+  ),
+  thead: ({ children, ...props }) => <thead style={{ background: "#f8fafc" }} {...props}>{children}</thead>,
+  tbody: ({ children, ...props }) => <tbody {...props}>{children}</tbody>,
+  tr: ({ children, ...props }) => <tr {...props}>{children}</tr>,
+  th: ({ children, ...props }) => <th style={{ border: "1px solid #e2e8f0", padding: "8px 12px", fontWeight: 600, textAlign: "left", background: "#f8fafc" }} {...props}>{children}</th>,
+  td: ({ children, ...props }) => <td style={{ border: "1px solid #e2e8f0", padding: "8px 12px" }} {...props}>{children}</td>,
 };
 
 function CopyButton({ text }: { text: string }) {
@@ -148,13 +157,12 @@ function ContentEditor({
                 key={v}
                 type="button"
                 onClick={() => setView(v)}
-                className={`px-3 py-1 text-xs font-medium rounded-md capitalize ${
-                  view === v
+                className={`px-3 py-1 text-xs font-medium rounded-md ${view === v
                     ? "bg-white text-slate-900 shadow-sm"
                     : "text-slate-500 hover:text-slate-700"
-                }`}
+                  }`}
               >
-                {v}
+                {v === "rendered" ? "Rendered" : "Markdown"}
               </button>
             ))}
           </div>
@@ -166,7 +174,7 @@ function ContentEditor({
       <div className="p-3">
         {view === "rendered" ? (
           <div className="min-h-[150px] prose prose-sm prose-slate max-w-none px-1 py-1">
-            <ReactMarkdown components={sharedMarkdownComponents}>
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={sharedMarkdownComponents}>
               {content || "No content available."}
             </ReactMarkdown>
           </div>
@@ -226,7 +234,7 @@ export default function ArticleCreation() {
         }),
       });
       // simple toast via sessionStorage + alert fallback
-      try { sessionStorage.setItem("toast", "Article submitted! Scoring in progress..."); } catch {}
+      try { sessionStorage.setItem("toast", "Article submitted! Scoring in progress..."); } catch { }
       navigate("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to submit article");
@@ -256,28 +264,28 @@ export default function ArticleCreation() {
             </div>
           )}
 
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Article Type
-                </label>
-                <Select
-                  value={values.article_type_id}
-                  onValueChange={(value: string) => setValues({ ...values, article_type_id: value })}
-                  disabled={loadingTypes}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select an article type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {types.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>
-                        {t.description ? `${t.name} — ${t.description}` : t.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                Article Type
+              </label>
+              <Select
+                value={values.article_type_id}
+                onValueChange={(value: string) => setValues({ ...values, article_type_id: value })}
+                disabled={loadingTypes}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select an article type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {types.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.description ? `${t.name} — ${t.description}` : t.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
 
             <div>

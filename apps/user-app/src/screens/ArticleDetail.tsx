@@ -6,6 +6,7 @@ import dayjs from "dayjs";
 import { useArticle, type HistoryItem, type ArticleDetailResponse } from "../hooks/useArticle";
 import { api } from "../http-client";
 import ReactMarkdown, { type Components } from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import type { CSSProperties } from "react";
@@ -97,6 +98,14 @@ const sharedMarkdownComponents: Components = {
     </a>
   ),
   code: MarkdownCode,
+  table: ({ children, ...props }) => (
+    <div style={{ overflowX: "auto", marginBottom: "1rem", maxWidth: "100%" }}><table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }} {...props}>{children}</table></div>
+  ),
+  thead: ({ children, ...props }) => <thead style={{ background: "#f8fafc" }} {...props}>{children}</thead>,
+  tbody: ({ children, ...props }) => <tbody {...props}>{children}</tbody>,
+  tr: ({ children, ...props }) => <tr {...props}>{children}</tr>,
+  th: ({ children, ...props }) => <th style={{ border: "1px solid #e2e8f0", padding: "8px 12px", fontWeight: 600, textAlign: "left", background: "#f8fafc" }} {...props}>{children}</th>,
+  td: ({ children, ...props }) => <td style={{ border: "1px solid #e2e8f0", padding: "8px 12px" }} {...props}>{children}</td>,
 };
 
 const feedbackMarkdownComponents: Components = {
@@ -156,6 +165,14 @@ const feedbackMarkdownComponents: Components = {
     </pre>
   ),
   code: MarkdownCode,
+  table: ({ children, ...props }) => (
+    <div style={{ overflowX: "auto", marginBottom: "0.75rem", maxWidth: "100%" }}><table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }} {...props}>{children}</table></div>
+  ),
+  thead: ({ children, ...props }) => <thead style={{ background: "#f8fafc" }} {...props}>{children}</thead>,
+  tbody: ({ children, ...props }) => <tbody {...props}>{children}</tbody>,
+  tr: ({ children, ...props }) => <tr {...props}>{children}</tr>,
+  th: ({ children, ...props }) => <th style={{ border: "1px solid #e2e8f0", padding: "8px 12px", fontWeight: 600, textAlign: "left", background: "#f8fafc", color: "#0f172a" }} {...props}>{children}</th>,
+  td: ({ children, ...props }) => <td style={{ border: "1px solid #e2e8f0", padding: "8px 12px", color: "#475569" }} {...props}>{children}</td>,
 };
 
 function scoreColor(score: number) {
@@ -241,7 +258,7 @@ function ContentBlock({ content }: { content: string }) {
       <div className="px-5 py-4">
         {view === "rendered" ? (
           <div className="markdown-body">
-            <ReactMarkdown components={sharedMarkdownComponents}>
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={sharedMarkdownComponents}>
               {content}
             </ReactMarkdown>
           </div>
@@ -302,7 +319,7 @@ function RewriteContentEditor({
       <div className="p-3">
         {view === "rendered" ? (
           <div className="min-h-[250px] prose prose-sm prose-slate max-w-none px-1 py-1">
-            <ReactMarkdown components={sharedMarkdownComponents}>
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={sharedMarkdownComponents}>
               {content || "No content available."}
             </ReactMarkdown>
           </div>
@@ -325,7 +342,7 @@ function FeedbackBlock({ feedback }: { feedback: string }) {
 
   return (
     <div className="prose prose-sm prose-slate max-w-none">
-      <ReactMarkdown components={feedbackMarkdownComponents}>
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={feedbackMarkdownComponents}>
         {formattedFeedback}
       </ReactMarkdown>
     </div>
