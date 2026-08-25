@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Header from "../components/Header";
-import {  ChevronLeft,  Edit3,  X,  Check,  Clock,  Loader2,  Copy} from "lucide-react";
+import { ChevronLeft, Edit3, X, Check, Clock, Loader2, Copy } from "lucide-react";
 import dayjs from "dayjs";
 import { useArticle, type HistoryItem, type ArticleDetailResponse } from "../hooks/useArticle";
 import { api } from "../http-client";
@@ -13,20 +13,152 @@ import { formatFeedbackAsMarkdown } from "../utils/formatFeedback";
 
 const syntaxTheme = oneDark as { [key: string]: CSSProperties };
 
+// Enhanced MarkdownCode component from File 1 - better syntax highlighting
 const MarkdownCode: Components["code"] = ({ className, children, ...props }) => {
   const match = /language-(\w+)/.exec(className || "");
+  
   if (match) {
     return (
-      <SyntaxHighlighter style={syntaxTheme} language={match[1]} PreTag="div">
+      <SyntaxHighlighter
+        style={syntaxTheme}
+        language={match[1]}
+        PreTag="div"
+      >
         {String(children).replace(/\n$/, "")}
       </SyntaxHighlighter>
     );
   }
+  
   return (
     <code className={className} {...props}>
       {children}
     </code>
   );
+};
+
+// Shared markdown components for consistent styling across ContentBlock and FeedbackBlock
+const sharedMarkdownComponents: Components = {
+  h1: ({ children, ...props }) => (
+    <h1 style={{ fontSize: "1.875rem", fontWeight: 700, marginTop: "1.5rem", marginBottom: "1rem" }} {...props}>
+      {children}
+    </h1>
+  ),
+  h2: ({ children, ...props }) => (
+    <h2 style={{ fontSize: "1.5rem", fontWeight: 600, marginTop: "1.5rem", marginBottom: "0.75rem" }} {...props}>
+      {children}
+    </h2>
+  ),
+  h3: ({ children, ...props }) => (
+    <h3 style={{ fontSize: "1.25rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }} {...props}>
+      {children}
+    </h3>
+  ),
+  p: ({ children, ...props }) => (
+    <p style={{ marginBottom: "1rem", lineHeight: 1.6 }} {...props}>
+      {children}
+    </p>
+  ),
+  ul: ({ children, ...props }) => (
+    <ul style={{ marginLeft: "1.5rem", marginBottom: "1rem", listStyleType: "disc" }} {...props}>
+      {children}
+    </ul>
+  ),
+  ol: ({ children, ...props }) => (
+    <ol style={{ marginLeft: "1.5rem", marginBottom: "1rem", listStyleType: "decimal" }} {...props}>
+      {children}
+    </ol>
+  ),
+  li: ({ children, ...props }) => (
+    <li style={{ marginBottom: "0.5rem" }} {...props}>
+      {children}
+    </li>
+  ),
+  strong: ({ children, ...props }) => (
+    <strong style={{ fontWeight: 600 }} {...props}>
+      {children}
+    </strong>
+  ),
+  em: ({ children, ...props }) => (
+    <em style={{ fontStyle: "italic" }} {...props}>
+      {children}
+    </em>
+  ),
+  blockquote: ({ children, ...props }) => (
+    <blockquote style={{ borderLeft: "4px solid #d9d9d9", paddingLeft: "1rem", marginLeft: 0, marginBottom: "1rem", color: "#666", fontStyle: "italic" }} {...props}>
+      {children}
+    </blockquote>
+  ),
+  pre: ({ children, ...props }) => (
+    <pre style={{ background: "#1e1e1e", border: "1px solid #444", borderRadius: 6, padding: 12, fontSize: 13, overflow: "auto", marginBottom: "1rem" }} {...props}>
+      {children}
+    </pre>
+  ),
+  a: ({ href, children, ...props }) => (
+    <a href={href} style={{ color: "#1890ff", textDecoration: "underline" }} target="_blank" rel="noopener noreferrer" {...props}>
+      {children}
+    </a>
+  ),
+  code: MarkdownCode,
+};
+
+// Feedback-specific markdown components with more compact styling
+const feedbackMarkdownComponents: Components = {
+  h1: ({ children, ...props }) => (
+    <h1 style={{ fontSize: "1.25rem", fontWeight: 600, color: "#0f172a", marginTop: "1rem", marginBottom: "0.5rem" }} {...props}>
+      {children}
+    </h1>
+  ),
+  h2: ({ children, ...props }) => (
+    <h2 style={{ fontSize: "1.1rem", fontWeight: 600, color: "#0f172a", marginTop: "0.75rem", marginBottom: "0.5rem" }} {...props}>
+      {children}
+    </h2>
+  ),
+  h3: ({ children, ...props }) => (
+    <h3 style={{ fontSize: "1rem", fontWeight: 600, color: "#0f172a", marginTop: "0.75rem", marginBottom: "0.5rem" }} {...props}>
+      {children}
+    </h3>
+  ),
+  p: ({ children, ...props }) => (
+    <p style={{ fontSize: "0.875rem", color: "#475569", lineHeight: 1.6, marginBottom: "0.75rem" }} {...props}>
+      {children}
+    </p>
+  ),
+  ul: ({ children, ...props }) => (
+    <ul style={{ marginLeft: "1.5rem", marginBottom: "0.75rem", listStyleType: "disc", fontSize: "0.875rem", color: "#475569" }} {...props}>
+      {children}
+    </ul>
+  ),
+  ol: ({ children, ...props }) => (
+    <ol style={{ marginLeft: "1.5rem", marginBottom: "0.75rem", listStyleType: "decimal", fontSize: "0.875rem", color: "#475569" }} {...props}>
+      {children}
+    </ol>
+  ),
+  li: ({ children, ...props }) => (
+    <li style={{ marginBottom: "0.25rem", lineHeight: 1.6 }} {...props}>
+      {children}
+    </li>
+  ),
+  strong: ({ children, ...props }) => (
+    <strong style={{ fontWeight: 600, color: "#0f172a" }} {...props}>
+      {children}
+    </strong>
+  ),
+  em: ({ children, ...props }) => (
+    <em style={{ fontStyle: "italic" }} {...props}>
+      {children}
+    </em>
+  ),
+  blockquote: ({ children, ...props }) => (
+    <blockquote style={{ borderLeft: "4px solid #e2e8f0", paddingLeft: "1rem", marginLeft: 0, marginBottom: "0.75rem", color: "#64748b", fontStyle: "italic" }} {...props}>
+      {children}
+    </blockquote>
+  ),
+  pre: ({ children, ...props }) => (
+    <pre style={{ background: "#1e1e1e", border: "1px solid #444", borderRadius: 6, padding: 12, fontSize: 12, overflow: "auto", marginBottom: "0.75rem" }} {...props}>
+      {children}
+    </pre>
+  ),
+  code: MarkdownCode,
 };
 
 function scoreColor(score: number) {
@@ -82,6 +214,7 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
+// Enhanced ContentBlock with File 1's markdown components
 function ContentBlock({ content }: { content: string }) {
   const [view, setView] = useState<"rendered" | "raw">("rendered");
 
@@ -94,13 +227,21 @@ function ContentBlock({ content }: { content: string }) {
           <div className="flex bg-slate-100 rounded-lg p-0.5">
             <button
               onClick={() => setView("rendered")}
-              className={`px-3 py-1 text-xs font-medium rounded-md ${view === "rendered" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+              className={`px-3 py-1 text-xs font-medium rounded-md ${
+                view === "rendered" 
+                  ? "bg-white text-slate-900 shadow-sm" 
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
             >
               Rendered
             </button>
             <button
               onClick={() => setView("raw")}
-              className={`px-3 py-1 text-xs font-medium rounded-md ${view === "raw" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+              className={`px-3 py-1 text-xs font-medium rounded-md ${
+                view === "raw" 
+                  ? "bg-white text-slate-900 shadow-sm" 
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
             >
               Markdown
             </button>
@@ -113,42 +254,22 @@ function ContentBlock({ content }: { content: string }) {
       <div className="px-5 py-4">
         {view === "rendered" ? (
           <div className="markdown-body">
-            <ReactMarkdown
-              components={{
-                code: MarkdownCode,
-                h1: ({ children }) => (
-                  <h1 style={{ fontSize: "1.875rem", fontWeight: 700, marginTop: "1.5rem", marginBottom: "1rem" }}>{children}</h1>
-                ),
-                h2: ({ children }) => (
-                  <h2 style={{ fontSize: "1.5rem", fontWeight: 600, marginTop: "1.5rem", marginBottom: "0.75rem" }}>{children}</h2>
-                ),
-                h3: ({ children }) => (
-                  <h3 style={{ fontSize: "1.25rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>{children}</h3>
-                ),
-                p: ({ children }) => <p style={{ marginBottom: "1rem", lineHeight: 1.6 }}>{children}</p>,
-                ul: ({ children }) => <ul style={{ marginLeft: "1.5rem", marginBottom: "1rem", listStyleType: "disc" }}>{children}</ul>,
-                ol: ({ children }) => <ol style={{ marginLeft: "1.5rem", marginBottom: "1rem", listStyleType: "decimal" }}>{children}</ol>,
-                li: ({ children }) => <li style={{ marginBottom: "0.5rem" }}>{children}</li>,
-                strong: ({ children }) => <strong style={{ fontWeight: 600 }}>{children}</strong>,
-                em: ({ children }) => <em style={{ fontStyle: "italic" }}>{children}</em>,
-                blockquote: ({ children }) => (
-                  <blockquote style={{ borderLeft: "4px solid #d9d9d9", paddingLeft: "1rem", marginLeft: 0, marginBottom: "1rem", color: "#666", fontStyle: "italic" }}>{children}</blockquote>
-                ),
-                pre: ({ children }) => (
-                  <pre style={{ background: "#1e1e1e", border: "1px solid #444", borderRadius: 6, padding: 12, fontSize: 13, overflow: "auto", marginBottom: "1rem" }}>{children}</pre>
-                ),
-                a: ({ href, children }) => (
-                  <a href={href} style={{ color: "#1890ff", textDecoration: "underline" }} target="_blank" rel="noopener noreferrer">
-                    {children}
-                  </a>
-                ),
-              }}
-            >
+            <ReactMarkdown components={sharedMarkdownComponents}>
               {content}
             </ReactMarkdown>
           </div>
         ) : (
-          <pre style={{ background: "#fafafa", border: "1px solid #f0f0f0", borderRadius: 6, padding: 12, fontSize: 13, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+          <pre
+            style={{
+              background: "#fafafa",
+              border: "1px solid #f0f0f0",
+              borderRadius: 6,
+              padding: 12,
+              fontSize: 13,
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+            }}
+          >
             {content}
           </pre>
         )}
@@ -194,7 +315,7 @@ function RewriteContentEditor({
       <div className="p-3">
         {view === "rendered" ? (
           <div className="min-h-[250px] prose prose-sm prose-slate max-w-none px-1 py-1">
-            <ReactMarkdown>
+            <ReactMarkdown components={sharedMarkdownComponents}>
               {content || "No content available."}
             </ReactMarkdown>
           </div>
@@ -212,82 +333,13 @@ function RewriteContentEditor({
   );
 }
 
+// Enhanced FeedbackBlock with File 1's complete markdown components
 function FeedbackBlock({ feedback }: { feedback: string }) {
   const formattedFeedback = formatFeedbackAsMarkdown(feedback);
 
   return (
     <div className="prose prose-sm prose-slate max-w-none">
-      <ReactMarkdown
-        components={{
-          h1: ({ children }) => (
-            <h1 className="text-lg font-semibold text-slate-900 mt-6 mb-3 first:mt-0">
-              {children}
-            </h1>
-          ),
-
-          h2: ({ children }) => (
-            <h2 className="text-base font-semibold text-slate-900 mt-6 mb-3 first:mt-0">
-              {children}
-            </h2>
-          ),
-
-          h3: ({ children }) => (
-            <h3 className="text-sm font-semibold text-slate-900 mt-6 mb-3 first:mt-0">
-              {children}
-            </h3>
-          ),
-
-          p: ({ children }) => (
-            <p className="text-sm text-slate-600 leading-6 mb-4 last:mb-0">
-              {children}
-            </p>
-          ),
-
-          ul: ({ children }) => (
-            <ul className="list-disc pl-5 space-y-2 mb-4 text-sm text-slate-600">
-              {children}
-            </ul>
-          ),
-
-          ol: ({ children }) => (
-            <ol className="list-decimal pl-5 space-y-2 mb-4 text-sm text-slate-600">
-              {children}
-            </ol>
-          ),
-
-          li: ({ children }) => (
-            <li className="leading-6 pl-1">
-              {children}
-            </li>
-          ),
-
-          strong: ({ children }) => (
-            <strong className="font-semibold text-slate-800">
-              {children}
-            </strong>
-          ),
-
-          em: ({ children }) => <em className="italic">{children}</em>,
-
-          blockquote: ({ children }) => (
-            <blockquote className="border-l-4 border-slate-200 pl-4 my-4 text-slate-500">
-              {children}
-            </blockquote>
-          ),
-
-          code: ({ children }) => (
-            <code className="bg-slate-100 text-slate-700 rounded px-1.5 py-0.5 text-xs font-mono">
-              {children}
-            </code>
-          ),
-
-          pre: ({ children }) => (
-            <pre className="bg-slate-50 border border-slate-200 rounded-lg p-4 overflow-x-auto text-xs font-mono mb-4">
-              {children}
-            </pre>
-          ),
-        }}
-      >
+      <ReactMarkdown components={feedbackMarkdownComponents}>
         {formattedFeedback}
       </ReactMarkdown>
     </div>
@@ -526,9 +578,7 @@ export default function ArticleDetail() {
                         <div
                           className={`h-full rounded-full ${colors!.bar}`}
                           style={{
-                            width: `${
-                              (Math.min(currentScore!, 10) / 10) * 100
-                            }%`,
+                            width: `${(Math.min(currentScore!, 10) / 10) * 100}%`,
                           }}
                         />
                       </div>
