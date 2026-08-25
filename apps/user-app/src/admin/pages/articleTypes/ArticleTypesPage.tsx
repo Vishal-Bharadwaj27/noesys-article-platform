@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import ArticleTypesManager, {
   ArticleTypeWithPrompt,
 } from "./ArticleTypesManager";
+import { tokenStorage } from "@/http-client";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
@@ -19,62 +20,13 @@ const DEFAULT_PASS_THRESHOLD = 5;
 const ArticleTypesPage = () => {
   const [types, setTypes] = useState<ArticleTypeWithPrompt[]>([]);
 
-  async function createArticleType(data: ArticleTypeFormData) {
-    const res = await fetch(`${BACKEND_URL}/api/article-types`, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name: data.name,
-        description: data.description,
-        scorePrompt: data.promptContent,
-        scoreMin: DEFAULT_SCORE_MIN,
-        scoreMax: DEFAULT_SCORE_MAX,
-        passThreshold: DEFAULT_PASS_THRESHOLD,
-      }),
-    });
-
-    if (!res.ok) {
-      const errorText = await res.text();
-      console.error("Create article type failed:", res.status, errorText);
-      throw new Error("Failed to create article type");
-    }
-
-    return res.json();
-  }
-
-  async function updateArticleType(id: string, data: ArticleTypeFormData) {
-    const res = await fetch(`${BACKEND_URL}/api/article-types/${id}`, {
-      method: "PATCH",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name: data.name,
-        description: data.description,
-        scorePrompt: data.promptContent,
-        scoreMin: DEFAULT_SCORE_MIN,
-        scoreMax: DEFAULT_SCORE_MAX,
-        passThreshold: DEFAULT_PASS_THRESHOLD,
-      }),
-    });
-
-    if (!res.ok) {
-      const errorText = await res.text();
-      console.error("Update article type failed:", res.status, errorText);
-      throw new Error("Failed to update article type");
-    }
-
-    return res.json();
-  }
-
   async function deleteArticleType(id: string) {
     const res = await fetch(`${BACKEND_URL}/api/article-types/${id}`, {
       method: "DELETE",
       credentials: "include",
+      headers: {
+        Authorization: `Bearer ${tokenStorage.get()}`,
+      },
     });
 
     if (!res.ok) {
@@ -85,8 +37,15 @@ const ArticleTypesPage = () => {
   }
 
   async function loadArticleTypes() {
+    const token = tokenStorage.get();
+
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
     const res = await fetch(`${BACKEND_URL}/api/article-types`, {
       credentials: "include",
+      headers,
     });
 
     if (!res.ok) {
@@ -105,16 +64,6 @@ const ArticleTypesPage = () => {
     });
   }, []);
 
-  const handleCreate = async (data: ArticleTypeFormData) => {
-    await createArticleType(data);
-    await loadArticleTypes();
-  };
-
-  const handleUpdate = async (id: string, data: ArticleTypeFormData) => {
-    await updateArticleType(id, data);
-    await loadArticleTypes();
-  };
-
   const handleDeleteType = async (id: string) => {
     await deleteArticleType(id);
     await loadArticleTypes();
@@ -122,12 +71,7 @@ const ArticleTypesPage = () => {
 
   return (
     <div>
-      <ArticleTypesManager
-        articleTypes={types}
-        onCreate={handleCreate}
-        onUpdate={handleUpdate}
-        onDelete={handleDeleteType}
-      />
+      <ArticleTypesManager articleTypes={types} onDelete={handleDeleteType} />
     </div>
   );
 };

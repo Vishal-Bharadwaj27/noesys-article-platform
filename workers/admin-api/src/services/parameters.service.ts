@@ -12,7 +12,10 @@ export interface ParameterInput {
 
 function validateScope(input: ParameterInput): string | null {
   if (input.scopeType === "numeric") {
-    if (typeof input.minValue !== "number" || typeof input.maxValue !== "number") {
+    if (
+      typeof input.minValue !== "number" ||
+      typeof input.maxValue !== "number"
+    ) {
       return "minValue and maxValue are required for numeric parameters";
     }
     if (input.maxValue <= input.minValue) {
@@ -30,8 +33,12 @@ function validateScope(input: ParameterInput): string | null {
 
 export async function getParametersByArticleType(
   db: D1Database,
-  articleTypeId: string,
+  articleTypeId?: string,
 ) {
+  if (articleTypeId?.trim() === "" || !articleTypeId) {
+    throw new Error("article type ID is invalid");
+  }
+
   const sql = `
     SELECT
       id,
@@ -84,13 +91,17 @@ export async function getParameterById(db: D1Database, parameterId: string) {
 
 export async function createParameter(
   db: D1Database,
-  articleTypeId: string,
   input: ParameterInput,
   createdBy: string,
+  articleTypeId?: string,
 ) {
   const scopeError = validateScope(input);
   if (scopeError) {
     throw new Error(scopeError);
+  }
+
+  if (articleTypeId?.trim() === "" || !articleTypeId) {
+    throw new Error("article type ID is invalid");
   }
 
   const articleType = await db
@@ -116,7 +127,9 @@ export async function createParameter(
     .first();
 
   if (existing) {
-    throw new Error("Parameter with this name already exists for this article type");
+    throw new Error(
+      "Parameter with this name already exists for this article type",
+    );
   }
 
   const parameterId = crypto.randomUUID();
@@ -170,7 +183,9 @@ export async function updateParameter(
   }
 
   const existing = await db
-    .prepare(`SELECT article_type_id FROM parameters WHERE id = ? AND is_active = 1`)
+    .prepare(
+      `SELECT article_type_id FROM parameters WHERE id = ? AND is_active = 1`,
+    )
     .bind(parameterId)
     .first<{ article_type_id: string }>();
 
@@ -193,7 +208,9 @@ export async function updateParameter(
     .first();
 
   if (duplicate) {
-    throw new Error("Parameter with this name already exists for this article type");
+    throw new Error(
+      "Parameter with this name already exists for this article type",
+    );
   }
 
   const now = new Date().toISOString();

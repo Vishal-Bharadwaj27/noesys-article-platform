@@ -41,6 +41,7 @@ app.get("/", (c) => {
   });
 });
 
+
 // auth routes
 app.route("/api/auth", authRoutes);
 
@@ -53,7 +54,7 @@ app.route("/api/articles", articlesRoute);
 // article types route
 app.route("/api/article-types", articleTypesRoute);
 
-app.route("/api/article-types/:articleTypeId/parameters", parametersRoute);
+app.route("/api/article-types", parametersRoute);
 
 app.get("/api/health", (c) => {
   return c.json({
