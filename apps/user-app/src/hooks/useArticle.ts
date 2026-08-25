@@ -67,5 +67,9 @@ export function useArticle(id: string) {
     loading,
     error,
     refetch: fetchArticle,
+    setCurrentScore,
+    setCurrentFeedback,
+    setHistory,
+    setArticle,
   };
 }

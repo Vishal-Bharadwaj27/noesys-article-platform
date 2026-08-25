@@ -1,20 +1,33 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Header from "../components/Header";
-import {
-  ChevronLeft,
-  Edit3,
-  X,
-  Check,
-  Clock,
-  Loader2,
-  Copy,
-} from "lucide-react";
+import {  ChevronLeft,  Edit3,  X,  Check,  Clock,  Loader2,  Copy} from "lucide-react";
 import dayjs from "dayjs";
-import { useArticle, type HistoryItem } from "../hooks/useArticle";
+import { useArticle, type HistoryItem, type ArticleDetailResponse } from "../hooks/useArticle";
 import { api } from "../http-client";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { type Components } from "react-markdown";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import type { CSSProperties } from "react";
 import { formatFeedbackAsMarkdown } from "../utils/formatFeedback";
+
+const syntaxTheme = oneDark as { [key: string]: CSSProperties };
+
+const MarkdownCode: Components["code"] = ({ className, children, ...props }) => {
+  const match = /language-(\w+)/.exec(className || "");
+  if (match) {
+    return (
+      <SyntaxHighlighter style={syntaxTheme} language={match[1]} PreTag="div">
+        {String(children).replace(/\n$/, "")}
+      </SyntaxHighlighter>
+    );
+  }
+  return (
+    <code className={className} {...props}>
+      {children}
+    </code>
+  );
+};
 
 function scoreColor(score: number) {
   if (score >= 8) {
@@ -79,19 +92,18 @@ function ContentBlock({ content }: { content: string }) {
 
         <div className="flex items-center gap-2">
           <div className="flex bg-slate-100 rounded-lg p-0.5">
-            {(["rendered", "raw"] as const).map((v) => (
-              <button
-                key={v}
-                onClick={() => setView(v)}
-                className={`px-3 py-1 text-xs font-medium rounded-md capitalize ${
-                  view === v
-                    ? "bg-white text-slate-900 shadow-sm"
-                    : "text-slate-500 hover:text-slate-700"
-                }`}
-              >
-                {v}
-              </button>
-            ))}
+            <button
+              onClick={() => setView("rendered")}
+              className={`px-3 py-1 text-xs font-medium rounded-md ${view === "rendered" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+            >
+              Rendered
+            </button>
+            <button
+              onClick={() => setView("raw")}
+              className={`px-3 py-1 text-xs font-medium rounded-md ${view === "raw" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+            >
+              Markdown
+            </button>
           </div>
 
           <CopyButton text={content} />
@@ -100,11 +112,43 @@ function ContentBlock({ content }: { content: string }) {
 
       <div className="px-5 py-4">
         {view === "rendered" ? (
-          <div className="prose prose-sm prose-slate max-w-none">
-            <ReactMarkdown>{content}</ReactMarkdown>
+          <div className="markdown-body">
+            <ReactMarkdown
+              components={{
+                code: MarkdownCode,
+                h1: ({ children }) => (
+                  <h1 style={{ fontSize: "1.875rem", fontWeight: 700, marginTop: "1.5rem", marginBottom: "1rem" }}>{children}</h1>
+                ),
+                h2: ({ children }) => (
+                  <h2 style={{ fontSize: "1.5rem", fontWeight: 600, marginTop: "1.5rem", marginBottom: "0.75rem" }}>{children}</h2>
+                ),
+                h3: ({ children }) => (
+                  <h3 style={{ fontSize: "1.25rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>{children}</h3>
+                ),
+                p: ({ children }) => <p style={{ marginBottom: "1rem", lineHeight: 1.6 }}>{children}</p>,
+                ul: ({ children }) => <ul style={{ marginLeft: "1.5rem", marginBottom: "1rem", listStyleType: "disc" }}>{children}</ul>,
+                ol: ({ children }) => <ol style={{ marginLeft: "1.5rem", marginBottom: "1rem", listStyleType: "decimal" }}>{children}</ol>,
+                li: ({ children }) => <li style={{ marginBottom: "0.5rem" }}>{children}</li>,
+                strong: ({ children }) => <strong style={{ fontWeight: 600 }}>{children}</strong>,
+                em: ({ children }) => <em style={{ fontStyle: "italic" }}>{children}</em>,
+                blockquote: ({ children }) => (
+                  <blockquote style={{ borderLeft: "4px solid #d9d9d9", paddingLeft: "1rem", marginLeft: 0, marginBottom: "1rem", color: "#666", fontStyle: "italic" }}>{children}</blockquote>
+                ),
+                pre: ({ children }) => (
+                  <pre style={{ background: "#1e1e1e", border: "1px solid #444", borderRadius: 6, padding: 12, fontSize: 13, overflow: "auto", marginBottom: "1rem" }}>{children}</pre>
+                ),
+                a: ({ href, children }) => (
+                  <a href={href} style={{ color: "#1890ff", textDecoration: "underline" }} target="_blank" rel="noopener noreferrer">
+                    {children}
+                  </a>
+                ),
+              }}
+            >
+              {content}
+            </ReactMarkdown>
           </div>
         ) : (
-          <pre className="bg-slate-50 p-4 rounded-lg text-xs text-slate-700 whitespace-pre-wrap font-mono">
+          <pre style={{ background: "#fafafa", border: "1px solid #f0f0f0", borderRadius: 6, padding: 12, fontSize: 13, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
             {content}
           </pre>
         )}
@@ -261,6 +305,10 @@ export default function ArticleDetail() {
     currentFeedback,
     loading,
     error,
+    setCurrentScore,
+    setCurrentFeedback,
+    setArticle,
+    setHistory,
   } = useArticle(id ?? "");
 
   const [editing, setEditing] = useState(false);
@@ -275,6 +323,28 @@ export default function ArticleDetail() {
       setContent(article.content);
     }
   }, [article]);
+
+  // Poll for article status updates (only when article is processing/pending)
+  useEffect(() => {
+    if (!article || (article.status !== "processing" && article.status !== "pending")) {
+      return;
+    }
+
+    const pollingInterval = setInterval(async () => {
+      try {
+        const result = await api<ArticleDetailResponse>(`/articles/mine/${article.id}`);
+        setArticle(result.article);
+        setHistory(result.history ?? []);
+        setCurrentScore(result.current_score);
+        setCurrentFeedback(result.current_feedback ?? "");
+        // interval will auto-stop on next effect run when status is no longer processing/pending
+      } catch {
+        // ignore polling errors
+      }
+    }, 3000);
+
+    return () => clearInterval(pollingInterval);
+  }, [article, setArticle, setHistory, setCurrentScore, setCurrentFeedback]);
 
   async function handleSubmitRewrite() {
     if (!article) return;
