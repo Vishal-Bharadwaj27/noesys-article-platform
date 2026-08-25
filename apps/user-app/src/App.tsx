@@ -25,34 +25,23 @@ function AdminLayout({ children }: { children: ReactNode }) {
 
 function Protected({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <Loader2 size={28} className="animate-spin text-slate-400" />
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50"><Loader2 size={28} className="animate-spin text-slate-400" /></div>;
+  if (!user) return <Navigate to="/login" replace />;
   return <>{children}</>;
+}
+function RootRedirect() {
+  const { user, loading } = useAuth();
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50"><Loader2 size={28} className="animate-spin text-slate-400" /></div>;
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.auth_role === "admin" || user.auth_role === "super_admin") return <Navigate to="/admin/articles" replace />;
+  return <MyArticles />;
 }
 
 export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
-      <Route
-        path="/"
-        element={
-          <Protected>
-            <MyArticles />
-          </Protected>
-        }
-      />
+      <Route path="/" element={<RootRedirect />} />
       <Route
         path="/articles/new"
         element={

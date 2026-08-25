@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { apiFull } from "../http-client";
 
 export interface ArticleListItem {
@@ -32,60 +32,85 @@ interface ArticleRow {
   author?: { id: string; name: string };
 }
 
+const POLLING_INTERVAL = 5000;
+
 export function useMyArticles(options: UseMyArticlesOptions = {}) {
   const { month, viewAll = false, page, limit = 10 } = options;
-
   const [articles, setArticles] = useState<ArticleListItem[]>([]);
-
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [pagination, setPagination] = useState<PaginationInfo>({
-    page: 1,
-    limit,
-    total: 0,
-    totalPages: 0,
-  });
+  const [pagination, setPagination] = useState<PaginationInfo>({ page: 1, limit, total: 0, totalPages: 0 });
+  const [isPolling, setIsPolling] = useState(false);
+  const intervalRef = useRef<number | null>(null);
 
-  const fetchArticles = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
+  const fetchArticles = useCallback(async (showLoading = true) => {
+    if (showLoading) { setLoading(true); setError(null); }
     const params = new URLSearchParams();
-    if (viewAll) {
-      params.set("viewAll", "true");
-      params.set("page", String(page ?? 1));
-      params.set("limit", String(limit));
-    } else if (month) {
-      params.set("month", month);
-    }
-
+    if (viewAll) { params.set("viewAll", "true"); params.set("page", String(page ?? 1)); params.set("limit", String(limit)); }
+    else if (month) params.set("month", month);
     const query = params.toString();
     const path = `/articles/mine${query ? `?${query}` : ""}`;
-
     try {
       const result = await apiFull<ArticleRow[]>(path);
-      setArticles(
-        result.data.map((row) => ({
-          ...row.article,
-          authorName: row.author?.name,
-        }))
-      );
-      if (result.pagination) {
-        setPagination(result.pagination);
-      }
+      setArticles(result.data.map((row) => ({ ...row.article, authorName: row.author?.name })));
+      if (result.pagination) setPagination(result.pagination);
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to load articles";
+      const message = err instanceof Error ? err.message : "Failed to load articles";
       setError(message);
-      setArticles([]);
-    } finally {
-      setLoading(false);
-    }
+      if (showLoading) setArticles([]);
+    } finally { if (showLoading) setLoading(false); }
   }, [viewAll, month, page, limit]);
 
-  useEffect(() => {
-    fetchArticles();
-  }, [fetchArticles]);
+  // silent refresh for polling (no loading spinner)
+  const refreshSilently = useCallback(async () => {
+    const params = new URLSearchParams();
+    if (viewAll) { params.set("viewAll", "true"); params.set("page", String(page ?? 1)); params.set("limit", String(limit)); }
+    else if (month) params.set("month", month);
+    const path = `/articles/mine${params.toString() ? `?${params.toString()}` : ""}`;
+    try {
+      const result = await apiFull<ArticleRow[]>(path);
+      setArticles(result.data.map((row) => ({ ...row.article, authorName: row.author?.name })));
+      if (result.pagination) setPagination(result.pagination);
+    } catch (e) { console.error("poll refresh failed", e); }
+  }, [viewAll, month, page, limit]);
 
-  return { articles, loading, error, pagination, refetch: fetchArticles };
+  useEffect(() => { fetchArticles(true); }, [fetchArticles]);
+
+  // smart polling: only when any article is pending/processing
+  const hasPending = articles.some((a) => a.status === "pending" || a.status === "processing");
+
+  useEffect(() => {
+    const clear = () => { if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; } setIsPolling(false); };
+    if (!hasPending) { clear(); return; }
+    if (document.visibilityState === "hidden") { clear(); return; }
+
+    setIsPolling(true);
+    intervalRef.current = window.setInterval(() => {
+      if (document.visibilityState === "hidden") return;
+      refreshSilently();
+    }, POLLING_INTERVAL);
+
+    const onVisibility = () => {
+      if (document.visibilityState === "visible" && hasPending) {
+        if (!intervalRef.current) {
+          intervalRef.current = window.setInterval(() => refreshSilently(), POLLING_INTERVAL);
+          setIsPolling(true);
+        }
+        refreshSilently();
+      } else if (document.visibilityState === "hidden") {
+        if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; setIsPolling(false); }
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => { document.removeEventListener("visibilitychange", onVisibility); clear(); };
+  }, [hasPending, refreshSilently]);
+
+  // stop when all terminal
+  useEffect(() => {
+    if (articles.length > 0 && !hasPending && intervalRef.current) {
+      clearInterval(intervalRef.current); intervalRef.current = null; setIsPolling(false);
+    }
+  }, [articles, hasPending]);
+
+  return { articles, loading, error, pagination, isPolling, refetch: fetchArticles };
 }

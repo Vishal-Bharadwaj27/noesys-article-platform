@@ -42,7 +42,7 @@ export default function MyArticles() {
   const [viewAll, setViewAll] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const { articles, loading, error, pagination } = useMyArticles({
+  const { articles, loading, error, pagination, isPolling } = useMyArticles({
     month: viewAll ? undefined : month,
     viewAll,
     page: viewAll ? currentPage : undefined,
@@ -50,6 +50,10 @@ export default function MyArticles() {
   });
 
   const totalPages = pagination.totalPages || 1;
+
+  // toast from creation
+  const [toast, setToast] = useState<string|null>(() => { try { const t=sessionStorage.getItem("toast"); if(t) sessionStorage.removeItem("toast"); return t; } catch{return null} });
+  useEffect(()=>{ if(toast){ const id=setTimeout(()=>setToast(null),3000); return()=>clearTimeout(id); } return; },[toast]);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -138,6 +142,8 @@ export default function MyArticles() {
           </span>
         </div>
 
+        {toast && <div className="mb-4 rounded-lg bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-700">{toast}</div>}
+        {isPolling && <div className="mb-2 text-xs text-slate-400 flex items-center gap-1"><Loader2 size={12} className="animate-spin"/> Scoring in progress — auto-refreshing...</div>}
         {error && (
           <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600">
             {error}
@@ -239,9 +245,8 @@ function ArticleRow({ article, onClick }: { article: ArticleListItem; onClick: (
       <span
         className={`inline-flex w-fit items-center gap-1 text-xs font-medium rounded-full px-2.5 py-1 ${STATUS_STYLES[status] ?? "bg-slate-100 text-slate-600"}`}
       >
-        {status === "pending" && <Clock size={11} />}
-        {status === "processing" && <Loader2 size={11} className="animate-spin" />}
-        {STATUS_LABELS[status] ?? status}
+        {(status === "pending" || status === "processing") && <Loader2 size={11} className="animate-spin" />}
+        {status === "pending" ? "Scoring..." : status === "processing" ? "Scoring..." : STATUS_LABELS[status] ?? status}
       </span>
 
       <span className="text-slate-400 text-sm">
