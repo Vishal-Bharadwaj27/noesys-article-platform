@@ -1,40 +1,190 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Header from "../components/Header";
-import {
-  ChevronLeft,
-  Edit3,
-  X,
-  Check,
-  Clock,
-  Loader2,
-  Copy,
-} from "lucide-react";
+import { ChevronLeft, Edit3, X, Check, Clock, Loader2, Copy } from "lucide-react";
 import dayjs from "dayjs";
-import { useArticle, type HistoryItem } from "../hooks/useArticle";
+import { useArticle, type HistoryItem, type ArticleDetailResponse } from "../hooks/useArticle";
 import { api } from "../http-client";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { type Components } from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import type { CSSProperties } from "react";
 import { formatFeedbackAsMarkdown } from "../utils/formatFeedback";
+
+const syntaxTheme = oneDark as { [key: string]: CSSProperties };
+
+const MarkdownCode: Components["code"] = ({ className, children, ...props }) => {
+  const match = /language-(\w+)/.exec(className || "");
+  
+  if (match) {
+    return (
+      <SyntaxHighlighter
+        style={syntaxTheme}
+        language={match[1]}
+        PreTag="div"
+      >
+        {String(children).replace(/\n$/, "")}
+      </SyntaxHighlighter>
+    );
+  }
+  
+  return (
+    <code className={className} {...props}>
+      {children}
+    </code>
+  );
+};
+
+const sharedMarkdownComponents: Components = {
+  h1: ({ children, ...props }) => (
+    <h1 style={{ fontSize: "1.875rem", fontWeight: 700, marginTop: "1.5rem", marginBottom: "1rem" }} {...props}>
+      {children}
+    </h1>
+  ),
+  h2: ({ children, ...props }) => (
+    <h2 style={{ fontSize: "1.5rem", fontWeight: 600, marginTop: "1.5rem", marginBottom: "0.75rem" }} {...props}>
+      {children}
+    </h2>
+  ),
+  h3: ({ children, ...props }) => (
+    <h3 style={{ fontSize: "1.25rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }} {...props}>
+      {children}
+    </h3>
+  ),
+  p: ({ children, ...props }) => (
+    <p style={{ marginBottom: "1rem", lineHeight: 1.6 }} {...props}>
+      {children}
+    </p>
+  ),
+  ul: ({ children, ...props }) => (
+    <ul style={{ marginLeft: "1.5rem", marginBottom: "1rem", listStyleType: "disc" }} {...props}>
+      {children}
+    </ul>
+  ),
+  ol: ({ children, ...props }) => (
+    <ol style={{ marginLeft: "1.5rem", marginBottom: "1rem", listStyleType: "decimal" }} {...props}>
+      {children}
+    </ol>
+  ),
+  li: ({ children, ...props }) => (
+    <li style={{ marginBottom: "0.5rem" }} {...props}>
+      {children}
+    </li>
+  ),
+  strong: ({ children, ...props }) => (
+    <strong style={{ fontWeight: 600 }} {...props}>
+      {children}
+    </strong>
+  ),
+  em: ({ children, ...props }) => (
+    <em style={{ fontStyle: "italic" }} {...props}>
+      {children}
+    </em>
+  ),
+  blockquote: ({ children, ...props }) => (
+    <blockquote style={{ borderLeft: "4px solid #d9d9d9", paddingLeft: "1rem", marginLeft: 0, marginBottom: "1rem", color: "#666", fontStyle: "italic" }} {...props}>
+      {children}
+    </blockquote>
+  ),
+  pre: ({ children, ...props }) => (
+    <pre style={{ background: "#1e1e1e", border: "1px solid #444", borderRadius: 6, padding: 12, fontSize: 13, overflow: "auto", marginBottom: "1rem" }} {...props}>
+      {children}
+    </pre>
+  ),
+  a: ({ href, children, ...props }) => (
+    <a href={href} style={{ color: "#1890ff", textDecoration: "underline" }} target="_blank" rel="noopener noreferrer" {...props}>
+      {children}
+    </a>
+  ),
+  code: MarkdownCode,
+  table: ({ children, ...props }) => (
+    <div style={{ overflowX: "auto", marginBottom: "1rem", maxWidth: "100%" }}><table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }} {...props}>{children}</table></div>
+  ),
+  thead: ({ children, ...props }) => <thead style={{ background: "#f8fafc" }} {...props}>{children}</thead>,
+  tbody: ({ children, ...props }) => <tbody {...props}>{children}</tbody>,
+  tr: ({ children, ...props }) => <tr {...props}>{children}</tr>,
+  th: ({ children, ...props }) => <th style={{ border: "1px solid #e2e8f0", padding: "8px 12px", fontWeight: 600, textAlign: "left", background: "#f8fafc" }} {...props}>{children}</th>,
+  td: ({ children, ...props }) => <td style={{ border: "1px solid #e2e8f0", padding: "8px 12px" }} {...props}>{children}</td>,
+};
+
+const feedbackMarkdownComponents: Components = {
+  h1: ({ children, ...props }) => (
+    <h1 style={{ fontSize: "1.25rem", fontWeight: 600, color: "#0f172a", marginTop: "1rem", marginBottom: "0.5rem" }} {...props}>
+      {children}
+    </h1>
+  ),
+  h2: ({ children, ...props }) => (
+    <h2 style={{ fontSize: "1.1rem", fontWeight: 600, color: "#0f172a", marginTop: "0.75rem", marginBottom: "0.5rem" }} {...props}>
+      {children}
+    </h2>
+  ),
+  h3: ({ children, ...props }) => (
+    <h3 style={{ fontSize: "1rem", fontWeight: 600, color: "#0f172a", marginTop: "0.75rem", marginBottom: "0.5rem" }} {...props}>
+      {children}
+    </h3>
+  ),
+  p: ({ children, ...props }) => (
+    <p style={{ fontSize: "0.875rem", color: "#475569", lineHeight: 1.6, marginBottom: "0.75rem" }} {...props}>
+      {children}
+    </p>
+  ),
+  ul: ({ children, ...props }) => (
+    <ul style={{ marginLeft: "1.5rem", marginBottom: "0.75rem", listStyleType: "disc", fontSize: "0.875rem", color: "#475569" }} {...props}>
+      {children}
+    </ul>
+  ),
+  ol: ({ children, ...props }) => (
+    <ol style={{ marginLeft: "1.5rem", marginBottom: "0.75rem", listStyleType: "decimal", fontSize: "0.875rem", color: "#475569" }} {...props}>
+      {children}
+    </ol>
+  ),
+  li: ({ children, ...props }) => (
+    <li style={{ marginBottom: "0.25rem", lineHeight: 1.6 }} {...props}>
+      {children}
+    </li>
+  ),
+  strong: ({ children, ...props }) => (
+    <strong style={{ fontWeight: 600, color: "#0f172a" }} {...props}>
+      {children}
+    </strong>
+  ),
+  em: ({ children, ...props }) => (
+    <em style={{ fontStyle: "italic" }} {...props}>
+      {children}
+    </em>
+  ),
+  blockquote: ({ children, ...props }) => (
+    <blockquote style={{ borderLeft: "4px solid #e2e8f0", paddingLeft: "1rem", marginLeft: 0, marginBottom: "0.75rem", color: "#64748b", fontStyle: "italic" }} {...props}>
+      {children}
+    </blockquote>
+  ),
+  pre: ({ children, ...props }) => (
+    <pre style={{ background: "#1e1e1e", border: "1px solid #444", borderRadius: 6, padding: 12, fontSize: 12, overflow: "auto", marginBottom: "0.75rem" }} {...props}>
+      {children}
+    </pre>
+  ),
+  code: MarkdownCode,
+  table: ({ children, ...props }) => (
+    <div style={{ overflowX: "auto", marginBottom: "0.75rem", maxWidth: "100%" }}><table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }} {...props}>{children}</table></div>
+  ),
+  thead: ({ children, ...props }) => <thead style={{ background: "#f8fafc" }} {...props}>{children}</thead>,
+  tbody: ({ children, ...props }) => <tbody {...props}>{children}</tbody>,
+  tr: ({ children, ...props }) => <tr {...props}>{children}</tr>,
+  th: ({ children, ...props }) => <th style={{ border: "1px solid #e2e8f0", padding: "8px 12px", fontWeight: 600, textAlign: "left", background: "#f8fafc", color: "#0f172a" }} {...props}>{children}</th>,
+  td: ({ children, ...props }) => <td style={{ border: "1px solid #e2e8f0", padding: "8px 12px", color: "#475569" }} {...props}>{children}</td>,
+};
 
 function scoreColor(score: number) {
   if (score >= 8) {
-    return {
-      bar: "bg-emerald-500",
-      badge: "bg-emerald-50 text-emerald-700",
-    };
+    return {bar: "bg-emerald-500",badge: "bg-emerald-50 text-emerald-700"};
   }
 
   if (score >= 6) {
-    return {
-      bar: "bg-amber-500",
-      badge: "bg-amber-50 text-amber-700",
-    };
+    return {bar: "bg-amber-500",badge: "bg-amber-50 text-amber-700"};
   }
 
-  return {
-    bar: "bg-red-500",
-    badge: "bg-red-50 text-red-600",
-  };
+  return {bar: "bg-red-500",badge: "bg-red-50 text-red-600"};
 }
 
 const STATUS_STYLES: Record<string, string> = {
@@ -79,19 +229,26 @@ function ContentBlock({ content }: { content: string }) {
 
         <div className="flex items-center gap-2">
           <div className="flex bg-slate-100 rounded-lg p-0.5">
-            {(["rendered", "raw"] as const).map((v) => (
-              <button
-                key={v}
-                onClick={() => setView(v)}
-                className={`px-3 py-1 text-xs font-medium rounded-md capitalize ${
-                  view === v
-                    ? "bg-white text-slate-900 shadow-sm"
-                    : "text-slate-500 hover:text-slate-700"
-                }`}
-              >
-                {v}
-              </button>
-            ))}
+            <button
+              onClick={() => setView("rendered")}
+              className={`px-3 py-1 text-xs font-medium rounded-md ${
+                view === "rendered" 
+                  ? "bg-white text-slate-900 shadow-sm" 
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              Rendered
+            </button>
+            <button
+              onClick={() => setView("raw")}
+              className={`px-3 py-1 text-xs font-medium rounded-md ${
+                view === "raw" 
+                  ? "bg-white text-slate-900 shadow-sm" 
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              Markdown
+            </button>
           </div>
 
           <CopyButton text={content} />
@@ -100,11 +257,23 @@ function ContentBlock({ content }: { content: string }) {
 
       <div className="px-5 py-4">
         {view === "rendered" ? (
-          <div className="prose prose-sm prose-slate max-w-none">
-            <ReactMarkdown>{content}</ReactMarkdown>
+          <div className="markdown-body">
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={sharedMarkdownComponents}>
+              {content}
+            </ReactMarkdown>
           </div>
         ) : (
-          <pre className="bg-slate-50 p-4 rounded-lg text-xs text-slate-700 whitespace-pre-wrap font-mono">
+          <pre
+            style={{
+              background: "#fafafa",
+              border: "1px solid #f0f0f0",
+              borderRadius: 6,
+              padding: 12,
+              fontSize: 13,
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+            }}
+          >
             {content}
           </pre>
         )}
@@ -150,7 +319,7 @@ function RewriteContentEditor({
       <div className="p-3">
         {view === "rendered" ? (
           <div className="min-h-[250px] prose prose-sm prose-slate max-w-none px-1 py-1">
-            <ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={sharedMarkdownComponents}>
               {content || "No content available."}
             </ReactMarkdown>
           </div>
@@ -173,77 +342,7 @@ function FeedbackBlock({ feedback }: { feedback: string }) {
 
   return (
     <div className="prose prose-sm prose-slate max-w-none">
-      <ReactMarkdown
-        components={{
-          h1: ({ children }) => (
-            <h1 className="text-lg font-semibold text-slate-900 mt-6 mb-3 first:mt-0">
-              {children}
-            </h1>
-          ),
-
-          h2: ({ children }) => (
-            <h2 className="text-base font-semibold text-slate-900 mt-6 mb-3 first:mt-0">
-              {children}
-            </h2>
-          ),
-
-          h3: ({ children }) => (
-            <h3 className="text-sm font-semibold text-slate-900 mt-6 mb-3 first:mt-0">
-              {children}
-            </h3>
-          ),
-
-          p: ({ children }) => (
-            <p className="text-sm text-slate-600 leading-6 mb-4 last:mb-0">
-              {children}
-            </p>
-          ),
-
-          ul: ({ children }) => (
-            <ul className="list-disc pl-5 space-y-2 mb-4 text-sm text-slate-600">
-              {children}
-            </ul>
-          ),
-
-          ol: ({ children }) => (
-            <ol className="list-decimal pl-5 space-y-2 mb-4 text-sm text-slate-600">
-              {children}
-            </ol>
-          ),
-
-          li: ({ children }) => (
-            <li className="leading-6 pl-1">
-              {children}
-            </li>
-          ),
-
-          strong: ({ children }) => (
-            <strong className="font-semibold text-slate-800">
-              {children}
-            </strong>
-          ),
-
-          em: ({ children }) => <em className="italic">{children}</em>,
-
-          blockquote: ({ children }) => (
-            <blockquote className="border-l-4 border-slate-200 pl-4 my-4 text-slate-500">
-              {children}
-            </blockquote>
-          ),
-
-          code: ({ children }) => (
-            <code className="bg-slate-100 text-slate-700 rounded px-1.5 py-0.5 text-xs font-mono">
-              {children}
-            </code>
-          ),
-
-          pre: ({ children }) => (
-            <pre className="bg-slate-50 border border-slate-200 rounded-lg p-4 overflow-x-auto text-xs font-mono mb-4">
-              {children}
-            </pre>
-          ),
-        }}
-      >
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={feedbackMarkdownComponents}>
         {formattedFeedback}
       </ReactMarkdown>
     </div>
@@ -261,6 +360,10 @@ export default function ArticleDetail() {
     currentFeedback,
     loading,
     error,
+    setCurrentScore,
+    setCurrentFeedback,
+    setArticle,
+    setHistory,
   } = useArticle(id ?? "");
 
   const [editing, setEditing] = useState(false);
@@ -275,6 +378,26 @@ export default function ArticleDetail() {
       setContent(article.content);
     }
   }, [article]);
+
+  // Fallback polling for direct visits — exponential backoff, max 50 attempts
+  useEffect(() => {
+    if (!article || (article.status !== "processing" && article.status !== "pending")) return;
+    let attempts = 0; let timeout: number | null = null; let stopped = false;
+    const schedule = () => {
+      if (stopped || attempts >= 50) return;
+      const delay = attempts < 5 ? 3000 : attempts < 15 ? 6000 : 10000;
+      timeout = window.setTimeout(async () => {
+        attempts++;
+        try {
+          const result = await api<ArticleDetailResponse>(`/articles/mine/${article.id}`);
+          setArticle(result.article); setHistory(result.history ?? []); setCurrentScore(result.current_score); setCurrentFeedback(result.current_feedback ?? "");
+          if (result.article.status === "pending" || result.article.status === "processing") schedule();
+        } catch (e) { console.error(e); schedule(); }
+      }, delay);
+    };
+    schedule();
+    return () => { stopped = true; if (timeout) clearTimeout(timeout); };
+  }, [article?.id, article?.status]);
 
   async function handleSubmitRewrite() {
     if (!article) return;
@@ -340,7 +463,7 @@ export default function ArticleDetail() {
     <div className="min-h-screen bg-slate-50">
       <Header />
 
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="w-full px-4 md:px-8 py-8">
         <button
           onClick={() => navigate("/")}
           className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-6"
@@ -456,9 +579,7 @@ export default function ArticleDetail() {
                         <div
                           className={`h-full rounded-full ${colors!.bar}`}
                           style={{
-                            width: `${
-                              (Math.min(currentScore!, 10) / 10) * 100
-                            }%`,
+                            width: `${(Math.min(currentScore!, 10) / 10) * 100}%`,
                           }}
                         />
                       </div>

@@ -25,8 +25,36 @@ import {
   SortAscendingOutlined,
   SortDescendingOutlined,
 } from "@ant-design/icons";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { type Components } from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import type { CSSProperties } from "react";
 import { formatDate } from "@/admin/utils/date";
+
+const syntaxTheme = oneDark as { [key: string]: CSSProperties };
+
+const MarkdownCode: Components["code"] = ({
+  className,
+  children,
+  ...props
+}) => {
+  const match = /language-(\w+)/.exec(className || "");
+
+  if (match) {
+    return (
+      <SyntaxHighlighter style={syntaxTheme} language={match[1]} PreTag="div">
+        {String(children).replace(/\n$/, "")}
+      </SyntaxHighlighter>
+    );
+  }
+
+  return (
+    <code className={className} {...props}>
+      {children}
+    </code>
+  );
+};
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -147,7 +175,207 @@ function ContentBlock({ content }: { content: string }) {
     >
       {view === "rendered" ? (
         <div className="markdown-body">
-          <ReactMarkdown>{content}</ReactMarkdown>
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={{
+              code: MarkdownCode,
+
+              h1: ({ children }) => (
+                <h1
+                  style={{
+                    fontSize: "1.875rem",
+                    fontWeight: 700,
+                    marginTop: "1.5rem",
+                    marginBottom: "1rem",
+                  }}
+                >
+                  {children}
+                </h1>
+              ),
+
+              h2: ({ children }) => (
+                <h2
+                  style={{
+                    fontSize: "1.5rem",
+                    fontWeight: 600,
+                    marginTop: "1.5rem",
+                    marginBottom: "0.75rem",
+                  }}
+                >
+                  {children}
+                </h2>
+              ),
+
+              h3: ({ children }) => (
+                <h3
+                  style={{
+                    fontSize: "1.25rem",
+                    fontWeight: 600,
+                    marginTop: "1rem",
+                    marginBottom: "0.5rem",
+                  }}
+                >
+                  {children}
+                </h3>
+              ),
+
+              p: ({ children }) => (
+                <p
+                  style={{
+                    marginBottom: "1rem",
+                    lineHeight: 1.6,
+                  }}
+                >
+                  {children}
+                </p>
+              ),
+
+              ul: ({ children }) => (
+                <ul
+                  style={{
+                    marginLeft: "1.5rem",
+                    marginBottom: "1rem",
+                    listStyleType: "disc",
+                  }}
+                >
+                  {children}
+                </ul>
+              ),
+
+              ol: ({ children }) => (
+                <ol
+                  style={{
+                    marginLeft: "1.5rem",
+                    marginBottom: "1rem",
+                    listStyleType: "decimal",
+                  }}
+                >
+                  {children}
+                </ol>
+              ),
+
+              li: ({ children }) => (
+                <li
+                  style={{
+                    marginBottom: "0.5rem",
+                  }}
+                >
+                  {children}
+                </li>
+              ),
+
+              strong: ({ children }) => (
+                <strong
+                  style={{
+                    fontWeight: 600,
+                  }}
+                >
+                  {children}
+                </strong>
+              ),
+
+              em: ({ children }) => (
+                <em
+                  style={{
+                    fontStyle: "italic",
+                  }}
+                >
+                  {children}
+                </em>
+              ),
+
+              blockquote: ({ children }) => (
+                <blockquote
+                  style={{
+                    borderLeft: "4px solid #d9d9d9",
+                    paddingLeft: "1rem",
+                    marginLeft: 0,
+                    marginBottom: "1rem",
+                    color: "#666",
+                    fontStyle: "italic",
+                  }}
+                >
+                  {children}
+                </blockquote>
+              ),
+
+              pre: ({ children }) => (
+                <pre
+                  style={{
+                    background: "#1e1e1e",
+                    border: "1px solid #444",
+                    borderRadius: 6,
+                    padding: 12,
+                    fontSize: 13,
+                    overflow: "auto",
+                    marginBottom: "1rem",
+                  }}
+                >
+                  {children}
+                </pre>
+              ),
+
+              table: ({ children }) => (
+                <div
+                  style={{
+                    overflowX: "auto",
+                    marginBottom: "1rem",
+                    maxWidth: "100%",
+                  }}
+                >
+                  <table
+                    style={{
+                      width: "100%",
+                      borderCollapse: "collapse",
+                      fontSize: "0.875rem",
+                    }}
+                  >
+                    {children}
+                  </table>
+                </div>
+              ),
+              thead: ({ children }) => (
+                <thead style={{ background: "#f8fafc" }}>{children}</thead>
+              ),
+              tbody: ({ children }) => <tbody>{children}</tbody>,
+              tr: ({ children }) => <tr>{children}</tr>,
+              th: ({ children }) => (
+                <th
+                  style={{
+                    border: "1px solid #e2e8f0",
+                    padding: "8px 12px",
+                    fontWeight: 600,
+                    textAlign: "left",
+                    background: "#f8fafc",
+                  }}
+                >
+                  {children}
+                </th>
+              ),
+              td: ({ children }) => (
+                <td
+                  style={{ border: "1px solid #e2e8f0", padding: "8px 12px" }}
+                >
+                  {children}
+                </td>
+              ),
+              a: ({ href, children }) => (
+                <a
+                  href={href}
+                  style={{
+                    color: "#1890ff",
+                    textDecoration: "underline",
+                  }}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {children}
+                </a>
+              ),
+            }}
+          >
+            {content}
+          </ReactMarkdown>
         </div>
       ) : (
         <pre
@@ -312,6 +540,146 @@ export default function ArticleDetailsPage() {
               <Text type="secondary">No feedback available</Text>
             )}
           </Paragraph>
+          <div style={{ marginBottom: 0 }}>
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                code: MarkdownCode,
+
+                h1: ({ children }) => (
+                  <h3
+                    style={{
+                      marginTop: "1rem",
+                      marginBottom: "0.5rem",
+                    }}
+                  >
+                    {children}
+                  </h3>
+                ),
+
+                h2: ({ children }) => (
+                  <h4
+                    style={{
+                      marginTop: "0.75rem",
+                      marginBottom: "0.5rem",
+                    }}
+                  >
+                    {children}
+                  </h4>
+                ),
+
+                h3: ({ children }) => (
+                  <h4
+                    style={{
+                      marginTop: "0.75rem",
+                      marginBottom: "0.5rem",
+                    }}
+                  >
+                    {children}
+                  </h4>
+                ),
+
+                p: ({ children }) => (
+                  <p
+                    style={{
+                      marginBottom: "0.75rem",
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    {children}
+                  </p>
+                ),
+
+                ul: ({ children }) => (
+                  <ul
+                    style={{
+                      marginLeft: "1.5rem",
+                      marginBottom: "0.75rem",
+                    }}
+                  >
+                    {children}
+                  </ul>
+                ),
+
+                ol: ({ children }) => (
+                  <ol
+                    style={{
+                      marginLeft: "1.5rem",
+                      marginBottom: "0.75rem",
+                    }}
+                  >
+                    {children}
+                  </ol>
+                ),
+
+                li: ({ children }) => (
+                  <li
+                    style={{
+                      marginBottom: "0.25rem",
+                    }}
+                  >
+                    {children}
+                  </li>
+                ),
+
+                strong: ({ children }) => (
+                  <strong
+                    style={{
+                      fontWeight: 600,
+                    }}
+                  >
+                    {children}
+                  </strong>
+                ),
+                table: ({ children }) => (
+                  <div
+                    style={{
+                      overflowX: "auto",
+                      marginBottom: "0.75rem",
+                      maxWidth: "100%",
+                    }}
+                  >
+                    <table
+                      style={{
+                        width: "100%",
+                        borderCollapse: "collapse",
+                        fontSize: "0.875rem",
+                      }}
+                    >
+                      {children}
+                    </table>
+                  </div>
+                ),
+                thead: ({ children }) => (
+                  <thead style={{ background: "#f8fafc" }}>{children}</thead>
+                ),
+                tbody: ({ children }) => <tbody>{children}</tbody>,
+                tr: ({ children }) => <tr>{children}</tr>,
+                th: ({ children }) => (
+                  <th
+                    style={{
+                      border: "1px solid #e2e8f0",
+                      padding: "8px 12px",
+                      fontWeight: 600,
+                      textAlign: "left",
+                      background: "#f8fafc",
+                    }}
+                  >
+                    {children}
+                  </th>
+                ),
+                td: ({ children }) => (
+                  <td
+                    style={{ border: "1px solid #e2e8f0", padding: "8px 12px" }}
+                  >
+                    {children}
+                  </td>
+                ),
+              }}
+            >
+              {article.ai_feedback ?? "No feedback available"}
+            </ReactMarkdown>
+          </div>
         </Card>
 
         {/* Content */}
@@ -426,6 +794,151 @@ export default function ArticleDetailsPage() {
                   >
                     {selectedVersion.ai_feedback}
                   </Paragraph>
+                  <div>
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        code: MarkdownCode,
+
+                        h1: ({ children }) => (
+                          <h4
+                            style={{
+                              marginTop: "0.75rem",
+                              marginBottom: "0.5rem",
+                            }}
+                          >
+                            {children}
+                          </h4>
+                        ),
+
+                        h2: ({ children }) => (
+                          <h4
+                            style={{
+                              marginTop: "0.75rem",
+                              marginBottom: "0.5rem",
+                            }}
+                          >
+                            {children}
+                          </h4>
+                        ),
+
+                        h3: ({ children }) => (
+                          <h4
+                            style={{
+                              marginTop: "0.75rem",
+                              marginBottom: "0.5rem",
+                            }}
+                          >
+                            {children}
+                          </h4>
+                        ),
+
+                        p: ({ children }) => (
+                          <p
+                            style={{
+                              marginBottom: "0.75rem",
+                              lineHeight: 1.6,
+                            }}
+                          >
+                            {children}
+                          </p>
+                        ),
+
+                        ul: ({ children }) => (
+                          <ul
+                            style={{
+                              marginLeft: "1.5rem",
+                              marginBottom: "0.75rem",
+                            }}
+                          >
+                            {children}
+                          </ul>
+                        ),
+
+                        ol: ({ children }) => (
+                          <ol
+                            style={{
+                              marginLeft: "1.5rem",
+                              marginBottom: "0.75rem",
+                            }}
+                          >
+                            {children}
+                          </ol>
+                        ),
+
+                        li: ({ children }) => (
+                          <li
+                            style={{
+                              marginBottom: "0.25rem",
+                            }}
+                          >
+                            {children}
+                          </li>
+                        ),
+
+                        strong: ({ children }) => (
+                          <strong
+                            style={{
+                              fontWeight: 600,
+                            }}
+                          >
+                            {children}
+                          </strong>
+                        ),
+                        table: ({ children }) => (
+                          <div
+                            style={{
+                              overflowX: "auto",
+                              marginBottom: "0.75rem",
+                              maxWidth: "100%",
+                            }}
+                          >
+                            <table
+                              style={{
+                                width: "100%",
+                                borderCollapse: "collapse",
+                                fontSize: "0.875rem",
+                              }}
+                            >
+                              {children}
+                            </table>
+                          </div>
+                        ),
+                        thead: ({ children }) => (
+                          <thead style={{ background: "#f8fafc" }}>
+                            {children}
+                          </thead>
+                        ),
+                        tbody: ({ children }) => <tbody>{children}</tbody>,
+                        tr: ({ children }) => <tr>{children}</tr>,
+                        th: ({ children }) => (
+                          <th
+                            style={{
+                              border: "1px solid #e2e8f0",
+                              padding: "8px 12px",
+                              fontWeight: 600,
+                              textAlign: "left",
+                              background: "#f8fafc",
+                            }}
+                          >
+                            {children}
+                          </th>
+                        ),
+                        td: ({ children }) => (
+                          <td
+                            style={{
+                              border: "1px solid #e2e8f0",
+                              padding: "8px 12px",
+                            }}
+                          >
+                            {children}
+                          </td>
+                        ),
+                      }}
+                    >
+                      {selectedVersion.ai_feedback}
+                    </ReactMarkdown>
+                  </div>
                 </Card>
               )}
             </Space>

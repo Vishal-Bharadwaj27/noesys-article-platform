@@ -29,7 +29,7 @@ app.use(
       return "";
     },
     allowMethods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowHeaders: ["Content-Type", "Authorization"],
+    allowHeaders: ["Content-Type", "Authorization", "Cookie"],
     credentials: true,
   }),
 );
@@ -40,6 +40,7 @@ app.get("/", (c) => {
     message: "Backend is working",
   });
 });
+
 
 // auth routes
 app.route("/api/auth", authRoutes);
