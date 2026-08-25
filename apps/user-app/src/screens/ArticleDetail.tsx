@@ -13,7 +13,6 @@ import { formatFeedbackAsMarkdown } from "../utils/formatFeedback";
 
 const syntaxTheme = oneDark as { [key: string]: CSSProperties };
 
-// Enhanced MarkdownCode component from File 1 - better syntax highlighting
 const MarkdownCode: Components["code"] = ({ className, children, ...props }) => {
   const match = /language-(\w+)/.exec(className || "");
   
@@ -36,7 +35,6 @@ const MarkdownCode: Components["code"] = ({ className, children, ...props }) => 
   );
 };
 
-// Shared markdown components for consistent styling across ContentBlock and FeedbackBlock
 const sharedMarkdownComponents: Components = {
   h1: ({ children, ...props }) => (
     <h1 style={{ fontSize: "1.875rem", fontWeight: 700, marginTop: "1.5rem", marginBottom: "1rem" }} {...props}>
@@ -101,7 +99,6 @@ const sharedMarkdownComponents: Components = {
   code: MarkdownCode,
 };
 
-// Feedback-specific markdown components with more compact styling
 const feedbackMarkdownComponents: Components = {
   h1: ({ children, ...props }) => (
     <h1 style={{ fontSize: "1.25rem", fontWeight: 600, color: "#0f172a", marginTop: "1rem", marginBottom: "0.5rem" }} {...props}>
@@ -163,23 +160,14 @@ const feedbackMarkdownComponents: Components = {
 
 function scoreColor(score: number) {
   if (score >= 8) {
-    return {
-      bar: "bg-emerald-500",
-      badge: "bg-emerald-50 text-emerald-700",
-    };
+    return {bar: "bg-emerald-500",badge: "bg-emerald-50 text-emerald-700"};
   }
 
   if (score >= 6) {
-    return {
-      bar: "bg-amber-500",
-      badge: "bg-amber-50 text-amber-700",
-    };
+    return {bar: "bg-amber-500",badge: "bg-amber-50 text-amber-700"};
   }
 
-  return {
-    bar: "bg-red-500",
-    badge: "bg-red-50 text-red-600",
-  };
+  return {bar: "bg-red-500",badge: "bg-red-50 text-red-600"};
 }
 
 const STATUS_STYLES: Record<string, string> = {
@@ -214,7 +202,6 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
-// Enhanced ContentBlock with File 1's markdown components
 function ContentBlock({ content }: { content: string }) {
   const [view, setView] = useState<"rendered" | "raw">("rendered");
 
@@ -333,7 +320,6 @@ function RewriteContentEditor({
   );
 }
 
-// Enhanced FeedbackBlock with File 1's complete markdown components
 function FeedbackBlock({ feedback }: { feedback: string }) {
   const formattedFeedback = formatFeedbackAsMarkdown(feedback);
 
@@ -389,9 +375,7 @@ export default function ArticleDetail() {
         setHistory(result.history ?? []);
         setCurrentScore(result.current_score);
         setCurrentFeedback(result.current_feedback ?? "");
-        // interval will auto-stop on next effect run when status is no longer processing/pending
       } catch {
-        // ignore polling errors
       }
     }, 3000);
 
@@ -462,7 +446,7 @@ export default function ArticleDetail() {
     <div className="min-h-screen bg-slate-50">
       <Header />
 
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="w-full px-4 md:px-8 py-8">
         <button
           onClick={() => navigate("/")}
           className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-6"
