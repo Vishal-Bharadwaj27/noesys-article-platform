@@ -362,25 +362,25 @@ export default function ArticleDetail() {
     }
   }, [article]);
 
-  // Poll for article status updates (only when article is processing/pending)
+  // Fallback polling for direct visits — exponential backoff, max 50 attempts
   useEffect(() => {
-    if (!article || (article.status !== "processing" && article.status !== "pending")) {
-      return;
-    }
-
-    const pollingInterval = setInterval(async () => {
-      try {
-        const result = await api<ArticleDetailResponse>(`/articles/mine/${article.id}`);
-        setArticle(result.article);
-        setHistory(result.history ?? []);
-        setCurrentScore(result.current_score);
-        setCurrentFeedback(result.current_feedback ?? "");
-      } catch {
-      }
-    }, 3000);
-
-    return () => clearInterval(pollingInterval);
-  }, [article, setArticle, setHistory, setCurrentScore, setCurrentFeedback]);
+    if (!article || (article.status !== "processing" && article.status !== "pending")) return;
+    let attempts = 0; let timeout: number | null = null; let stopped = false;
+    const schedule = () => {
+      if (stopped || attempts >= 50) return;
+      const delay = attempts < 5 ? 3000 : attempts < 15 ? 6000 : 10000;
+      timeout = window.setTimeout(async () => {
+        attempts++;
+        try {
+          const result = await api<ArticleDetailResponse>(`/articles/mine/${article.id}`);
+          setArticle(result.article); setHistory(result.history ?? []); setCurrentScore(result.current_score); setCurrentFeedback(result.current_feedback ?? "");
+          if (result.article.status === "pending" || result.article.status === "processing") schedule();
+        } catch (e) { console.error(e); schedule(); }
+      }, delay);
+    };
+    schedule();
+    return () => { stopped = true; if (timeout) clearTimeout(timeout); };
+  }, [article?.id, article?.status]);
 
   async function handleSubmitRewrite() {
     if (!article) return;

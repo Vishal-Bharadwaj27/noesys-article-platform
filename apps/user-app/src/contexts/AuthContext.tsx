@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { useNavigate } from "react-router-dom";
-import { api, tokenStorage } from "../http-client";
+import { api, tokenManager } from "../http-client";
 
 export type AuthUser = {
   id: string;
@@ -57,16 +57,16 @@ function isTokenExpired(token: string): boolean {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [token, setToken] = useState<string | null>(tokenStorage.get());
+  const [token, setToken] = useState<string | null>(tokenManager.get());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
 
     async function validate() {
-      const stored = tokenStorage.get();
+      const stored = tokenManager.get() ?? localStorage.getItem("token");
       if (!stored || isTokenExpired(stored)) {
-        tokenStorage.clear();
+        tokenManager.clear();
         setToken(null);
         setLoading(false);
         return;
@@ -87,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
       } catch {
         if (active) {
-          tokenStorage.clear();
+          tokenManager.clear();
           setToken(null);
           setUser(null);
         }
@@ -118,7 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         method: "POST",
         body: JSON.stringify({ email, code }),
       });
-      tokenStorage.set(result.token);
+      tokenManager.set(result.token);
       setToken(result.token);
       setUser(result.user);
       
@@ -133,14 +133,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const logout = useCallback(() => {
-    tokenStorage.clear();
+    tokenManager.clear();
     setToken(null);
     setUser(null);
     navigate("/login", { replace: true });
   }, [navigate]);
 
   const isAuthenticated = useCallback(() => {
-    const stored = tokenStorage.get();
+    const stored = tokenManager.get() ?? localStorage.getItem("token");
     return !!stored && !isTokenExpired(stored);
   }, []);
 

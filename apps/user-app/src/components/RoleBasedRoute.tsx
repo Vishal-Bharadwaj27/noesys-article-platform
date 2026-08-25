@@ -25,7 +25,11 @@ export function RoleBasedRoute({
   }
 
   if (!allowedRoles.includes(user.auth_role)) {
-    return <Navigate to="/" replace />;
+    const isAdmin = user.auth_role === "admin" || user.auth_role === "super_admin";
+    // admin hitting user-only route -> admin home; user hitting admin -> user home
+    const adminOnly = allowedRoles.every((r) => r !== "user");
+    if (adminOnly) return <Navigate to="/" replace />;
+    return <Navigate to={isAdmin ? "/admin/articles" : "/"} replace />;
   }
 
   return <>{children}</>;

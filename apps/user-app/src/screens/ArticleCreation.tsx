@@ -165,14 +165,14 @@ function ContentEditor({
 
       <div className="p-3">
         {view === "rendered" ? (
-          <div className="min-h-[250px] prose prose-sm prose-slate max-w-none px-1 py-1">
+          <div className="min-h-[150px] prose prose-sm prose-slate max-w-none px-1 py-1">
             <ReactMarkdown components={sharedMarkdownComponents}>
               {content || "No content available."}
             </ReactMarkdown>
           </div>
         ) : (
           <textarea
-            rows={10}
+            rows={6}
             value={content}
             onChange={(e) => onChange(e.target.value)}
             placeholder="Write your article content here..."
@@ -217,7 +217,7 @@ export default function ArticleCreation() {
     if (!values.content.trim()) { setError("Please enter content"); return; }
     setSubmitting(true);
     try {
-      const result = await api<CreateResponse>("/articles", {
+      await api<CreateResponse>("/articles", {
         method: "POST",
         body: JSON.stringify({
           article_type_id: values.article_type_id,
@@ -225,7 +225,9 @@ export default function ArticleCreation() {
           content: values.content.trim(),
         }),
       });
-      navigate(`/articles/${result.id}`);
+      // simple toast via sessionStorage + alert fallback
+      try { sessionStorage.setItem("toast", "Article submitted! Scoring in progress..."); } catch {}
+      navigate("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to submit article");
     } finally {
