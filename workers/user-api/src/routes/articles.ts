@@ -386,7 +386,7 @@ articleRoutes.post("/", async (c) => {
       message: "Article submitted successfully",
       data: {
         id: articleId,
-        status: "processing",
+        status: "pending",
       },
     });
   }

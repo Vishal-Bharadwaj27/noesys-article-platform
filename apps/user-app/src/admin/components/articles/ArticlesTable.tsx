@@ -46,6 +46,10 @@ const STATUS_CONFIG: Record<
     label: "Pending",
     icon: true,
   },
+  failed: {
+    color: "blue",
+    label: "failed",
+  },
 };
 
 function scoreColor(score: number) {
