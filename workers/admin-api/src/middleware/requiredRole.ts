@@ -52,7 +52,7 @@ export function requiredRole(...allowedRoles: AuthRole[]) {
       }
 
       c.set("user", user);
-      await next();
+      return await next();
     } catch {
       return c.json({ message: "Unauthorized" }, 401);
     }

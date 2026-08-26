@@ -137,9 +137,8 @@ articleRoutes.get("/mine/:id", async (c) => {
     history.sort((a, b) => a.version - b.version);
   }
 
-  const currentFeedback =
-    article.ai_feedback ||
-    (history.length > 0 ? history[history.length - 1].ai_feedback : "");
+  const isPending = article.status === "pending" || article.status === "processing";
+  const currentFeedback = isPending ? "" : (article.ai_feedback || (history.length > 0 ? history[history.length - 1].ai_feedback || "" : ""));
 
   return c.json({
     message: "Article fetched successfully",

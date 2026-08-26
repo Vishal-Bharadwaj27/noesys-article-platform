@@ -61,6 +61,5 @@ export async function authMiddleware(
     is_active: user.is_active,
   });
 
-  await next();
-  return;
+  return await next();
 }

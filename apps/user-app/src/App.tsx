@@ -12,6 +12,7 @@ import UsersPage from "./admin/pages/users/UsersPage";
 import ArticleTypesPage from "./admin/pages/articleTypes/ArticleTypesPage";
 
 import Sidebar from "./admin/components/Sidebar";
+import AdminHeader from "./admin/components/AdminHeader";
 import ArticleDetailsPage from "./admin/components/articles/ArticleDetailsPage";
 import ArticleTypesForm from "./admin/components/articleTypes/ArticleTypesForm";
 
@@ -19,7 +20,10 @@ function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex flex-col lg:flex-row">
       <Sidebar />
-      <div className="flex-1 min-w-0">{children}</div>
+      <div className="flex-1 min-w-0 flex flex-col">
+        <AdminHeader />
+        <div className="flex-1 min-w-0">{children}</div>
+      </div>
     </div>
   );
 }
