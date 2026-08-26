@@ -325,7 +325,7 @@ articleRoutes.post("/", async (c) => {
       article_type_id,
       title,
       content,
-      status: "processing",
+      status: "pending",
       version: 1,
       submitted_at: now,
       month_year,

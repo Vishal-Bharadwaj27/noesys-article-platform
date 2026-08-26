@@ -1,8 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import ArticlesTable from "../../components/articles/ArticlesTable";
-import type {
-  ArticleSummary,
-} from "../../components/articles/ArticlesRow";
+import type { ArticleSummary } from "../../components/articles/ArticlesRow";
 import { useNavigate, useParams } from "react-router-dom";
 import { DatePicker, Select, Empty } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
@@ -32,6 +30,10 @@ const STATUS_OPTIONS = [
     value: "rewrite_required",
     label: "Rewrite Required",
   },
+  {
+    processing: "processing",
+    label: "Processing"
+  }
 ];
 
 const AllArticles = () => {
@@ -41,8 +43,6 @@ const AllArticles = () => {
   const [articles, setArticles] = useState<ArticleSummary[]>([]);
 
   const [articleTypes, setArticleTypes] = useState<ArticleTypeOption[]>([]);
-
-  const [aiScore, setAiScore] = useState("default");
 
   const [userName, setUserName] = useState("");
 
@@ -148,7 +148,7 @@ const AllArticles = () => {
 
   const displayedArticles = useMemo(() => {
     const sorted = [...articles];
-    console.log(sorted)
+
     switch (sortBy) {
       case "score_desc":
         sorted.sort((a, b) => (b.ai_score ?? -1) - (a.ai_score ?? -1));
