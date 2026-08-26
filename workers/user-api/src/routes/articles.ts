@@ -328,6 +328,7 @@ articleRoutes.post("/", async (c) => {
       message: "Article submitted and evaluated",
       data: {
         id: articleId,
+        // status: "pending",
         status: finalArticle?.status || "failed",
         ai_score: finalArticle?.ai_score ?? null,
         ai_feedback: finalArticle?.ai_feedback ?? null,

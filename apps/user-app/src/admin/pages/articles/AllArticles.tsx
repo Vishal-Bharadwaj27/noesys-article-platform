@@ -30,10 +30,6 @@ const STATUS_OPTIONS = [
     value: "rewrite_required",
     label: "Rewrite Required",
   },
-  {
-    processing: "processing",
-    label: "Processing"
-  }
 ];
 
 const AllArticles = () => {
