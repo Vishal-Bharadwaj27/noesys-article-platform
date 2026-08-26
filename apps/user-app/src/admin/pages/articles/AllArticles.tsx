@@ -1,87 +1,218 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import ArticlesTable from "../../components/articles/ArticlesTable";
-import { ArticleSummary } from "../../components/articles/ArticlesRow";
+import type {
+  ArticleStatus,
+  ArticleSummary,
+} from "../../components/articles/ArticlesRow";
 import { useNavigate, useParams } from "react-router-dom";
-import { DatePicker } from "antd";
-import type { Dayjs } from "dayjs";
+import { DatePicker, Select, Empty } from "antd";
+import dayjs, { type Dayjs } from "dayjs";
+import { api } from "@/http-client";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
-const AllArticles = () => {
-  const [articles, setArticles] = useState<ArticleSummary[]>([]);
-  const { id } = useParams();
-  const [userName, setUserName] = useState<string>("");
+type ArticleTypeOption = {
+  id: string;
+  name: string;
+};
 
-  const [selectedMonth, setSelectedMonth] = useState<Dayjs | null>(null);
+const STATUS_OPTIONS = [
+  {
+    value: "all",
+    label: "All Statuses",
+  },
+  {
+    value: "approved",
+    label: "Approved",
+  },
+  {
+    value: "pending",
+    label: "Pending",
+  },
+  {
+    value: "rewrite_required",
+    label: "Rewrite Required",
+  },
+];
+
+const AllArticles = () => {
+  const { id } = useParams();
   const navigate = useNavigate();
 
-  async function fetchArticles(
-    month?: string,
-    status?: string,
-  ): Promise<ArticleSummary[]> {
-    const params = new URLSearchParams();
+  const [articles, setArticles] = useState<ArticleSummary[]>([]);
+  console.log("articles", articles);
 
-    if (month) params.set("month", month);
-    if (status) params.set("status", status);
+  const [articleTypes, setArticleTypes] = useState<ArticleTypeOption[]>([]);
 
-    const res = await fetch(
-      !id
-        ? `${BACKEND_URL}/api/articles?${params.toString()}`
-        : `${BACKEND_URL}/api/users/${id}/articles?${params.toString()}`,
-      {
+  const [userName, setUserName] = useState("");
+
+  // Current month is the default.
+  const [selectedMonth, setSelectedMonth] = useState<Dayjs>(
+    dayjs().startOf("month"),
+  );
+
+  const [selectedStatus, setSelectedStatus] = useState("all");
+
+  const [selectedType, setSelectedType] = useState("all");
+
+  const [loading, setLoading] = useState(false);
+
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchArticleTypes = useCallback(async () => {
+    try {
+      const response = await api<
+        Array<{
+          id: string;
+          name: string;
+        }>
+      >("/article-types");
+
+      setArticleTypes(
+        response.map((type) => ({
+          id: type.id,
+          name: type.name,
+        })),
+      );
+    } catch (err) {
+      console.error("Failed to load article types:", err);
+    }
+  }, []);
+
+  const fetchArticles = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const params = new URLSearchParams();
+
+      // Always send month.
+      params.set("month", selectedMonth.format("YYYY-MM"));
+
+      if (selectedStatus !== "all") {
+        params.set("status", selectedStatus);
+      }
+
+      if (selectedType !== "all") {
+        params.set("type", selectedType);
+      }
+
+      const endpoint = id
+        ? `${BACKEND_URL}/api/users/${id}/articles?${params.toString()}`
+        : `${BACKEND_URL}/api/articles?${params.toString()}`;
+
+      const res = await fetch(endpoint, {
         credentials: "include",
-      },
-    );
+      });
 
-    if (!res.ok) {
-      throw new Error("Failed to fetch articles");
+      if (!res.ok) {
+        throw new Error(`Failed to fetch articles (${res.status})`);
+      }
+
+      const json = await res.json();
+
+      if (json.user) {
+        setUserName(json.user.name ?? "");
+      }
+
+      setArticles(json.data ?? []);
+    } catch (err) {
+      console.error("Failed to load articles:", err);
+
+      setError(err instanceof Error ? err.message : "Failed to load articles");
+
+      setArticles([]);
+    } finally {
+      setLoading(false);
     }
-
-    const json = await res.json();
-
-    if (json.user) {
-      setUserName(json.user.name);
-    }
-    return json.data;
-  }
-
-  const loadArticles = async () => {
-    const monthString = selectedMonth
-      ? selectedMonth.format("YYYY-MM")
-      : undefined;
-
-    const data = await fetchArticles(monthString, status || undefined);
-
-    setArticles(data);
-  };
+  }, [id, selectedMonth, selectedStatus, selectedType]);
 
   useEffect(() => {
-    loadArticles();
-  }, [selectedMonth, id]);
+    fetchArticleTypes();
+  }, [fetchArticleTypes]);
+
+  useEffect(() => {
+    fetchArticles();
+  }, [fetchArticles]);
+
+  const handleMonthChange = (date: Dayjs | null) => {
+    // Clearing the month resets it to current month.
+    if (!date) {
+      setSelectedMonth(dayjs().startOf("month"));
+      return;
+    }
+
+    setSelectedMonth(date.startOf("month"));
+  };
+  console.log(articles)
 
   return (
     <div className="m-5">
-      <div className="text-3xl font-semibold mb-3">
-        <div className="text-3xl font-semibold mb-3">
-          {id ? <h1>{userName}'s Articles</h1> : <h1>All Articles</h1>}
-        </div>
+      <div className="mb-5">
+        <h1 className="text-3xl font-semibold">
+          {id ? `${userName || "User"}'s Articles` : "All Articles"}
+        </h1>
+
+        <p className="text-sm text-slate-500 mt-1">
+          Showing articles for {selectedMonth.format("MMMM YYYY")}
+        </p>
       </div>
 
-      <div className="flex gap-3 mb-4">
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-3 mb-5">
         <DatePicker
           picker="month"
           value={selectedMonth}
-          onChange={(date) => setSelectedMonth(date)}
+          onChange={handleMonthChange}
+          allowClear
           placeholder="Select month"
           className="w-[220px]"
         />
-      </div>
-      <div>
-        <ArticlesTable
-          articles={articles}
-          onRowClick={(id) => navigate(`/admin/articles/${id}`)}
+
+        <Select
+          value={selectedType}
+          onChange={setSelectedType}
+          className="w-[220px]"
+          options={[
+            {
+              value: "all",
+              label: "All Types",
+            },
+            ...articleTypes.map((type) => ({
+              value: type.id,
+              label: type.name,
+            })),
+          ]}
+        />
+
+        <Select
+          value={selectedStatus}
+          onChange={setSelectedStatus}
+          className="w-[220px]"
+          options={STATUS_OPTIONS}
         />
       </div>
+
+      {error ? (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          {error}
+        </div>
+      ) : loading ? (
+        <div className="rounded-xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">
+          Loading articles...
+        </div>
+      ) : articles.length === 0 ? (
+        <Empty
+          description={`No articles found for ${selectedMonth.format(
+            "MMMM YYYY",
+          )}`}
+        />
+      ) : (
+        <ArticlesTable
+          articles={articles}
+          onRowClick={(articleId) => navigate(`/admin/articles/${articleId}`)}
+        />
+      )}
     </div>
   );
 };

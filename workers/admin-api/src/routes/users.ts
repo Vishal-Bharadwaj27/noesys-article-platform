@@ -1,10 +1,11 @@
 import { Hono } from "hono";
 import {
-  getUserArticles,
+  getArticlesByUser,
   getUserById,
   getUsers,
   updateUser,
   updateUserAuthRole,
+  updateUserStatus,
 } from "../services/users.service";
 import type { Env } from "../types";
 import { AuthContext, authMiddleware } from "../middleware/auth";
@@ -29,34 +30,19 @@ usersRoute.get("/", async (c) => {
 
 // return article of a specific user GET /users/:id/articles
 usersRoute.get("/:id/articles", async (c) => {
-  const db = c.env.DB;
+  const userId = c.req.param("id");
 
-  const id = c.req.param("id");
   const month = c.req.query("month");
   const status = c.req.query("status");
+  const type = c.req.query("type");
 
-  if (!id || id.trim() === "") {
-    return c.json({ message: "Invalid id" }, 400);
-  }
-
-  const data = await getUserArticles(
-    db,
-    id,
-    month || undefined,
-    status || undefined,
-  );
-
-  if (!data) {
-    return c.json({ message: "User not found" }, 404);
-  }
+  const data = await getArticlesByUser(c.env.DB, userId, month, status, type);
 
   return c.json({
     message: "User articles fetched successfully",
-    user: data.user,
-    data: data.articles,
+    data,
   });
 });
-
 // update a specific user's role
 usersRoute.patch("/:id/role", async (c) => {
   const id = c.req.param("id");
@@ -112,6 +98,18 @@ usersRoute.patch("/:id", async (c) => {
 
   return c.json({
     message: "User updated successfully",
+  });
+});
+
+usersRoute.patch("/:id/status", async (c) => {
+  const id = c.req.param("id");
+
+  const body = await c.req.json();
+
+  await updateUserStatus(c.env.DB, id, body.is_active);
+
+  return c.json({
+    message: "User status updated successfully",
   });
 });
 

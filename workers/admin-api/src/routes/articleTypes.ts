@@ -1,11 +1,12 @@
 import { Hono } from "hono";
 import { Env } from "../types";
-import getArticleTypes, {
+import {
   createArticleType,
   deactivateArticleType,
   getArticleTypeById,
   updateArticleType,
   ArticleTypeInput,
+  getArticleTypes,
 } from "../services/articleTypes.service";
 import { requiredRole } from "../middleware/requiredRole";
 import { AuthContext } from "../middleware/auth";

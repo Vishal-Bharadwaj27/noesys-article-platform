@@ -31,6 +31,7 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import type { CSSProperties } from "react";
 import { formatDate } from "@/admin/utils/date";
+import { tokenStorage } from "@/http-client";
 
 const syntaxTheme = oneDark as { [key: string]: CSSProperties };
 
@@ -413,8 +414,16 @@ export default function ArticleDetailsPage() {
       setLoading(true);
       setErrored(false);
       try {
+        const headers: Record<string, string> = {};
+        const token = tokenStorage.get();
+
+        if(token) {
+          headers['Authorization'] = `Bearer ${token}`
+        }
+
         const res = await fetch(`${BACKEND_URL}/api/articles/${id}`, {
           credentials: "include",
+          headers
         });
 
         if (!res.ok) {
@@ -445,7 +454,7 @@ export default function ArticleDetailsPage() {
 
   if (loading) {
     return (
-      <div style={{ maxWidth: 960, margin: "0 auto", padding: 24 }}>
+      <div style={{ maxWidth: 960, margin: "0", padding: 10 }}>
         <Card style={{ marginBottom: 16 }}>
           <Skeleton active paragraph={{ rows: 2 }} />
         </Card>
