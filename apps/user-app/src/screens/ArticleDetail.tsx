@@ -16,7 +16,7 @@ const syntaxTheme = oneDark as { [key: string]: CSSProperties };
 
 const MarkdownCode: Components["code"] = ({ className, children, ...props }) => {
   const match = /language-(\w+)/.exec(className || "");
-  
+
   if (match) {
     return (
       <SyntaxHighlighter
@@ -28,7 +28,7 @@ const MarkdownCode: Components["code"] = ({ className, children, ...props }) => 
       </SyntaxHighlighter>
     );
   }
-  
+
   return (
     <code className={className} {...props}>
       {children}
@@ -67,21 +67,9 @@ const sharedMarkdownComponents: Components = {
       {children}
     </ol>
   ),
-  li: ({ children, ...props }) => (
-    <li style={{ marginBottom: "0.5rem" }} {...props}>
-      {children}
-    </li>
-  ),
-  strong: ({ children, ...props }) => (
-    <strong style={{ fontWeight: 600 }} {...props}>
-      {children}
-    </strong>
-  ),
-  em: ({ children, ...props }) => (
-    <em style={{ fontStyle: "italic" }} {...props}>
-      {children}
-    </em>
-  ),
+  li: ({ children, ...props }) => <li style={{ marginBottom: "0.5rem" }} {...props}>{children}</li>,
+  strong: ({ children, ...props }) => <strong style={{ fontWeight: 600 }} {...props}>{children}</strong>,
+  em: ({ children, ...props }) => <em style={{ fontStyle: "italic" }} {...props}>{children}</em>,
   blockquote: ({ children, ...props }) => (
     <blockquote style={{ borderLeft: "4px solid #d9d9d9", paddingLeft: "1rem", marginLeft: 0, marginBottom: "1rem", color: "#666", fontStyle: "italic" }} {...props}>
       {children}
@@ -92,99 +80,66 @@ const sharedMarkdownComponents: Components = {
       {children}
     </pre>
   ),
-  a: ({ href, children, ...props }) => (
-    <a href={href} style={{ color: "#1890ff", textDecoration: "underline" }} target="_blank" rel="noopener noreferrer" {...props}>
-      {children}
-    </a>
-  ),
-  code: MarkdownCode,
-  table: ({ children, ...props }) => (
-    <div style={{ overflowX: "auto", marginBottom: "1rem", maxWidth: "100%" }}><table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }} {...props}>{children}</table></div>
-  ),
-  thead: ({ children, ...props }) => <thead style={{ background: "#f8fafc" }} {...props}>{children}</thead>,
-  tbody: ({ children, ...props }) => <tbody {...props}>{children}</tbody>,
-  tr: ({ children, ...props }) => <tr {...props}>{children}</tr>,
-  th: ({ children, ...props }) => <th style={{ border: "1px solid #e2e8f0", padding: "8px 12px", fontWeight: 600, textAlign: "left", background: "#f8fafc" }} {...props}>{children}</th>,
-  td: ({ children, ...props }) => <td style={{ border: "1px solid #e2e8f0", padding: "8px 12px" }} {...props}>{children}</td>,
+    a: ({ href, children, ...props }) => (
+      <a href={href} style={{ color: "#1890ff", textDecoration: "underline" }} target="_blank" rel="noopener noreferrer" {...props}>
+        {children}
+      </a>
+    ),
+      code: MarkdownCode,
+        table: ({ children, ...props }) => (
+          <div style={{ overflowX: "auto", marginBottom: "1rem", maxWidth: "100%" }}><table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }} {...props}>{children}</table></div>
+        ),
+          thead: ({ children, ...props }) => <thead style={{ background: "#f8fafc" }} {...props}>{children}</thead>,
+            tbody: ({ children, ...props }) => <tbody {...props}>{children}</tbody>,
+              tr: ({ children, ...props }) => <tr {...props}>{children}</tr>,
+                th: ({ children, ...props }) => <th style={{ border: "1px solid #e2e8f0", padding: "8px 12px", fontWeight: 600, textAlign: "left", background: "#f8fafc" }} {...props}>{children}</th>,
+                  td: ({ children, ...props }) => <td style={{ border: "1px solid #e2e8f0", padding: "8px 12px" }} {...props}>{children}</td>,
 };
 
 const feedbackMarkdownComponents: Components = {
-  h1: ({ children, ...props }) => (
-    <h1 style={{ fontSize: "1.25rem", fontWeight: 600, color: "#0f172a", marginTop: "1rem", marginBottom: "0.5rem" }} {...props}>
-      {children}
-    </h1>
-  ),
-  h2: ({ children, ...props }) => (
-    <h2 style={{ fontSize: "1.1rem", fontWeight: 600, color: "#0f172a", marginTop: "0.75rem", marginBottom: "0.5rem" }} {...props}>
+  h2: ({ children }: any) => (
+    <h2 className="text-lg font-bold text-slate-900 mt-4 mb-3 border-b border-slate-200 pb-2">
       {children}
     </h2>
   ),
-  h3: ({ children, ...props }) => (
-    <h3 style={{ fontSize: "1rem", fontWeight: 600, color: "#0f172a", marginTop: "0.75rem", marginBottom: "0.5rem" }} {...props}>
+  h3: ({ children }: any) => (
+    <h3 className="text-base font-semibold text-slate-800 mt-3 mb-2">
       {children}
     </h3>
   ),
-  p: ({ children, ...props }) => (
-    <p style={{ fontSize: "0.875rem", color: "#475569", lineHeight: 1.6, marginBottom: "0.75rem" }} {...props}>
-      {children}
-    </p>
-  ),
-  ul: ({ children, ...props }) => (
-    <ul style={{ marginLeft: "1.5rem", marginBottom: "0.75rem", listStyleType: "disc", fontSize: "0.875rem", color: "#475569" }} {...props}>
+  ul: ({ children }: any) => (
+    <ul className="list-disc list-inside ml-2 mb-3 space-y-1">
       {children}
     </ul>
   ),
-  ol: ({ children, ...props }) => (
-    <ol style={{ marginLeft: "1.5rem", marginBottom: "0.75rem", listStyleType: "decimal", fontSize: "0.875rem", color: "#475569" }} {...props}>
-      {children}
-    </ol>
-  ),
-  li: ({ children, ...props }) => (
-    <li style={{ marginBottom: "0.25rem", lineHeight: 1.6 }} {...props}>
+  li: ({ children }: any) => (
+    <li className="text-sm text-slate-700 leading-relaxed">
       {children}
     </li>
   ),
-  strong: ({ children, ...props }) => (
-    <strong style={{ fontWeight: 600, color: "#0f172a" }} {...props}>
+  p: ({ children }: any) => (
+    <p className="text-sm text-slate-600 mb-2">
       {children}
-    </strong>
+    </p>
   ),
-  em: ({ children, ...props }) => (
-    <em style={{ fontStyle: "italic" }} {...props}>
-      {children}
-    </em>
+  strong: ({ children }: any) => (
+    <strong className="font-semibold text-slate-900">{children}</strong>
   ),
-  blockquote: ({ children, ...props }) => (
-    <blockquote style={{ borderLeft: "4px solid #e2e8f0", paddingLeft: "1rem", marginLeft: 0, marginBottom: "0.75rem", color: "#64748b", fontStyle: "italic" }} {...props}>
-      {children}
-    </blockquote>
+  em: ({ children }: any) => (
+    <em className="italic">{children}</em>
   ),
-  pre: ({ children, ...props }) => (
-    <pre style={{ background: "#1e1e1e", border: "1px solid #444", borderRadius: 6, padding: 12, fontSize: 12, overflow: "auto", marginBottom: "0.75rem" }} {...props}>
-      {children}
-    </pre>
-  ),
-  code: MarkdownCode,
-  table: ({ children, ...props }) => (
-    <div style={{ overflowX: "auto", marginBottom: "0.75rem", maxWidth: "100%" }}><table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }} {...props}>{children}</table></div>
-  ),
-  thead: ({ children, ...props }) => <thead style={{ background: "#f8fafc" }} {...props}>{children}</thead>,
-  tbody: ({ children, ...props }) => <tbody {...props}>{children}</tbody>,
-  tr: ({ children, ...props }) => <tr {...props}>{children}</tr>,
-  th: ({ children, ...props }) => <th style={{ border: "1px solid #e2e8f0", padding: "8px 12px", fontWeight: 600, textAlign: "left", background: "#f8fafc", color: "#0f172a" }} {...props}>{children}</th>,
-  td: ({ children, ...props }) => <td style={{ border: "1px solid #e2e8f0", padding: "8px 12px", color: "#475569" }} {...props}>{children}</td>,
 };
 
 function scoreColor(score: number) {
   if (score >= 8) {
-    return {bar: "bg-emerald-500",badge: "bg-emerald-50 text-emerald-700"};
+    return { bar: "bg-emerald-500", badge: "bg-emerald-50 text-emerald-700" };
   }
 
   if (score >= 6) {
-    return {bar: "bg-amber-500",badge: "bg-amber-50 text-amber-700"};
+    return { bar: "bg-amber-500", badge: "bg-amber-50 text-amber-700" };
   }
 
-  return {bar: "bg-red-500",badge: "bg-red-50 text-red-600"};
+  return { bar: "bg-red-500", badge: "bg-red-50 text-red-600" };
 }
 
 const STATUS_STYLES: Record<string, string> = {
@@ -231,21 +186,19 @@ function ContentBlock({ content }: { content: string }) {
           <div className="flex bg-slate-100 rounded-lg p-0.5">
             <button
               onClick={() => setView("rendered")}
-              className={`px-3 py-1 text-xs font-medium rounded-md ${
-                view === "rendered" 
-                  ? "bg-white text-slate-900 shadow-sm" 
+              className={`px-3 py-1 text-xs font-medium rounded-md ${view === "rendered"
+                  ? "bg-white text-slate-900 shadow-sm"
                   : "text-slate-500 hover:text-slate-700"
-              }`}
+                }`}
             >
               Rendered
             </button>
             <button
               onClick={() => setView("raw")}
-              className={`px-3 py-1 text-xs font-medium rounded-md ${
-                view === "raw" 
-                  ? "bg-white text-slate-900 shadow-sm" 
+              className={`px-3 py-1 text-xs font-medium rounded-md ${view === "raw"
+                  ? "bg-white text-slate-900 shadow-sm"
                   : "text-slate-500 hover:text-slate-700"
-              }`}
+                }`}
             >
               Markdown
             </button>
@@ -299,20 +252,24 @@ function RewriteContentEditor({
         </span>
 
         <div className="flex bg-slate-200 rounded-lg p-0.5">
-          {(["rendered", "raw"] as const).map((v) => (
-            <button
-              key={v}
-              type="button"
-              onClick={() => setView(v)}
-              className={`px-3 py-1 text-xs font-medium rounded-md capitalize ${
-                view === v
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-500 hover:text-slate-700"
+          <button
+            onClick={() => setView("rendered")}
+            className={`px-3 py-1 text-xs font-medium rounded-md ${view === "rendered"
+                ? "bg-white text-slate-900 shadow-sm"
+                : "text-slate-500 hover:text-slate-700"
               }`}
-            >
-              {v}
-            </button>
-          ))}
+          >
+            Rendered
+          </button>
+          <button
+            onClick={() => setView("raw")}
+            className={`px-3 py-1 text-xs font-medium rounded-md ${view === "raw"
+                ? "bg-white text-slate-900 shadow-sm"
+                : "text-slate-500 hover:text-slate-700"
+              }`}
+          >
+            Markdown
+          </button>
         </div>
       </div>
 
@@ -339,9 +296,8 @@ function RewriteContentEditor({
 
 function FeedbackBlock({ feedback }: { feedback: string }) {
   const formattedFeedback = formatFeedbackAsMarkdown(feedback);
-
   return (
-    <div className="prose prose-sm prose-slate max-w-none">
+    <div className="prose prose-sm prose-slate max-w-none bg-white p-4 rounded-lg border border-slate-200">
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={feedbackMarkdownComponents}>
         {formattedFeedback}
       </ReactMarkdown>
@@ -353,19 +309,7 @@ export default function ArticleDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const {
-    article,
-    history,
-    currentScore,
-    currentFeedback,
-    loading,
-    error,
-    setCurrentScore,
-    setCurrentFeedback,
-    setArticle,
-    setHistory,
-  } = useArticle(id ?? "");
-
+  const { article, history, currentScore, currentFeedback, loading, error, setCurrentScore, setCurrentFeedback, setArticle, setHistory } = useArticle(id ?? "");
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -665,9 +609,8 @@ function HistoryRow({ item }: { item: HistoryItem }) {
       </div>
 
       <span
-        className={`inline-flex w-fit items-center gap-1 text-xs font-medium rounded-full px-2.5 py-1 ${
-          STATUS_STYLES[item.status] ?? "bg-slate-100 text-slate-600"
-        }`}
+        className={`inline-flex w-fit items-center gap-1 text-xs font-medium rounded-full px-2.5 py-1 ${STATUS_STYLES[item.status] ?? "bg-slate-100 text-slate-600"
+          }`}
       >
         {item.status === "pending" && <Clock size={11} />}
         {item.status}

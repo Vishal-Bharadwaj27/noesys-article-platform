@@ -1,15 +1,7 @@
 import { useState } from "react";
-import {
-  FileText,
-  Users,
-  Tags,
-  Menu,
-  X,
-  LogOut,
-} from "lucide-react";
+import { FileText, Users, Tags, Menu, X, LogOut } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
-import NoesysLogo from "../../Logo/Noesys_logo.avif";
 
 type NavItem = {
   key: string;
@@ -87,22 +79,7 @@ export default function Sidebar() {
     <>
       {/* Mobile top bar */}
       <div className="lg:hidden flex items-center justify-between px-4 h-14 bg-white border-b border-slate-200 w-full">
-        <div className="flex items-center gap-2">
-          <img
-            src={NoesysLogo}
-            alt="Noesys Article Platform"
-            className="w-8 h-8 rounded-lg object-contain"
-          />
-
-          <span className="font-semibold text-slate-900">
-            Noesys Article Platform
-          </span>
-
-          <span className="ml-1 text-[11px] font-medium text-indigo-600 bg-indigo-50 rounded-full px-2 py-0.5">
-            Admin
-          </span>
-        </div>
-
+        <span className="text-sm font-semibold text-slate-900">Menu</span>
         <button
           onClick={() => setOpen(true)}
           aria-label="Open menu"
@@ -127,18 +104,7 @@ export default function Sidebar() {
           ${open ? "translate-x-0" : "-translate-x-full"}`}
       >
         <div className="flex items-center justify-between px-4 h-14 border-b border-slate-200">
-          <div className="flex items-center gap-2">
-            <img
-              src={NoesysLogo}
-              alt="Noesys Article Platform"
-              className="w-8 h-8 rounded-lg object-contain"
-            />
-
-            <span className="font-semibold text-slate-900">
-              Noesys Article Platform
-            </span>
-          </div>
-
+          <span className="text-sm font-semibold text-slate-900">Navigation</span>
           <button
             onClick={() => setOpen(false)}
             aria-label="Close menu"
@@ -157,21 +123,6 @@ export default function Sidebar() {
 
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex flex-col w-60 h-screen bg-white border-r border-slate-200 sticky top-0">
-        <div className="flex items-center gap-2 px-4 h-14 border-b border-slate-200">
-          <img
-            src={NoesysLogo}
-            alt="Noesys Article Platform"
-            className="w-8 h-8 rounded-lg object-contain"
-          />
-
-          <span className="font-semibold text-slate-900">
-            Noesys Article Platform
-          </span>
-
-          <span className="ml-auto text-[11px] font-medium text-indigo-600 bg-indigo-50 rounded-full px-2 py-0.5">
-            Admin
-          </span>
-        </div>
 
         <NavList />
 

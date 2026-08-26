@@ -1,59 +1,34 @@
-/**
- * Client-side utility to ensure feedback is properly formatted as Markdown.
- * This handles legacy plain-text feedback and ensures consistent rendering.
- */
-
 export function formatFeedbackAsMarkdown(feedback: string): string {
-  if (!feedback) {
-    return "No feedback available yet.";
-  }
+  if (!feedback) return "";
 
-  // If feedback already contains Markdown headers, assume it's properly formatted
-  if (feedback.includes("###") || feedback.includes("##") || feedback.includes("-\n")) {
+  if (feedback.includes("##") || feedback.includes("###") || feedback.includes("- ")) {
     return feedback;
   }
 
-  // For plain text feedback, add basic Markdown formatting
-  // Split by double newlines to preserve paragraph structure
-  const paragraphs = feedback.split("\n\n");
-  
-  // Process each paragraph
-  const formattedParagraphs = paragraphs.map((paragraph, index) => {
-    // Skip empty paragraphs
-    if (!paragraph.trim()) {
-      return "";
+  const lines = feedback.split("\n").map((line) => line.trim());
+  const formattedLines: string[] = [];
+  const mainHeaders = ["Strengths", "Weaknesses", "Improvements Needed", "Justification of the Score"];
+
+  lines.forEach((line) => {
+    if (mainHeaders.some((header) => line === header)) {
+      formattedLines.push(`## ${line}`);
+      return;
     }
 
-    // If paragraph starts with a number followed by a dot, treat as a list item
-    if (/^\d+\.\s/.test(paragraph)) {
-      return paragraph;
-    }
-
-    // If paragraph starts with a hyphen, treat as a list item
-    if (/^-\s/.test(paragraph)) {
-      return paragraph;
-    }
-
-    // If paragraph contains common section keywords, format as a header
-    const sectionKeywords = [
-      "Overall Score",
-      "Justification",
-      "Strengths",
-      "Weaknesses",
-      "Specific Improvement Suggestions",
-      "Score:",
-    ];
-
-    for (const keyword of sectionKeywords) {
-      if (paragraph.includes(keyword)) {
-        return `### ${paragraph}`;
+    if (/^\d+\./.test(line)) {
+      const prevLine = formattedLines[formattedLines.length - 1];
+      const isPreviousAHeader = mainHeaders.some((header) => prevLine?.includes(`## ${header}`));
+      if (isPreviousAHeader && !formattedLines[formattedLines.length - 1]?.includes("- ")) {
+        formattedLines.push("");
       }
+      formattedLines.push(line.replace(/^\d+\.\s*/, "- "));
+      return;
     }
 
-    // Default: return as a regular paragraph
-    return paragraph;
+    if (line.length > 0) {
+      formattedLines.push(line);
+    }
   });
 
-  // Join with double newlines for proper Markdown paragraph spacing
-  return formattedParagraphs.join("\n\n");
+  return formattedLines.join("\n");
 }
