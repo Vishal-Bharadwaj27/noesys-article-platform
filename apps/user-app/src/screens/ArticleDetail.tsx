@@ -365,7 +365,10 @@ export default function ArticleDetail() {
         }),
       });
 
-      navigate("/my-articles");
+      setArticle({ ...article, status: "pending", version: article.version + 1 });
+      setCurrentScore(null);
+      setCurrentFeedback("");
+      setEditing(false);
     } catch (err) {
       setSubmitError(
         err instanceof Error ? err.message : "Failed to submit rewrite"
@@ -514,6 +517,8 @@ export default function ArticleDetail() {
                         <Loader2 size={16} className="animate-spin text-indigo-600" />
                         <span>Calculating score...</span>
                       </div>
+                    ) : article?.status === "failed" ? (
+                      <p className="text-sm text-red-600">Feedback generation failed. Please try again.</p>
                     ) : (
                       <>
                         <p className="text-3xl font-semibold text-slate-900">

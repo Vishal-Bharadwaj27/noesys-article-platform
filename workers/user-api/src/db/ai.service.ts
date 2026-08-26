@@ -40,7 +40,7 @@ Your justification here.
 `;
 
   const { output } = await generateText({
-   model: google("gemini-3.6-flash"),
+    model: google("gemini-2.5-flash-lite"),
     system: `${prompt}\n\n${markdownFormattingInstructions}`,
     prompt: `
 Title:
