@@ -3,7 +3,7 @@ export type ArticleHistory = {
   article_id: string;
   article_type_id: string;
   title: string;
-  ai_feedback: string;
+  ai_feedback: string | null;
   content: string;
   ai_score: number | null;
   version: number;
