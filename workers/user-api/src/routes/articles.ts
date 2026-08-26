@@ -297,7 +297,7 @@ articleRoutes.post("/", async (c) => {
       article_type_id,
       title,
       content,
-      status: "processing",
+      status: "pending",
       version: 1,
       submitted_at: now,
       month_year,
@@ -328,6 +328,7 @@ articleRoutes.post("/", async (c) => {
       message: "Article submitted and evaluated",
       data: {
         id: articleId,
+        // status: "pending",
         status: finalArticle?.status || "failed",
         ai_score: finalArticle?.ai_score ?? null,
         ai_feedback: finalArticle?.ai_feedback ?? null,

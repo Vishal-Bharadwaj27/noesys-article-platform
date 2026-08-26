@@ -15,17 +15,12 @@ import {
   Col,
 } from "antd";
 import type { ColumnsType, TableProps } from "antd/es/table";
-import {
-  ClockCircleOutlined,
-  SearchOutlined,
-} from "@ant-design/icons";
+import { ClockCircleOutlined, SearchOutlined } from "@ant-design/icons";
 import { Resizable } from "react-resizable";
 import "react-resizable/css/styles.css";
 
-import type {
-  ArticleStatus,
-  ArticleSummary,
-} from "./ArticlesRow";
+import type { ArticleStatus, ArticleSummary } from "./ArticlesRow";
+import { useParams } from "react-router-dom";
 
 const { Text } = Typography;
 
@@ -50,6 +45,10 @@ const STATUS_CONFIG: Record<
     color: "gold",
     label: "Pending",
     icon: true,
+  },
+  failed: {
+    color: "blue",
+    label: "failed",
   },
 };
 
@@ -103,8 +102,7 @@ const ResizeableTitle = ({
   width,
   children,
   ...restProps
-}: ResizeableTitleProps &
-  React.HTMLAttributes<HTMLTableHeaderCellElement>) => {
+}: ResizeableTitleProps & React.HTMLAttributes<HTMLTableHeaderCellElement>) => {
   if (!width || typeof width !== "number") {
     return <th {...restProps}>{children}</th>;
   }
@@ -156,19 +154,15 @@ function ArticleParameters({
   );
 }
 
-function ArticlesTableInner({
-  articles,
-  onRowClick,
-}: ArticlesTableProps) {
-  const [columns, setColumns] = useState<
-    ColumnsType<ArticleSummary>
-  >([]);
+function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
+  const [columns, setColumns] = useState<ColumnsType<ArticleSummary>>([]);
+
+  const { id } = useParams();
 
   const [titleFilter, setTitleFilter] = useState("");
   const [authorFilter, setAuthorFilter] = useState("");
 
-  const [visibleRows, setVisibleRows] =
-    useState<ArticleSummary[]>(articles);
+  const [visibleRows, setVisibleRows] = useState<ArticleSummary[]>(articles);
 
   useEffect(() => {
     setVisibleRows(articles);
@@ -185,9 +179,7 @@ function ArticlesTableInner({
 
       const matchesAuthor =
         !normalizedAuthor ||
-        article.author_name
-          .toLowerCase()
-          .includes(normalizedAuthor);
+        article.author_name.toLowerCase().includes(normalizedAuthor);
 
       return matchesTitle && matchesAuthor;
     });
@@ -212,16 +204,12 @@ function ArticlesTableInner({
       (article) => article.status === "rewrite_required",
     ).length;
 
-    const scored = visibleRows.filter(
-      (article) => article.ai_score !== null,
-    );
+    const scored = visibleRows.filter((article) => article.ai_score !== null);
 
     const averageScore =
       scored.length > 0
-        ? scored.reduce(
-            (sum, article) => sum + (article.ai_score ?? 0),
-            0,
-          ) / scored.length
+        ? scored.reduce((sum, article) => sum + (article.ai_score ?? 0), 0) /
+          scored.length
         : null;
 
     return {
@@ -245,8 +233,7 @@ function ArticlesTableInner({
         render: (title: string) => (
           <Text
             style={{
-              color:
-                "var(--ant-color-link, #2f54eb)",
+              color: "var(--ant-color-link, #2f54eb)",
               fontWeight: 500,
             }}
           >
@@ -283,9 +270,7 @@ function ArticlesTableInner({
         dataIndex: "article_type_name",
         key: "type",
         width: 170,
-        render: (type: string) => (
-          <Tag bordered={false}>{type}</Tag>
-        ),
+        render: (type: string) => <Tag bordered={false}>{type}</Tag>,
       },
 
       {
@@ -293,9 +278,7 @@ function ArticlesTableInner({
         dataIndex: "parameters",
         key: "parameters",
         width: 320,
-        render: (
-          parameters: ArticleSummary["parameters"],
-        ) => (
+        render: (parameters: ArticleSummary["parameters"]) => (
           <ArticleParameters parameters={parameters} />
         ),
       },
@@ -311,11 +294,7 @@ function ArticlesTableInner({
           return (
             <Tag
               color={cfg.color}
-              icon={
-                cfg.icon ? (
-                  <ClockCircleOutlined />
-                ) : undefined
-              }
+              icon={cfg.icon ? <ClockCircleOutlined /> : undefined}
             >
               {cfg.label}
             </Tag>
@@ -328,11 +307,7 @@ function ArticlesTableInner({
         dataIndex: "version",
         key: "version",
         width: 105,
-        render: (version: number) => (
-          <Text type="secondary">
-            v{version}
-          </Text>
-        ),
+        render: (version: number) => <Text type="secondary">v{version}</Text>,
         // sorter: (a, b) =>
         //   a.version - b.version,
       },
@@ -351,12 +326,7 @@ function ArticlesTableInner({
           ) : (
             <Space size={8} align="center">
               <Progress
-                percent={
-                  Math.min(
-                    Math.max(score, 0),
-                    10,
-                  ) * 10
-                }
+                percent={Math.min(Math.max(score, 0), 10) * 10}
                 size="small"
                 showInfo={false}
                 strokeColor={scoreColor(score)}
@@ -384,9 +354,7 @@ function ArticlesTableInner({
         key: "created_at",
         width: 135,
         render: (date: string) => (
-          <Text type="secondary">
-            {formatDate(date)}
-          </Text>
+          <Text type="secondary">{formatDate(date)}</Text>
         ),
         // sorter: (a, b) =>
         //   new Date(a.created_at).getTime() -
@@ -423,26 +391,26 @@ function ArticlesTableInner({
       });
     };
 
-  const mergedColumns = columns.map(
-    (column, index) => ({
-      ...column,
-      ...(typeof column.width === "number"
-        ? {
-            onHeaderCell: () => ({
-              width: column.width,
-              onResize: handleResize(index),
-            }),
-          }
-        : {}),
-    }),
-  );
+  const mergedColumns = columns.map((column, index) => ({
+    ...column,
+    ...(typeof column.width === "number"
+      ? {
+          onHeaderCell: () => ({
+            width: column.width,
+            onResize: handleResize(index),
+          }),
+        }
+      : {}),
+  }));
 
-  const handleTableChange: TableProps<ArticleSummary>["onChange"] =
-    (_, __, ___, extra) => {
-      setVisibleRows(
-        extra.currentDataSource ?? locallyFilteredArticles,
-      );
-    };
+  const handleTableChange: TableProps<ArticleSummary>["onChange"] = (
+    _,
+    __,
+    ___,
+    extra,
+  ) => {
+    setVisibleRows(extra.currentDataSource ?? locallyFilteredArticles);
+  };
 
   return (
     <div className="space-y-4">
@@ -450,21 +418,15 @@ function ArticlesTableInner({
       <Row gutter={[12, 12]}>
         <Col xs={24} sm={12} md={8} lg={4}>
           <Card size="small">
-            <Text type="secondary">
-              Total Articles
-            </Text>
+            <Text type="secondary">Total Articles</Text>
 
-            <div className="text-2xl font-semibold mt-1">
-              {dashboard.total}
-            </div>
+            <div className="text-2xl font-semibold mt-1">{dashboard.total}</div>
           </Card>
         </Col>
 
         <Col xs={24} sm={12} md={8} lg={5}>
           <Card size="small">
-            <Text type="secondary">
-              Approved
-            </Text>
+            <Text type="secondary">Approved</Text>
 
             <div className="text-2xl font-semibold text-emerald-600 mt-1">
               {dashboard.approved}
@@ -474,9 +436,7 @@ function ArticlesTableInner({
 
         <Col xs={24} sm={12} md={8} lg={5}>
           <Card size="small">
-            <Text type="secondary">
-              Pending
-            </Text>
+            <Text type="secondary">Pending</Text>
 
             <div className="text-2xl font-semibold text-amber-600 mt-1">
               {dashboard.pending}
@@ -486,9 +446,7 @@ function ArticlesTableInner({
 
         <Col xs={24} sm={12} md={8} lg={5}>
           <Card size="small">
-            <Text type="secondary">
-              Rewrite Required
-            </Text>
+            <Text type="secondary">Rewrite Required</Text>
 
             <div className="text-2xl font-semibold text-red-600 mt-1">
               {dashboard.rewriteRequired}
@@ -498,9 +456,7 @@ function ArticlesTableInner({
 
         <Col xs={24} sm={12} md={8} lg={5}>
           <Card size="small">
-            <Text type="secondary">
-              Average AI Score
-            </Text>
+            <Text type="secondary">Average AI Score</Text>
 
             <div className="text-2xl font-semibold mt-1">
               {dashboard.averageScore === null
@@ -516,33 +472,29 @@ function ArticlesTableInner({
         <Input
           allowClear
           value={titleFilter}
-          onChange={(event) =>
-            setTitleFilter(event.target.value)
-          }
+          onChange={(event) => setTitleFilter(event.target.value)}
           placeholder="Search title..."
           prefix={<SearchOutlined />}
           className="w-[240px]"
         />
 
-        <Input
-          allowClear
-          value={authorFilter}
-          onChange={(event) =>
-            setAuthorFilter(event.target.value)
-          }
-          placeholder="Search author..."
-          prefix={<SearchOutlined />}
-          className="w-[240px]"
-        />
+        {!id && (
+          <Input
+            allowClear
+            value={authorFilter}
+            onChange={(event) => setAuthorFilter(event.target.value)}
+            placeholder="Search author..."
+            prefix={<SearchOutlined />}
+            className="w-[240px]"
+          />
+        )}
       </div>
 
       {/* Table */}
       <div
         style={{
-          background:
-            "var(--ant-color-bg-container)",
-          border:
-            "1px solid var(--ant-color-border-secondary)",
+          background: "var(--ant-color-bg-container)",
+          border: "1px solid var(--ant-color-border-secondary)",
           borderRadius: 12,
           overflow: "hidden",
         }}
@@ -553,18 +505,14 @@ function ArticlesTableInner({
             alignItems: "center",
             justifyContent: "space-between",
             padding: "16px 20px",
-            borderBottom:
-              "1px solid var(--ant-color-border-secondary)",
+            borderBottom: "1px solid var(--ant-color-border-secondary)",
           }}
         >
           <Text strong style={{ fontSize: 15 }}>
             Articles
           </Text>
 
-          <Text
-            type="secondary"
-            style={{ fontSize: 12 }}
-          >
+          <Text type="secondary" style={{ fontSize: 12 }}>
             {visibleRows.length} shown
           </Text>
         </div>
@@ -587,18 +535,13 @@ function ArticlesTableInner({
           }}
           onChange={handleTableChange}
           onRow={(record) => ({
-            onClick: () =>
-              onRowClick?.(record.id),
+            onClick: () => onRowClick?.(record.id),
             style: {
-              cursor: onRowClick
-                ? "pointer"
-                : "default",
+              cursor: onRowClick ? "pointer" : "default",
             },
           })}
           locale={{
-            emptyText: (
-              <Empty description="No articles found" />
-            ),
+            emptyText: <Empty description="No articles found" />,
           }}
         />
       </div>
@@ -606,14 +549,11 @@ function ArticlesTableInner({
   );
 }
 
-export default function ArticlesTable(
-  props: ArticlesTableProps,
-) {
+export default function ArticlesTable(props: ArticlesTableProps) {
   return (
     <ConfigProvider
       theme={{
-        algorithm:
-          antdTheme.defaultAlgorithm,
+        algorithm: antdTheme.defaultAlgorithm,
         token: {
           colorPrimary: "#534ab7",
           borderRadius: 8,

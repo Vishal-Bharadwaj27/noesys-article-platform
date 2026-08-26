@@ -1,6 +1,11 @@
 import { Clock } from "lucide-react";
 
-export type ArticleStatus = "approved" | "rewrite_required" | "pending";
+export type ArticleStatus =
+  | "approved"
+  | "rewrite_required"
+  | "pending"
+  | "failed";
+
 
 export type ArticleParameterResult = {
   parameterId: string;
@@ -32,12 +37,14 @@ const STATUS_STYLES: Record<ArticleStatus, string> = {
   approved: "bg-indigo-50 text-indigo-700",
   rewrite_required: "bg-red-50 text-red-600",
   pending: "bg-amber-50 text-amber-700",
+  failed: "bg-red",
 };
 
 const STATUS_LABELS: Record<ArticleStatus, string> = {
   approved: "Approved",
   rewrite_required: "Rewrite Required",
   pending: "Pending",
+  failed: "failed"
 };
 
 function scoreColor(score: number) {
@@ -75,10 +82,7 @@ function formatDate(dateStr: string) {
   });
 }
 
-export default function ArticleRow({
-  article,
-  onClick,
-}: ArticleRowProps) {
+export default function ArticleRow({ article, onClick }: ArticleRowProps) {
   const {
     title,
     type,
@@ -104,17 +108,11 @@ export default function ArticleRow({
         {title}
       </span>
 
-      <span className="text-slate-500 text-sm truncate">
-        {type}
-      </span>
+      <span className="text-slate-500 text-sm truncate">{type}</span>
 
-      <span className="text-slate-500 text-sm">
-        v{version}
-      </span>
+      <span className="text-slate-500 text-sm">v{version}</span>
 
-      <span className="text-slate-600 text-sm truncate">
-        {author_name}
-      </span>
+      <span className="text-slate-600 text-sm truncate">{author_name}</span>
 
       <div className="flex flex-wrap gap-1.5">
         {parameters?.length ? (
@@ -162,9 +160,7 @@ export default function ArticleRow({
           {STATUS_LABELS[status]}
         </span>
 
-        <span className="text-slate-400 text-sm">
-          {formatDate(created_at)}
-        </span>
+        <span className="text-slate-400 text-sm">{formatDate(created_at)}</span>
       </div>
     </div>
   );
