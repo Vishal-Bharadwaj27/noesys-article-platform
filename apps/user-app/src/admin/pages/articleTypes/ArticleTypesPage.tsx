@@ -6,13 +6,6 @@ import { tokenStorage } from "@/http-client";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
-type ArticleTypeFormData = {
-  name: string;
-  description: string;
-  promptContent: string;
-  parameters?: unknown[];
-};
-
 const DEFAULT_SCORE_MIN = 0;
 const DEFAULT_SCORE_MAX = 10;
 const DEFAULT_PASS_THRESHOLD = 7;

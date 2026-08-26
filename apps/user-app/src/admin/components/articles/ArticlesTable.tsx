@@ -333,18 +333,18 @@ function ArticlesTableInner({
             v{version}
           </Text>
         ),
-        sorter: (a, b) =>
-          a.version - b.version,
+        // sorter: (a, b) =>
+        //   a.version - b.version,
       },
 
       {
         title: "AI Score",
         dataIndex: "ai_score",
         key: "ai_score",
-        width: 165,
-        sorter: (a, b) =>
-          (a.ai_score ?? -1) -
-          (b.ai_score ?? -1),
+        // width: 165,
+        // sorter: (a, b) =>
+        //   (a.ai_score ?? -1) -
+        //   (b.ai_score ?? -1),
         render: (score: number | null) =>
           score === null ? (
             <Text type="secondary">—</Text>
@@ -388,9 +388,9 @@ function ArticlesTableInner({
             {formatDate(date)}
           </Text>
         ),
-        sorter: (a, b) =>
-          new Date(a.created_at).getTime() -
-          new Date(b.created_at).getTime(),
+        // sorter: (a, b) =>
+        //   new Date(a.created_at).getTime() -
+        //   new Date(b.created_at).getTime(),
         defaultSortOrder: "descend",
       },
     ];

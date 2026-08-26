@@ -23,7 +23,6 @@ function generateOtpCode(): string {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
 authRoutes.post("/otp/request", async (c) => {
-  console.log("HERE")
   let body: { email?: string };
 
   try {
