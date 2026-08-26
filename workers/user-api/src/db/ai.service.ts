@@ -1,5 +1,5 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { generateText, Output } from "ai";
+import { generateObject } from "ai";
 import { ArticleEvaluationSchema } from "../schemas/articleEvaluation.schema";
 
 export async function evaluateArticle(
@@ -39,8 +39,8 @@ Example format:
 Your justification here.
 `;
 
-  const { output } = await generateText({
-   model: google("gemini-3.6-flash"),
+  const { object } = await generateObject({
+    model: google("gemini-2.0-flash"),
     system: `${prompt}\n\n${markdownFormattingInstructions}`,
     prompt: `
 Title:
@@ -51,10 +51,8 @@ Article:
 
 ${content}
 `,
-    output: Output.object({
-      schema: ArticleEvaluationSchema,
-    }),
+    schema: ArticleEvaluationSchema,
   });
 
-  return output;
+  return object;
 }
