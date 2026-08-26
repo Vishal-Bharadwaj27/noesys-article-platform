@@ -454,7 +454,7 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
           </Card>
         </Col>
 
-        <Col xs={24} sm={12} md={8} lg={5}>
+        {/* <Col xs={24} sm={12} md={8} lg={5}>
           <Card size="small">
             <Text type="secondary">Average AI Score</Text>
 
@@ -464,7 +464,7 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
                 : dashboard.averageScore.toFixed(1)}
             </div>
           </Card>
-        </Col>
+        </Col> */}
       </Row>
 
       {/* Local search */}
