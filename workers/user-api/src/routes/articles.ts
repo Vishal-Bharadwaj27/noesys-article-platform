@@ -259,59 +259,32 @@ articleRoutes.post("/", async (c) => {
 
     articleId = requestedId;
 
-    c.executionCtx.waitUntil(
-      (async () => {
-        const prompt = await getPromptForArticleType(
-          db,
-          article_type_id,
-        );
-
-        if (!prompt) {
-          await updateArticleStatus(
-            db,
-            articleId,
-            "failed",
-          );
-          return;
-        }
-
-        try {
-          const evaluation = await evaluateArticle(
-            c.env.GOOGLE_GENERATIVE_AI_API_KEY,
-            prompt,
-            title,
-            content,
-          );
-
-          const status =
-            evaluation.score >= 7
-              ? "approved"
-              : "rewrite_required";
-
-          await updateEvaluation(
-            db,
-            articleId,
-            evaluation.score,
-            evaluation.feedback,
-            status,
-          );
-        } catch (err) {
-          console.error("Gemini Error:", err);
-
-          await updateArticleStatus(
-            db,
-            articleId,
-            "failed",
-          );
-        }
-      })(),
-    );
-
+    // Synchronous evaluation - ensures score/feedback before workers isolate shuts down
+    // (waitUntil is unreliable for D1 writes on some runtimes)
+    const prompt = await getPromptForArticleType(db, article_type_id);
+    if (!prompt) {
+      await db.prepare(`UPDATE articles SET status='failed', ai_feedback=? WHERE id=?`).bind("Prompt not found for article type: " + article_type_id, articleId).run();
+    } else {
+      try {
+        const apiKey = (c.env as any).GOOGLE_GENERATIVE_AI_API_KEY || (c.env as any).GOOGLE_API_KEY || "";
+        if (!apiKey) throw new Error("GOOGLE_GENERATIVE_AI_API_KEY not set in worker secrets. Run: wrangler secret put GOOGLE_GENERATIVE_AI_API_KEY");
+        const evaluation = await evaluateArticle(apiKey, prompt, title, content);
+        const status = evaluation.score >= 7 ? "approved" : "rewrite_required";
+        await updateEvaluation(db, articleId, evaluation.score, evaluation.feedback, status);
+      } catch (err: any) {
+        const msg = err?.message || String(err);
+        console.error("Gemini Error (rewrite):", msg, err);
+        await db.prepare(`UPDATE articles SET status='failed', ai_feedback=? WHERE id=?`).bind(`AI evaluation failed: ${msg}`.slice(0, 2000), articleId).run();
+      }
+    }
+    const finalArticle = await getArticleById(db, articleId, user.id);
     return c.json({
-      message: "Article rewrite submitted successfully",
+      message: "Article rewrite evaluated",
       data: {
         id: articleId,
-        status: "pending",
+        status: finalArticle?.status || "failed",
+        ai_score: finalArticle?.ai_score ?? null,
+        ai_feedback: finalArticle?.ai_feedback ?? null,
       },
     });
   } else {
@@ -333,59 +306,31 @@ articleRoutes.post("/", async (c) => {
 
     articleId = newId;
 
-    c.executionCtx.waitUntil(
-      (async () => {
-        const prompt = await getPromptForArticleType(
-          db,
-          article_type_id,
-        );
-
-        if (!prompt) {
-          await updateArticleStatus(
-            db,
-            articleId,
-            "failed",
-          );
-          return;
-        }
-
-        try {
-          const evaluation = await evaluateArticle(
-            c.env.GOOGLE_GENERATIVE_AI_API_KEY,
-            prompt,
-            title,
-            content,
-          );
-
-          const status =
-            evaluation.score >= 7
-              ? "approved"
-              : "rewrite_required";
-
-          await updateEvaluation(
-            db,
-            articleId,
-            evaluation.score,
-            evaluation.feedback,
-            status,
-          );
-        } catch (err) {
-          console.error("Gemini Error:", err);
-
-          await updateArticleStatus(
-            db,
-            articleId,
-            "failed",
-          );
-        }
-      })(),
-    );
-
+    // Synchronous evaluation for new article
+    const prompt = await getPromptForArticleType(db, article_type_id);
+    if (!prompt) {
+      await db.prepare(`UPDATE articles SET status='failed', ai_feedback=? WHERE id=?`).bind("Prompt not found for article type: " + article_type_id, articleId).run();
+    } else {
+      try {
+        const apiKey = (c.env as any).GOOGLE_GENERATIVE_AI_API_KEY || (c.env as any).GOOGLE_API_KEY || "";
+        if (!apiKey) throw new Error("GOOGLE_GENERATIVE_AI_API_KEY not set in worker secrets. Run: wrangler secret put GOOGLE_GENERATIVE_AI_API_KEY");
+        const evaluation = await evaluateArticle(apiKey, prompt, title, content);
+        const status = evaluation.score >= 7 ? "approved" : "rewrite_required";
+        await updateEvaluation(db, articleId, evaluation.score, evaluation.feedback, status);
+      } catch (err: any) {
+        const msg = err?.message || String(err);
+        console.error("Gemini Error (new):", msg, err);
+        await db.prepare(`UPDATE articles SET status='failed', ai_feedback=? WHERE id=?`).bind(`AI evaluation failed: ${msg}`.slice(0, 2000), articleId).run();
+      }
+    }
+    const finalArticle = await getArticleById(db, articleId, user.id);
     return c.json({
-      message: "Article submitted successfully",
+      message: "Article submitted and evaluated",
       data: {
         id: articleId,
-        status: "processing",
+        status: finalArticle?.status || "failed",
+        ai_score: finalArticle?.ai_score ?? null,
+        ai_feedback: finalArticle?.ai_feedback ?? null,
       },
     });
   }
