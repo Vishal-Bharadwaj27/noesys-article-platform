@@ -14,7 +14,7 @@ export async function getPromptForArticleType(
     .first<{ content: string }>();
 
   if (!result) {
-    throw new Error("Prompt not found for article type");
+    return null;
   }
 
   return result.content;

@@ -365,7 +365,10 @@ export default function ArticleDetail() {
         }),
       });
 
-      navigate("/my-articles");
+      setArticle({ ...article, status: "pending", version: article.version + 1 });
+      setCurrentScore(null);
+      setCurrentFeedback("");
+      setEditing(false);
     } catch (err) {
       setSubmitError(
         err instanceof Error ? err.message : "Failed to submit rewrite"
@@ -509,24 +512,35 @@ export default function ArticleDetail() {
                   </p>
 
                   <div className="flex items-center gap-3">
-                    <p className="text-3xl font-semibold text-slate-900">
-                      {hasScore ? currentScore!.toFixed(1) : "—"}
-
-                      <span className="text-base text-slate-400 font-normal">
-                        {" "}
-                        / 10
-                      </span>
-                    </p>
-
-                    {hasScore && (
-                      <div className="flex-1 h-2 rounded-full bg-slate-200 overflow-hidden">
-                        <div
-                          className={`h-full rounded-full ${colors!.bar}`}
-                          style={{
-                            width: `${(Math.min(currentScore!, 10) / 10) * 100}%`,
-                          }}
-                        />
+                    {article?.status === "pending" || article?.status === "processing" ? (
+                      <div className="flex items-center gap-2 text-sm text-slate-500 py-1">
+                        <Loader2 size={16} className="animate-spin text-indigo-600" />
+                        <span>Calculating score...</span>
                       </div>
+                    ) : article?.status === "failed" ? (
+                      <p className="text-sm text-red-600">Feedback generation failed. Please try again.</p>
+                    ) : (
+                      <>
+                        <p className="text-3xl font-semibold text-slate-900">
+                          {hasScore ? currentScore!.toFixed(1) : "—"}
+
+                          <span className="text-base text-slate-400 font-normal">
+                            {" "}
+                            / 10
+                          </span>
+                        </p>
+
+                        {hasScore && (
+                          <div className="flex-1 h-2 rounded-full bg-slate-200 overflow-hidden">
+                            <div
+                              className={`h-full rounded-full ${colors!.bar}`}
+                              style={{
+                                width: `${(Math.min(currentScore!, 10) / 10) * 100}%`,
+                              }}
+                            />
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
@@ -542,11 +556,18 @@ export default function ArticleDetail() {
                     )}
                   </div>
 
-                  <FeedbackBlock
-                    feedback={
-                      currentFeedback || "No feedback available yet."
-                    }
-                  />
+                  {article?.status === "pending" || article?.status === "processing" ? (
+                    <div className="flex items-center gap-2 text-sm text-slate-500 py-2 bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+                      <Loader2 size={16} className="animate-spin text-indigo-600" />
+                      <span>Generating AI feedback (this may take up to 30 seconds)...</span>
+                    </div>
+                  ) : (
+                    <FeedbackBlock
+                      feedback={
+                        currentFeedback || "No feedback available yet."
+                      }
+                    />
+                  )}
                 </div>
               </div>
             </div>
