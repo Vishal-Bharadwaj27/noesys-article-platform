@@ -1,5 +1,5 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { generateObject } from "ai";
+import { generateText, Output } from "ai";
 import { ArticleEvaluationSchema } from "../schemas/articleEvaluation.schema";
 
 export async function evaluateArticle(
@@ -11,6 +11,7 @@ export async function evaluateArticle(
   if (!apiKey) {
     throw new Error("Google Generative AI API key is missing.");
   }
+  console.log(apiKey)
 
   const google = createGoogleGenerativeAI({
     apiKey,
@@ -39,8 +40,8 @@ Example format:
 Your justification here.
 `;
 
-  const { object } = await generateObject({
-    model: google("gemini-2.5-flash"),
+  const { output } = await generateText({
+   model: google("gemini-3.6-flash"),
     system: `${prompt}\n\n${markdownFormattingInstructions}`,
     prompt: `
 Title:
@@ -51,8 +52,10 @@ Article:
 
 ${content}
 `,
-    schema: ArticleEvaluationSchema,
+    output: Output.object({
+      schema: ArticleEvaluationSchema,
+    }),
   });
 
-  return object;
+  return output;
 }
