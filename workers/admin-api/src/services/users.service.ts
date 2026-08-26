@@ -162,72 +162,88 @@ export async function updateUserAuthRole(
   }
 }
 
-export async function getUserArticles(
+export async function getArticlesByUser(
   db: D1Database,
   userId: string,
   month?: string,
   status?: string,
+  type?: string,
 ) {
-  const user = await db
-    .prepare(
-      `
-      SELECT
-        id,
-        name,
-        email,
-        job_role,
-        auth_role
-      FROM users
-      WHERE id = ?
-      `,
-    )
-    .bind(userId)
-    .first();
-
-  if (!user) {
-    return null;
-  }
-
   const conditions = ["a.user_id = ?"];
-  const bindings: (string | number)[] = [userId];
+  const params: unknown[] = [userId];
+
+  if (month) {
+    conditions.push("a.month_year = ?");
+    params.push(month);
+  }
 
   if (status) {
     conditions.push("a.status = ?");
-    bindings.push(status);
+    params.push(status);
   }
 
-  if (month) {
-    conditions.push("strftime('%Y-%m', a.submitted_at) = ?");
-    bindings.push(month);
+  if (type) {
+    conditions.push("a.article_type_id = ?");
+    params.push(type);
   }
 
-  const result = await db
+  const sql = `
+    SELECT
+      a.id,
+      a.title,
+      a.status,
+      a.ai_score,
+      a.version,
+      a.submitted_at,
+
+      a.user_id,
+
+      u.name AS author_name,
+
+      at.id AS article_type_id,
+      at.name AS article_type_name
+
+    FROM articles a
+
+    JOIN users u
+      ON u.id = a.user_id
+
+    JOIN article_types at
+      ON at.id = a.article_type_id
+
+    WHERE ${conditions.join(" AND ")}
+
+    ORDER BY a.submitted_at DESC
+  `;
+
+  const results = (
+    await db
+      .prepare(sql)
+      .bind(...params)
+      .all()
+  ).results as any[];
+
+  return results.map((article) => ({
+    ...article,
+
+    // keep same shape as All Articles page
+    parameters: [],
+  }));
+}
+
+export async function updateUserStatus(
+  db: D1Database,
+  id: string,
+  isActive: boolean,
+) {
+  return db
     .prepare(
       `
-      SELECT
-        a.id,
-        a.title,
-        at.name AS type,
-        a.version,
-        a.ai_score,
-        a.status,
-        a.submitted_at AS created_at,
-        u.name AS author_name,
-        u.email AS author_email
-      FROM articles a
-      INNER JOIN users u
-        ON u.id = a.user_id
-      INNER JOIN article_types at
-        ON at.id = a.article_type_id
-      WHERE ${conditions.join(" AND ")}
-      ORDER BY a.submitted_at DESC
-      `,
+      UPDATE users
+      SET is_active = ?
+      WHERE id = ?
+    `,
     )
-    .bind(...bindings)
-    .all();
-
-  return {
-    user,
-    articles: result.results,
-  };
+    .bind(isActive ? 1 : 0, id)
+    .run();
 }

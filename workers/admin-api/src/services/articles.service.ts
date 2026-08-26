@@ -16,57 +16,93 @@ export async function getArticles(
   db: D1Database,
   month?: string,
   status?: string,
+  type?: string,
 ) {
-  let sql = `
-    SELECT
-      a.id,
-      a.title,
-
-      at.name AS type,
-
-      a.version,
-      a.ai_score,
-      a.status,
-
-      a.submitted_at AS created_at,
-
-      u.name AS author_name
-
-    FROM articles a
-
-    INNER JOIN users u
-      ON u.id = a.user_id
-
-    INNER JOIN article_types at
-      ON at.id = a.article_type_id
-
-    WHERE 1 = 1
-  `;
-
-  const bindings: string[] = [];
+  const conditions: string[] = [];
+  const params: unknown[] = [];
 
   if (month) {
-    sql += ` AND a.month_year = ?`;
-    bindings.push(month);
+    conditions.push("a.month_year = ?");
+    params.push(month);
   }
 
   if (status) {
-    sql += ` AND a.status = ?`;
-    bindings.push(status);
+    conditions.push("a.status = ?");
+    params.push(status);
   }
 
-  sql += `
+  if (type) {
+    conditions.push("a.article_type_id = ?");
+    params.push(type);
+  }
+
+  const whereClause =
+    conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+
+  const sql = `
+    SELECT
+      a.id,
+      a.title,
+      a.status,
+      a.ai_score,
+      a.version,
+      a.submitted_at,
+
+      u.id AS user_id,
+      u.name AS author_name,
+
+      at.id AS article_type_id,
+      at.name AS article_type_name,
+
+      json_group_array(
+        CASE
+          WHEN p.id IS NOT NULL THEN
+            json_object(
+              'parameterId', p.id,
+              'parameterName', p.name,
+              'scopeType', p.scope_type,
+              'value', apr.value
+            )
+        END
+      ) AS parameters
+
+    FROM articles a
+
+    JOIN users u
+      ON u.id = a.user_id
+
+    JOIN article_types at
+      ON at.id = a.article_type_id
+
+    LEFT JOIN article_parameter_results apr
+      ON apr.article_id = a.id
+      AND apr.version = a.version
+
+    LEFT JOIN parameters p
+      ON p.id = apr.parameter_id
+
+    ${whereClause}
+
+    GROUP BY
+      a.id,
+      u.id,
+      at.id
+
     ORDER BY a.submitted_at DESC
   `;
 
   const result = await db
     .prepare(sql)
-    .bind(...bindings)
+    .bind(...params)
     .all();
 
-  return result.results;
+  return result.results.map((row: any) => ({
+    ...row,
+    parameters: row.parameters
+      ? JSON.parse(row.parameters).filter(Boolean)
+      : [],
+  }));
 }
-
 export async function getArticleById(db: D1Database, id: string) {
   const article = await db
     .prepare(
@@ -121,4 +157,52 @@ export async function getArticleById(db: D1Database, id: string) {
     ...article,
     history: history.results,
   };
+}
+
+function currentMonthYear() {
+  return new Date().toISOString().slice(0, 7);
+}
+
+export async function getArticleStats(db: D1Database, month?: string) {
+  const targetMonth = month || currentMonthYear();
+
+  const sql = `
+    SELECT
+
+      COUNT(*) AS total_articles,
+
+      SUM(
+        CASE
+          WHEN status = 'approved'
+          THEN 1
+          ELSE 0
+        END
+      ) AS approved,
+
+      SUM(
+        CASE
+          WHEN status = 'rewrite_required'
+          THEN 1
+          ELSE 0
+        END
+      ) AS rewrite_required,
+
+      SUM(
+        CASE
+          WHEN status = 'pending'
+          THEN 1
+          ELSE 0
+        END
+      ) AS pending,
+
+      ROUND(AVG(ai_score), 2) AS average_score
+
+    FROM articles
+
+    WHERE month_year = ?
+  `;
+
+  const result = await db.prepare(sql).bind(targetMonth).first();
+
+  return result;
 }

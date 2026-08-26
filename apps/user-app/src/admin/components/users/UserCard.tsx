@@ -164,12 +164,12 @@ export default function UserCard({
             </button>
           )}
 
-          <button
+          {(user.auth_role === 'user') && <button
             className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium bg-indigo-50 text-indigo-700 hover:bg"
             onClick={() => onUserClick?.(user.id)}
           >
             View user articles
-          </button>
+          </button>}
 
           {user.auth_role === "admin" && (
             <>

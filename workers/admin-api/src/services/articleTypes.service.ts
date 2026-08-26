@@ -1,42 +1,56 @@
-export default async function getArticleTypes(db: D1Database) {
+export async function getArticleTypes(db: D1Database) {
   const sql = `
-   
-  SELECT
-  at.id,
-  at.name,
-  at.description,
-  at.pass_threshold,
-  at.score_prompt,
-  at.score_max,
-  at.is_active,
-  json_group_array(
-    json_object(
-      'id', p.id,
-      'name', p.name,
-      'scopeType', p.scope_type,
-      'options', p.options
-    )
-  ) AS parameters
-FROM article_types at
-LEFT JOIN parameters p
-  ON p.article_type_id = at.id
-  AND p.is_active = 1
-WHERE at.is_active = 1
-GROUP BY
-  at.id,
-  at.name,
-  at.description,
-  at.pass_threshold,
-  at.score_prompt,
-  at.score_max,
-  at.is_active;`;
+    SELECT
+      at.id,
+      at.name,
+      at.description,
+      at.is_active,
+      at.pass_threshold,
+      at.score_prompt,
+      at.score_max,
+      at.created_by,
+      at.created_at,
+      at.updated_at,
 
-  const data = await db.prepare(sql).all();
-  console.log(data.results);
-  return data.results.map((row: any) => ({
+      COALESCE(
+        json_group_array(
+          CASE
+            WHEN p.id IS NOT NULL THEN json_object(
+              'id', p.id,
+              'name', p.name,
+              'scopeType', p.scope_type,
+              'options', p.options
+            )
+          END
+        ),
+        '[]'
+      ) as parameters,
+
+      COUNT(p.id) as parameter_count
+
+    FROM article_types at
+    LEFT JOIN parameters p
+      ON p.article_type_id = at.id
+      AND p.is_active = 1
+
+    WHERE at.is_active = 1
+
+    GROUP BY at.id
+
+    ORDER BY at.name ASC
+  `;
+
+  const result = await db.prepare(sql).all();
+
+  return result.results.map((row: any) => ({
     ...row,
 
-    parameters: JSON.parse(row.parameters ?? "[]").filter((p: any) => p?.id),
+    parameters:
+      typeof row.parameters === "string"
+        ? JSON.parse(row.parameters).filter(Boolean)
+        : [],
+
+    parameter_count: Number(row.parameter_count),
   }));
 }
 
