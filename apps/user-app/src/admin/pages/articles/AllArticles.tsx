@@ -1,7 +1,6 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import ArticlesTable from "../../components/articles/ArticlesTable";
 import type {
-  ArticleStatus,
   ArticleSummary,
 } from "../../components/articles/ArticlesRow";
 import { useNavigate, useParams } from "react-router-dom";
@@ -40,9 +39,10 @@ const AllArticles = () => {
   const navigate = useNavigate();
 
   const [articles, setArticles] = useState<ArticleSummary[]>([]);
-  console.log("articles", articles);
 
   const [articleTypes, setArticleTypes] = useState<ArticleTypeOption[]>([]);
+
+  const [aiScore, setAiScore] = useState("default");
 
   const [userName, setUserName] = useState("");
 
@@ -144,7 +144,48 @@ const AllArticles = () => {
 
     setSelectedMonth(date.startOf("month"));
   };
-  console.log(articles)
+  const [sortBy, setSortBy] = useState("created_desc");
+
+  const displayedArticles = useMemo(() => {
+    const sorted = [...articles];
+    console.log(sorted)
+    switch (sortBy) {
+      case "score_desc":
+        sorted.sort((a, b) => (b.ai_score ?? -1) - (a.ai_score ?? -1));
+        break;
+
+      case "score_asc":
+        sorted.sort((a, b) => (a.ai_score ?? -1) - (b.ai_score ?? -1));
+        break;
+
+      case "version_desc":
+        sorted.sort((a, b) => b.version - a.version);
+        break;
+
+      case "version_asc":
+        sorted.sort((a, b) => a.version - b.version);
+        break;
+
+      case "created_asc":
+        sorted.sort(
+          (a, b) =>
+            new Date(a.submitted_at).getTime() -
+            new Date(b.submitted_at).getTime(),
+        );
+        break;
+
+      case "created_desc":
+      default:
+        sorted.sort(
+          (a, b) =>
+            new Date(b.submitted_at).getTime() -
+            new Date(a.submitted_at).getTime(),
+        );
+        break;
+    }
+
+    return sorted;
+  }, [articles, sortBy]);
 
   return (
     <div className="m-5">
@@ -191,6 +232,38 @@ const AllArticles = () => {
           className="w-[220px]"
           options={STATUS_OPTIONS}
         />
+
+        <Select
+          value={sortBy}
+          onChange={setSortBy}
+          className="w-[240px]"
+          options={[
+            {
+              value: "created_desc",
+              label: "Created (Newest First)",
+            },
+            {
+              value: "created_asc",
+              label: "Created (Oldest First)",
+            },
+            {
+              value: "score_desc",
+              label: "AI Score (High → Low)",
+            },
+            {
+              value: "score_asc",
+              label: "AI Score (Low → High)",
+            },
+            {
+              value: "version_desc",
+              label: "Version (High → Low)",
+            },
+            {
+              value: "version_asc",
+              label: "Version (Low → High)",
+            },
+          ]}
+        />
       </div>
 
       {error ? (
@@ -209,7 +282,7 @@ const AllArticles = () => {
         />
       ) : (
         <ArticlesTable
-          articles={articles}
+          articles={displayedArticles}
           onRowClick={(articleId) => navigate(`/admin/articles/${articleId}`)}
         />
       )}
