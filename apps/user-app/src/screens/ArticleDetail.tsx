@@ -499,7 +499,7 @@ export default function ArticleDetail() {
         <div className="space-y-6">
           {/* Current Score - MOVED TO TOP */}
           <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-            <p className="text-xs uppercase tracking-wide text-slate-400 mb-1">
+            <p className="text-md font-semibold uppercase tracking-wide text-slate-600 mb-1">
               Current Score
             </p>
 
@@ -538,7 +538,7 @@ export default function ArticleDetail() {
           {/* Feedback - BELOW SCORE */}
           <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs uppercase tracking-wide text-slate-400">
+              <p className="text-md font-semibold uppercase tracking-wide text-slate-600">
                 Feedback
               </p>
 
@@ -562,11 +562,8 @@ export default function ArticleDetail() {
           </div>
 
           {/* Content - COLLAPSIBLE */}
-          <div 
-            className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm cursor-pointer"
-            onClick={() => setContentCollapsed(!contentCollapsed)}
-          >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 cursor-pointer" onClick={() => setContentCollapsed(!contentCollapsed)}>
               <h2 className="font-semibold text-slate-900">Article</h2>
 
               <div className="flex items-center gap-2">
@@ -575,19 +572,14 @@ export default function ArticleDetail() {
                     {article.article_type_name}
                   </span>
                 )}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setContentCollapsed(!contentCollapsed);
-                  }}
-                  className="p-1 text-slate-400 hover:text-slate-600"
-                >
+                <span className="p-1 text-slate-400">
+
                   {contentCollapsed ? (
                     <ChevronDown size={18} />
                   ) : (
                     <ChevronUp size={18} />
                   )}
-                </button>
+                </span>
               </div>
             </div>
 
