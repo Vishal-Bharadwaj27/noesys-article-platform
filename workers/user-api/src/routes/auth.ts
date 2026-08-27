@@ -94,9 +94,11 @@ authRoutes.post("/otp/request", async (c) => {
 
   await createOtpCode(db, otpCode);
 
-  console.log(`[OTP] Login code for ${email}: ${otpCode.code}`);
+  // Local dev: OTP is visible in `wrangler dev` terminal - no email required
+  console.log(`\n========== OTP for ${email}: ${otpCode.code} ==========\n`);
 
-  await sendOTPEmail(c.env, email, otpCode.code);
+  // Fire-and-forget email; failure does not block login (works offline/locally)
+  await sendOTPEmail(c.env, email, otpCode.code).catch((e) => console.error("[Email] async error:", e));
 
   return c.json({
     success: true,
