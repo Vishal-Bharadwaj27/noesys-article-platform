@@ -95,7 +95,7 @@ export default function Login() {
       <div className="w-full max-w-sm">
         {/* Brand */}
         <div className="flex items-center justify-center gap-2 mb-8">
-          <img src={logoImage} alt="Noesys Article Platform" className="h-9 w-9 rounded-lg" />
+          <img src={logoImage} alt="Noesys Article Platform" className="h-12 w-20 rounded-lg" />
           <span className="font-semibold text-lg text-slate-900">
             Noesys Article Platform
           </span>
