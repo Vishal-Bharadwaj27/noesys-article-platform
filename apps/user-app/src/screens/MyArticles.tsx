@@ -78,7 +78,7 @@ export default function MyArticles() {
   useEffect(() => { if (toast) { const id = setTimeout(() => setToast(null), 3000); return () => clearTimeout(id); } return; }, [toast]);
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-[#f3f4f6]">
       <Header />
 
       <div className="w-full px-4 md:px-8 py-8">
@@ -170,8 +170,8 @@ export default function MyArticles() {
         {/* Pagination */}
         {viewAll && totalPages > 1 && (
           <div className="flex items-center justify-between mt-4">
-            <span className="text-sm text-slate-500">
-              Page {currentPage} of {totalPages}
+            <span className="text-[13.5px] text-slate-700 font-medium">
+              Page {currentPage} of {totalPages} 
             </span>
             <div className="flex gap-2">
               <button
@@ -201,24 +201,24 @@ function MyArticlesTable({ articles, loading, onRowClick, month, viewAll }: { ar
 
   useEffect(() => {
     const cols: ColumnsType<ArticleListItem> = [
-      { title: "Title", dataIndex: "title", key: "title", ellipsis: true, width: 300, render: (v: string) => <Text style={{ color: "var(--ant-color-link, #2f54eb)", fontWeight: 500 }}>{v}</Text> },
-      { title: "Type", dataIndex: "type", key: "type", width: 150, render: (v: string) => <Tag bordered={false}>{v}</Tag> },
-      { title: "Version", dataIndex: "version", key: "version", width: 90, render: (v: number) => <Text type="secondary">v{v}</Text> },
+      { title: "Title", dataIndex: "title", key: "title", ellipsis: true, width: 300, render: (v: string) => <Text style={{ color: "#1e293b", fontWeight: 600, fontSize: 14 }}>{v}</Text> },
+      { title: "Type", dataIndex: "type", key: "type", width: 150, render: (v: string) => <Tag bordered={false} style={{ color: "#334155", fontSize: 13 }}>{v}</Tag> },
+      { title: "Version", dataIndex: "version", key: "version", width: 90, render: (v: number) => <Text style={{ color: "#334155", fontSize: 13 }}>v{v}</Text> },
       {
-        title: "AI Score", dataIndex: "ai_score", key: "ai_score", width: 130, render: (score: number | null) => score === null ? <Text type="secondary">—</Text> : (
+        title: "AI Score", dataIndex: "ai_score", key: "ai_score", width: 130, render: (score: number | null) => score === null ? <Text style={{ color: "#334155", fontSize: 13 }}>—</Text> : (
           <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
             <Progress percent={Math.min(Math.max(score, 0), 10) * 10} size="small" showInfo={false} strokeColor={scoreColorHex(score)} style={{ width: 56 }} />
-            <Text strong style={{ color: scoreColorHex(score), fontSize: 12 }}>{score}</Text>
+            <Text strong style={{ color: scoreColorHex(score), fontSize: 13 }}>{score}</Text>
           </span>
         )
       },
       {
         title: "Status", dataIndex: "status", key: "status", width: 140, render: (status: string) => {
           const cfg = STATUS_CONFIG[status] ?? { color: "default", label: status };
-          return <Tag color={cfg.color} icon={cfg.icon ? <ClockCircleOutlined /> : undefined}>{cfg.label}</Tag>;
+          return <Tag color={cfg.color} icon={cfg.icon ? <ClockCircleOutlined /> : undefined} style={{ fontSize: 13 }}>{cfg.label}</Tag>;
         }
       },
-      { title: "Created", dataIndex: "created", key: "created", width: 135, render: (d: string) => <Text type="secondary">{dayjs(d).format("MMM D, YYYY")}</Text>, defaultSortOrder: "descend" as const },
+      { title: "Created", dataIndex: "created", key: "created", width: 135, render: (d: string) => <Text style={{ color: "#334155", fontSize: 13 }}>{dayjs(d).format("MMM D, YYYY")}</Text>, defaultSortOrder: "descend" as const },
     ];
     setColumns(cols);
   }, []);
@@ -229,10 +229,10 @@ function MyArticlesTable({ articles, loading, onRowClick, month, viewAll }: { ar
   const mergedColumns = columns.map((col, idx) => ({ ...col, ...(typeof col.width === "number" ? { onHeaderCell: () => ({ width: col.width, onResize: handleResize(idx) }) } : {}) }));
 
   return (
-    <ConfigProvider theme={{ algorithm: antdTheme.defaultAlgorithm, token: { colorPrimary: "#534ab7", borderRadius: 8 } }}>
-      <div style={{ background: "var(--ant-color-bg-container)", border: "1px solid var(--ant-color-border-secondary)", borderRadius: 12, overflow: "hidden" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", padding: "16px 20px", borderBottom: "1px solid var(--ant-color-border-secondary)" }}>
-          <Text style={{ fontSize: 14, color: 'black' }}>{articles.length} shown</Text>
+    <ConfigProvider theme={{ algorithm: antdTheme.defaultAlgorithm, token: { colorPrimary: "#111827", borderRadius: 8, colorText: "#111827", colorTextSecondary: "#374151", fontSize: 14, colorBgContainer: "#ffffff" }, components: { Table: { headerBg: "#ffffff", headerColor: "#111827", headerSplitColor: "#d1d5db", borderColor: "#d1d5db", rowHoverBg: "#f9fafb", cellPaddingBlock: 14 } } }}>
+        <div style={{ background: "#ffffff", border: "1.5px solid #d1d5db", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", padding: "16px 20px", borderBottom: "1.5px solid #d1d5db", background: "#ffffff" }}>
+          <Text style={{ fontSize: 14, color: "#111827", fontWeight: 500 }}>{articles.length} shown</Text>
         </div>
         <Table<ArticleListItem>
           components={{ header: { cell: ResizeableTitle } }}
@@ -242,7 +242,7 @@ function MyArticlesTable({ articles, loading, onRowClick, month, viewAll }: { ar
           loading={loading}
           pagination={{ pageSize: 10, hideOnSinglePage: true }}
           scroll={{ x: "max-content" }}
-          onRow={(record) => ({ onClick: () => onRowClick(record.id), style: { cursor: "pointer" } })}
+          onRow={(record) => ({ onClick: () => onRowClick(record.id), style: { cursor: "pointer", background: "#ffffff" } })}
           locale={{ emptyText: <Empty description={viewAll ? "No articles found." : `No articles for ${month}.`} /> }}
         />
       </div>
