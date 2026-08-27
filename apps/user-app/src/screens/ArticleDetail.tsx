@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Header from "../components/Header";
-import { ChevronLeft, Edit3, X, Check, Clock, Loader2, Copy } from "lucide-react";
+import { ChevronLeft, Edit3, X, Check, Clock, Loader2, Copy, ChevronDown, ChevronUp } from "lucide-react";
 import dayjs from "dayjs";
 import { useArticle, type HistoryItem, type ArticleDetailResponse } from "../hooks/useArticle";
 import { api } from "../http-client";
@@ -11,8 +11,23 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import type { CSSProperties } from "react";
 import { formatFeedbackAsMarkdown } from "../utils/formatFeedback";
+import { ConfigProvider, Table, Tag, Progress, theme as antdTheme } from "antd";
+import type { ColumnsType } from "antd/es/table";
+import { Resizable } from "react-resizable";
+import "react-resizable/css/styles.css";
 
 const syntaxTheme = oneDark as { [key: string]: CSSProperties };
+
+const ResizeableTitle = ({ onResize, width, children, ...restProps }: any) => {
+  if (!width || typeof width !== "number") return <th {...restProps}>{children}</th>;
+  return (
+    <Resizable width={width} height={10} onResize={onResize} draggableOpts={{ enableUserSelectHack: false }}
+      handle={<span className="column-resize-handle" onClick={(e) => e.stopPropagation()} />}>
+      <th {...restProps}>{children}</th>
+    </Resizable>
+  );
+};
+function scoreColorHex(score: number) { if (score >= 8) return "#389e0d"; if (score >= 6) return "#d48806"; return "#cf1322"; }
 
 const MarkdownCode: Components["code"] = ({ className, children, ...props }) => {
   const match = /language-(\w+)/.exec(className || "");
@@ -319,6 +334,7 @@ export default function ArticleDetail() {
   const [content, setContent] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [contentCollapsed, setContentCollapsed] = useState(true);
 
   useEffect(() => {
     if (article) {
@@ -481,7 +497,75 @@ export default function ArticleDetail() {
         </div>
 
         <div className="space-y-6">
-          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+          {/* Current Score - MOVED TO TOP */}
+          <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+            <p className="text-xs uppercase tracking-wide text-slate-400 mb-1">
+              Current Score
+            </p>
+
+            <div className="flex items-center gap-3">
+              {currentScore === null ? (
+                <div className="flex items-center gap-2 text-sm text-slate-500 py-1">
+                  <Loader2 size={16} className="animate-spin text-slate-400" />
+                  <span>Scoring...</span>
+                </div>
+              ) : (
+                <>
+                  <p className="text-3xl font-semibold text-slate-900">
+                    {hasScore ? currentScore!.toFixed(1) : "—"}
+
+                    <span className="text-base text-slate-400 font-normal">
+                      {" "}
+                      / 10
+                    </span>
+                  </p>
+
+                  {hasScore && (
+                    <div className="flex-1 h-2 rounded-full bg-slate-200 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${colors!.bar}`}
+                        style={{
+                          width: `${(Math.min(currentScore!, 10) / 10) * 100}%`,
+                        }}
+                      />
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Feedback - BELOW SCORE */}
+          <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs uppercase tracking-wide text-slate-400">
+                Feedback
+              </p>
+
+              {currentFeedback && (
+                <CopyButton text={currentFeedback} />
+              )}
+            </div>
+
+            {currentScore === null ? (
+              <div className="flex items-center gap-2 text-sm text-slate-500 py-2 bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+                <Loader2 size={16} className="animate-spin text-slate-400" />
+                <span>Scoring...</span>
+              </div>
+            ) : (
+              <FeedbackBlock
+                feedback={
+                  currentFeedback || "No feedback available yet."
+                }
+              />
+            )}
+          </div>
+
+          {/* Content - COLLAPSIBLE */}
+          <div 
+            className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm cursor-pointer"
+            onClick={() => setContentCollapsed(!contentCollapsed)}
+          >
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
               <h2 className="font-semibold text-slate-900">Article</h2>
 
@@ -491,158 +575,68 @@ export default function ArticleDetail() {
                     {article.article_type_name}
                   </span>
                 )}
-              </div>
-            </div>
-
-            <div className="px-5 py-4">
-              {editing ? (
-                <RewriteContentEditor
-                  content={content}
-                  onChange={setContent}
-                />
-              ) : (
-                <ContentBlock content={article?.content ?? ""} />
-              )}
-
-              {submitError && (
-                <p className="mt-3 text-sm text-red-600">{submitError}</p>
-              )}
-
-              <div className="mt-6 space-y-4">
-                <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                  <p className="text-xs uppercase tracking-wide text-slate-400 mb-1">
-                    Current Score
-                  </p>
-
-                  <div className="flex items-center gap-3">
-                    {currentScore === null ? (
-                      <div className="flex items-center gap-2 text-sm text-slate-500 py-1">
-                        <Loader2 size={16} className="animate-spin text-slate-400" />
-                        <span>Scoring...</span>
-                      </div>
-                    ) : (
-                      <>
-                        <p className="text-3xl font-semibold text-slate-900">
-                          {hasScore ? currentScore!.toFixed(1) : "—"}
-
-                          <span className="text-base text-slate-400 font-normal">
-                            {" "}
-                            / 10
-                          </span>
-                        </p>
-
-                        {hasScore && (
-                          <div className="flex-1 h-2 rounded-full bg-slate-200 overflow-hidden">
-                            <div
-                              className={`h-full rounded-full ${colors!.bar}`}
-                              style={{
-                                width: `${(Math.min(currentScore!, 10) / 10) * 100}%`,
-                              }}
-                            />
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-xs uppercase tracking-wide text-slate-400">
-                      Feedback
-                    </p>
-
-                    {currentFeedback && (
-                      <CopyButton text={currentFeedback} />
-                    )}
-                  </div>
-
-                  {currentScore === null ? (
-                    <div className="flex items-center gap-2 text-sm text-slate-500 py-2 bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-                      <Loader2 size={16} className="animate-spin text-slate-400" />
-                      <span>Scoring...</span>
-                    </div>
-                  ) : (
-                    <FeedbackBlock
-                      feedback={
-                        currentFeedback || "No feedback available yet."
-                      }
-                    />
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-            <div className="px-5 py-4 border-b border-slate-100">
-              <h2 className="font-semibold text-slate-900">
-                Scoring History
-              </h2>
-            </div>
-
-            <div className="hidden md:grid grid-cols-4 gap-3 px-5 py-2.5 bg-slate-50 border-b border-slate-100">
-              {["VERSION", "SCORE", "STATUS", "SUBMITTED"].map((col) => (
-                <span
-                  key={col}
-                  className="text-[11px] font-medium text-slate-400 tracking-wide"
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setContentCollapsed(!contentCollapsed);
+                  }}
+                  className="p-1 text-slate-400 hover:text-slate-600"
                 >
-                  {col}
-                </span>
-              ))}
+                  {contentCollapsed ? (
+                    <ChevronDown size={18} />
+                  ) : (
+                    <ChevronUp size={18} />
+                  )}
+                </button>
+              </div>
             </div>
 
-            {history.length === 0 ? (
-              <div className="py-10 text-center text-slate-400 text-sm">
-                No scoring history yet.
+            {!contentCollapsed && (
+              <div className="px-5 py-4">
+                {editing ? (
+                  <RewriteContentEditor
+                    content={content}
+                    onChange={setContent}
+                  />
+                ) : (
+                  <ContentBlock content={article?.content ?? ""} />
+                )}
+
+                {submitError && (
+                  <p className="mt-3 text-sm text-red-600">{submitError}</p>
+                )}
               </div>
-            ) : (
-              history.map((item) => (
-                <HistoryRow key={item.version} item={item} />
-              ))
             )}
           </div>
+
+          <ScoringHistoryTable history={history} articleId={article?.id ?? ""} />
         </div>
       </div>
     </div>
   );
 }
 
-function HistoryRow({ item }: { item: HistoryItem }) {
-  const hasScore = item.score !== null;
-  const colors = hasScore ? scoreColor(item.score!) : null;
-
+function ScoringHistoryTable({ history, articleId }: { history: HistoryItem[]; articleId: string }) {
+  const navigate = useNavigate();
+  const [cols, setCols] = useState<ColumnsType<HistoryItem>>([]);
+  useEffect(() => {
+    const columns: ColumnsType<HistoryItem> = [
+      { title: "Title", dataIndex: "title", key: "title", width: 260, ellipsis: true, render: (v: string, r: HistoryItem) => <span onClick={() => navigate(`/articles/${articleId}/history/${r.version}`)} style={{ color: "#1e293b", fontWeight: 600, fontSize: 14, cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3 }}>{v || `v${r.version}`}</span> },
+      { title: "Version", dataIndex: "version", key: "version", width: 90, sorter: (a, b) => a.version - b.version, render: (v: number) => <span style={{ color: "#334155", fontSize: 13 }}>v{v}</span> },
+      { title: "AI Score", dataIndex: "score", key: "score", width: 130, render: (s: number | null) => s === null ? <span style={{ color: "#94a3b8", fontSize: 13 }}>—</span> : <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><Progress percent={Math.min(Math.max(s, 0), 10) * 10} size="small" showInfo={false} strokeColor={scoreColorHex(s)} style={{ width: 56 }} /><span style={{ color: scoreColorHex(s), fontWeight: 600, fontSize: 13 }}>{s.toFixed(1)}</span></span> },
+      { title: "Status", dataIndex: "status", key: "status", width: 130, render: (_: any, r: HistoryItem) => { const ds = r.score === null ? "scoring" : r.score === 10 ? "accepted" : "rejected"; const label = ds === "scoring" ? "Scoring..." : ds === "accepted" ? "Accepted" : "Rejected"; return <Tag color={ds === "accepted" ? "green" : ds === "rejected" ? "red" : "default"} style={{ fontSize: 13 }}>{label}</Tag>; } },
+      { title: "Submitted", dataIndex: "submitted_at", key: "submitted_at", width: 160, sorter: (a, b) => new Date(a.submitted_at).getTime() - new Date(b.submitted_at).getTime(), render: (d: string) => <span style={{ color: "#334155", fontSize: 13 }}>{dayjs(d).format("MMM D, YYYY h:mm A")}</span> },
+    ];
+    setCols(columns);
+  }, [articleId]);
+  const handleResize = (idx: number) => (_: any, { size }: { size: { width: number } }) => setCols(cur => { const n = [...cur]; n[idx] = { ...n[idx], width: size.width }; return n; });
+  const merged = cols.map((c, i) => ({ ...c, ...(typeof c.width === "number" ? { onHeaderCell: () => ({ width: c.width, onResize: handleResize(i) }) } : {}) }));
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 px-5 py-3.5 border-b border-slate-100 last:border-b-0 items-center">
-      <span className="font-medium text-slate-700 text-sm">
-        v{item.version}
-      </span>
-
-      <div className="flex items-center gap-2">
-        {hasScore ? (
-          <span
-            className={`text-xs font-semibold rounded-full px-2 py-0.5 ${colors!.badge}`}
-          >
-            {item.score!.toFixed(1)}
-          </span>
-        ) : (
-          <span className="text-slate-300 text-sm">—</span>
-        )}
+    <ConfigProvider theme={{ algorithm: antdTheme.defaultAlgorithm, token: { colorPrimary: "#111827", borderRadius: 8, colorText: "#111827", colorTextSecondary: "#374151", fontSize: 14, colorBgContainer: "#ffffff" }, components: { Table: { headerBg: "#ffffff", headerColor: "#111827", headerSplitColor: "#d1d5db", borderColor: "#d1d5db", rowHoverBg: "#f9fafb", cellPaddingBlock: 14 } } }}>
+      <div style={{ background: "#ffffff", border: "1.5px solid #d1d5db", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", borderBottom: "1.5px solid #d1d5db" }}><span style={{ fontSize: 15, fontWeight: 600, color: "#111827" }}>Scoring History</span><span style={{ fontSize: 13, color: "#64748b" }}>{history.length} versions</span></div>
+        <Table<HistoryItem> components={{ header: { cell: ResizeableTitle } }} columns={merged} dataSource={history} rowKey="version" pagination={false} scroll={{ x: "max-content" }} locale={{ emptyText: "No scoring history yet." }} />
       </div>
-
-      {(() => {
-        const ds = item.score === null ? "scoring" : item.score === 10 ? "accepted" : "rejected";
-        const label = ds === "scoring" ? "Scoring..." : ds === "accepted" ? "Accepted" : "Rejected";
-        return (
-          <span className={`inline-flex w-fit items-center gap-1 text-xs font-medium rounded-full px-2.5 py-1 ${STATUS_STYLES[ds]}`}>
-            {label}
-          </span>
-        );
-      })()}
-
-      <span className="text-slate-400 text-sm">
-        {dayjs(item.submitted_at).format("MMM D, YYYY h:mm A")}
-      </span>
-    </div>
+    </ConfigProvider>
   );
 }

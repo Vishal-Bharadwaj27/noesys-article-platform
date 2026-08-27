@@ -227,6 +227,8 @@ articleRoutes.get("/mine/:id", async (c) => {
         return {
           article_id: item.article_id,
           version: item.version,
+          title: (item as any).title ?? "",
+          content: (item as any).content ?? "",
           score: item.ai_score,
           feedback: item.ai_feedback || null,
           status,
