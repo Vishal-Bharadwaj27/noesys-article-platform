@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import Header from "../components/Header";
 import { ChevronLeft, Edit3, X, Check, Clock, Loader2, Copy, ChevronDown, ChevronUp } from "lucide-react";
 import dayjs from "dayjs";
@@ -314,7 +314,10 @@ function RewriteContentEditor({
 }
 
 function FeedbackBlock({ feedback }: { feedback: string }) {
-  const formattedFeedback = formatFeedbackAsMarkdown(feedback);
+  // Strip "Overall Score: X/10" line from feedback
+  const strippedFeedback = feedback.replace(/^###\s*Overall\s*Score:.*?\/10.*$/m, '').trim();
+  const formattedFeedback = formatFeedbackAsMarkdown(strippedFeedback);
+  
   return (
     <div className="prose prose-sm prose-slate max-w-none bg-white p-4 rounded-lg border border-slate-200">
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={feedbackMarkdownComponents}>
@@ -325,8 +328,13 @@ function FeedbackBlock({ feedback }: { feedback: string }) {
 }
 
 export default function ArticleDetail() {
-  const { id } = useParams<{ id: string }>();
+  const { id, version: routeVersion } = useParams<{ id: string; version?: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const queryVersion = searchParams.get("version");
+  const rawVersion = routeVersion ?? queryVersion;
+  const parsedVersion = rawVersion ? parseInt(rawVersion, 10) : null;
+  const versionParam = parsedVersion !== null && !isNaN(parsedVersion) ? parsedVersion : null;
 
   const { article, history, currentScore, currentFeedback, loading, error, setCurrentScore, setCurrentFeedback, setArticle, setHistory } = useArticle(id ?? "");
   const [editing, setEditing] = useState(false);
@@ -343,8 +351,18 @@ export default function ArticleDetail() {
     }
   }, [article]);
 
+  const isVersionSnapshot = versionParam !== null && history.some(h => h.version === versionParam) && versionParam !== article?.version;
+  // If version param matches a history entry, show snapshot; if it equals current version treat as live
+  const snapshot = versionParam !== null ? history.find(h => h.version === versionParam) ?? null : null;
+  const effectiveSnapshot = isVersionSnapshot ? snapshot : null;
+  const displayTitle = effectiveSnapshot?.title ?? article?.title ?? "";
+  const displayContent = effectiveSnapshot?.content ?? article?.content ?? "";
+  const displayScore = effectiveSnapshot ? effectiveSnapshot.score : currentScore;
+  const displayFeedback = effectiveSnapshot ? (effectiveSnapshot.feedback ?? "") : (currentFeedback ?? "");
+  const displaySubmittedAt = effectiveSnapshot?.submitted_at ?? null;
+
   useEffect(() => {
-    if (!article || currentScore !== null) return;
+    if (effectiveSnapshot || !article || currentScore !== null) return;
     let attempts = 0; let timeout: number | null = null; let stopped = false;
     const schedule = () => {
       if (stopped || attempts >= 50) return;
@@ -360,7 +378,7 @@ export default function ArticleDetail() {
     };
     schedule();
     return () => { stopped = true; if (timeout) clearTimeout(timeout); };
-  }, [article?.id, currentScore]);
+  }, [article?.id, currentScore, effectiveSnapshot]);
 
   async function handleSubmitRewrite() {
     if (!article) return;
@@ -422,8 +440,8 @@ export default function ArticleDetail() {
     );
   }
 
-  const hasScore = currentScore !== null;
-  const colors = hasScore ? scoreColor(currentScore!) : null;
+  const hasScore = displayScore !== null;
+  const colors = hasScore ? scoreColor(displayScore!) : null;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -438,6 +456,12 @@ export default function ArticleDetail() {
           Back to Articles
         </button>
 
+        {effectiveSnapshot && (
+          <div className="mb-4 flex items-center gap-2">
+            <span className="text-xs px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 font-medium">Version {effectiveSnapshot.version} Snapshot</span>
+            {displaySubmittedAt && <span className="text-xs text-slate-400">{dayjs(displaySubmittedAt).format("MMM D, YYYY h:mm A")}</span>}
+          </div>
+        )}
         <div className="flex items-start justify-between gap-4 mb-6">
           {editing ? (
             <input
@@ -449,11 +473,11 @@ export default function ArticleDetail() {
             />
           ) : (
             <h1 className="text-2xl font-semibold text-slate-900 leading-snug">
-              {article?.title}
+              {displayTitle}
             </h1>
           )}
 
-          {editing ? (
+          {effectiveSnapshot ? null : editing ? (
             <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={() => {
@@ -504,7 +528,7 @@ export default function ArticleDetail() {
             </p>
 
             <div className="flex items-center gap-3">
-              {currentScore === null ? (
+              {displayScore === null ? (
                 <div className="flex items-center gap-2 text-sm text-slate-500 py-1">
                   <Loader2 size={16} className="animate-spin text-slate-400" />
                   <span>Scoring...</span>
@@ -512,7 +536,7 @@ export default function ArticleDetail() {
               ) : (
                 <>
                   <p className="text-3xl font-semibold text-slate-900">
-                    {hasScore ? currentScore!.toFixed(1) : "—"}
+                    {hasScore ? displayScore!.toFixed(1) : "—"}
 
                     <span className="text-base text-slate-400 font-normal">
                       {" "}
@@ -525,7 +549,7 @@ export default function ArticleDetail() {
                       <div
                         className={`h-full rounded-full ${colors!.bar}`}
                         style={{
-                          width: `${(Math.min(currentScore!, 10) / 10) * 100}%`,
+                          width: `${(Math.min(displayScore!, 10) / 10) * 100}%`,
                         }}
                       />
                     </div>
@@ -542,12 +566,12 @@ export default function ArticleDetail() {
                 Feedback
               </p>
 
-              {currentFeedback && (
-                <CopyButton text={currentFeedback} />
+              {displayFeedback && (
+                <CopyButton text={displayFeedback} />
               )}
             </div>
 
-            {currentScore === null ? (
+            {displayScore === null ? (
               <div className="flex items-center gap-2 text-sm text-slate-500 py-2 bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
                 <Loader2 size={16} className="animate-spin text-slate-400" />
                 <span>Scoring...</span>
@@ -555,7 +579,7 @@ export default function ArticleDetail() {
             ) : (
               <FeedbackBlock
                 feedback={
-                  currentFeedback || "No feedback available yet."
+                  displayFeedback || "No feedback available yet."
                 }
               />
             )}
@@ -591,7 +615,7 @@ export default function ArticleDetail() {
                     onChange={setContent}
                   />
                 ) : (
-                  <ContentBlock content={article?.content ?? ""} />
+                  <ContentBlock content={displayContent} />
                 )}
 
                 {submitError && (
@@ -601,7 +625,7 @@ export default function ArticleDetail() {
             )}
           </div>
 
-          <ScoringHistoryTable history={history} articleId={article?.id ?? ""} />
+          {!effectiveSnapshot && <ScoringHistoryTable history={history} articleId={article?.id ?? ""} />}
         </div>
       </div>
     </div>
@@ -613,7 +637,7 @@ function ScoringHistoryTable({ history, articleId }: { history: HistoryItem[]; a
   const [cols, setCols] = useState<ColumnsType<HistoryItem>>([]);
   useEffect(() => {
     const columns: ColumnsType<HistoryItem> = [
-      { title: "Title", dataIndex: "title", key: "title", width: 260, ellipsis: true, render: (v: string, r: HistoryItem) => <span onClick={() => navigate(`/articles/${articleId}/history/${r.version}`)} style={{ color: "#1e293b", fontWeight: 600, fontSize: 14, cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3 }}>{v || `v${r.version}`}</span> },
+      { title: "Title", dataIndex: "title", key: "title", width: 260, ellipsis: true, render: (v: string, r: HistoryItem) => <span onClick={() => navigate(`/articles/${articleId}?version=${r.version}`)} style={{ color: "#0284c7", fontWeight: 600, fontSize: 14, cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3 }}>{v || `v${r.version}`}</span> }, 
       { title: "Version", dataIndex: "version", key: "version", width: 90, sorter: (a, b) => a.version - b.version, render: (v: number) => <span style={{ color: "#334155", fontSize: 13 }}>v{v}</span> },
       { title: "AI Score", dataIndex: "score", key: "score", width: 130, render: (s: number | null) => s === null ? <span style={{ color: "#94a3b8", fontSize: 13 }}>—</span> : <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><Progress percent={Math.min(Math.max(s, 0), 10) * 10} size="small" showInfo={false} strokeColor={scoreColorHex(s)} style={{ width: 56 }} /><span style={{ color: scoreColorHex(s), fontWeight: 600, fontSize: 13 }}>{s.toFixed(1)}</span></span> },
       { title: "Status", dataIndex: "status", key: "status", width: 130, render: (_: any, r: HistoryItem) => { const ds = r.score === null ? "scoring" : r.score === 10 ? "accepted" : "rejected"; const label = ds === "scoring" ? "Scoring..." : ds === "accepted" ? "Accepted" : "Rejected"; return <Tag color={ds === "accepted" ? "green" : ds === "rejected" ? "red" : "default"} style={{ fontSize: 13 }}>{label}</Tag>; } },
