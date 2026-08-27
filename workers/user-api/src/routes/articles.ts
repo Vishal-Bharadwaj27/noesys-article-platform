@@ -10,10 +10,9 @@ import {
   snapshotArticle,
   updateArticleForRewrite,
 } from "../db/articleHistory";
-import { getArticleTypes, updateEvaluation } from "../db/articleTypes";
+import { getArticleTypes } from "../db/articleTypes";
 import type { AppEnv } from "../types";
-import { getPromptForArticleType } from "../db/prompts.service";
-import { evaluateArticle } from "../db/ai.service";
+import { evaluateArticle } from "../db/evaluateArticle.service";
 import { authMiddleware } from "../middleware/auth";
 
 const articleRoutes = new Hono<AppEnv>();
@@ -57,54 +56,26 @@ async function evaluateAndUpdate(
   db: any,
   env: any,
   articleId: string,
-  article_type_id: string,
+  articleTypeId: string,
   title: string,
-  content: string
+  content: string,
+  version: number
 ) {
   try {
-    const prompt = await getPromptForArticleType(db, article_type_id);
-    if (!prompt) {
-      await db
-        .prepare(
-          `UPDATE articles SET status='failed', ai_feedback=? WHERE id=?`
-        )
-        .bind(
-          "Prompt not found for article type: " + article_type_id,
-          articleId
-        )
-        .run();
-      return;
-    }
-
-    const apiKey =
-      (env as any).GOOGLE_GENERATIVE_AI_API_KEY ||
-      (env as any).GOOGLE_API_KEY ||
-      "";
-    if (!apiKey) {
-      throw new Error(
-        "GOOGLE_GENERATIVE_AI_API_KEY not set in worker secrets. Run: wrangler secret put GOOGLE_GENERATIVE_AI_API_KEY"
-      );
-    }
-
-    const evaluation = await evaluateArticle(apiKey, prompt, title, content);
-    // Threshold changed to 10: only score of exactly 10 is approved
-    const status = evaluation.score === 10 ? "approved" : "rewrite_required";
-    await updateEvaluation(
+    await evaluateArticle(
       db,
+      env,
       articleId,
-      evaluation.score,
-      evaluation.feedback,
-      status
+      articleTypeId,
+      title,
+      content,
+      version
     );
   } catch (err: any) {
     const msg = err?.message || String(err);
     console.error("Background evaluation error:", msg, err);
-    await db
-      .prepare(
-        `UPDATE articles SET status='failed', ai_feedback=? WHERE id=?`
-      )
-      .bind(`AI evaluation failed: ${msg}`.slice(0, 2000), articleId)
-      .run();
+    // Error handling is already done inside evaluateArticle service
+    // This catch is just for logging
   }
 }
 
@@ -217,11 +188,14 @@ articleRoutes.get("/mine/:id", async (c) => {
       current_feedback: currentFeedback,
       current_score: article.ai_score,
       history: history.map((item) => {
-        // Threshold changed to 10: only score of exactly 10 is approved
+        // For historical items, we infer status from score
+        // Note: This uses a default threshold since historical pass_threshold isn't stored
+        // A future migration should add status to the history table for accuracy
         let status = "pending";
 
         if (item.ai_score !== null) {
-          status = item.ai_score === 10 ? "approved" : "rewrite_required";
+          // Default threshold for historical data (article type thresholds may have changed)
+          status = item.ai_score >= 7.0 ? "approved" : "rewrite_required";
         }
 
         return {
@@ -306,6 +280,7 @@ articleRoutes.post("/", async (c) => {
 
     // ❌ REMOVED: Synchronous evaluation (was blocking)
     // ✅ ADDED: Background evaluation via waitUntil
+    const currentVersion = existingArticle.version;
     c.executionCtx.waitUntil(
       evaluateAndUpdate(
         db,
@@ -313,7 +288,8 @@ articleRoutes.post("/", async (c) => {
         articleId,
         article_type_id,
         title,
-        content
+        content,
+        currentVersion
       )
     );
 
@@ -355,7 +331,8 @@ articleRoutes.post("/", async (c) => {
         articleId,
         article_type_id,
         title,
-        content
+        content,
+        1 // New articles start at version 1
       )
     );
 
