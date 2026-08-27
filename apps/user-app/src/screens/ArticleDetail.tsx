@@ -143,12 +143,16 @@ function scoreColor(score: number) {
 }
 
 const STATUS_STYLES: Record<string, string> = {
-  approved: "bg-indigo-50 text-indigo-700",
-  rewrite_required: "bg-red-50 text-red-600",
-  pending: "bg-amber-50 text-amber-700",
-  processing: "bg-blue-50 text-blue-700",
-  failed: "bg-slate-100 text-slate-600",
+  accepted: "bg-emerald-50 text-emerald-700",
+  rejected: "bg-red-50 text-red-600",
+  scoring: "bg-slate-100 text-slate-600",
 };
+
+function getDisplayStatus(article: { status: string } | null | undefined, score: number | null): "accepted" | "rejected" | "scoring" {
+  if (score === null) return "scoring";
+  if (score === 10 && article?.status === "approved") return "accepted";
+  return "rejected";
+}
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -323,9 +327,8 @@ export default function ArticleDetail() {
     }
   }, [article]);
 
-  // Fallback polling for direct visits — exponential backoff, max 50 attempts
   useEffect(() => {
-    if (!article || (article.status !== "processing" && article.status !== "pending")) return;
+    if (!article || currentScore !== null) return;
     let attempts = 0; let timeout: number | null = null; let stopped = false;
     const schedule = () => {
       if (stopped || attempts >= 50) return;
@@ -335,13 +338,13 @@ export default function ArticleDetail() {
         try {
           const result = await api<ArticleDetailResponse>(`/articles/mine/${article.id}`);
           setArticle(result.article); setHistory(result.history ?? []); setCurrentScore(result.current_score); setCurrentFeedback(result.current_feedback ?? "");
-          if (result.article.status === "pending" || result.article.status === "processing") schedule();
+          if (result.current_score === null) schedule();
         } catch (e) { console.error(e); schedule(); }
       }, delay);
     };
     schedule();
     return () => { stopped = true; if (timeout) clearTimeout(timeout); };
-  }, [article?.id, article?.status]);
+  }, [article?.id, currentScore]);
 
   async function handleSubmitRewrite() {
     if (!article) return;
@@ -512,13 +515,11 @@ export default function ArticleDetail() {
                   </p>
 
                   <div className="flex items-center gap-3">
-                    {article?.status === "pending" || article?.status === "processing" ? (
+                    {currentScore === null ? (
                       <div className="flex items-center gap-2 text-sm text-slate-500 py-1">
-                        <Loader2 size={16} className="animate-spin text-indigo-600" />
-                        <span>Calculating score...</span>
+                        <Loader2 size={16} className="animate-spin text-slate-400" />
+                        <span>Scoring...</span>
                       </div>
-                    ) : article?.status === "failed" ? (
-                      <p className="text-sm text-red-600">Feedback generation failed. Please try again.</p>
                     ) : (
                       <>
                         <p className="text-3xl font-semibold text-slate-900">
@@ -556,10 +557,10 @@ export default function ArticleDetail() {
                     )}
                   </div>
 
-                  {article?.status === "pending" || article?.status === "processing" ? (
+                  {currentScore === null ? (
                     <div className="flex items-center gap-2 text-sm text-slate-500 py-2 bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-                      <Loader2 size={16} className="animate-spin text-indigo-600" />
-                      <span>Generating AI feedback (this may take up to 30 seconds)...</span>
+                      <Loader2 size={16} className="animate-spin text-slate-400" />
+                      <span>Scoring...</span>
                     </div>
                   ) : (
                     <FeedbackBlock
@@ -629,13 +630,15 @@ function HistoryRow({ item }: { item: HistoryItem }) {
         )}
       </div>
 
-      <span
-        className={`inline-flex w-fit items-center gap-1 text-xs font-medium rounded-full px-2.5 py-1 ${STATUS_STYLES[item.status] ?? "bg-slate-100 text-slate-600"
-          }`}
-      >
-        {item.status === "pending" && <Clock size={11} />}
-        {item.status}
-      </span>
+      {(() => {
+        const ds = item.score === null ? "scoring" : item.score === 10 ? "accepted" : "rejected";
+        const label = ds === "scoring" ? "Scoring..." : ds === "accepted" ? "Accepted" : "Rejected";
+        return (
+          <span className={`inline-flex w-fit items-center gap-1 text-xs font-medium rounded-full px-2.5 py-1 ${STATUS_STYLES[ds]}`}>
+            {label}
+          </span>
+        );
+      })()}
 
       <span className="text-slate-400 text-sm">
         {dayjs(item.submitted_at).format("MMM D, YYYY h:mm A")}

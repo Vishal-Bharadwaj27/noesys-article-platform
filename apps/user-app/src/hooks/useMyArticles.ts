@@ -76,8 +76,7 @@ export function useMyArticles(options: UseMyArticlesOptions = {}) {
 
   useEffect(() => { fetchArticles(true); }, [fetchArticles]);
 
-  // smart polling: only when any article is pending/processing
-  const hasPending = articles.some((a) => a.status === "pending" || a.status === "processing");
+  const hasPending = articles.some((a) => a.ai_score === null);
 
   useEffect(() => {
     const clear = () => { if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; } setIsPolling(false); };
