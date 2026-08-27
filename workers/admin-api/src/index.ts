@@ -54,6 +54,7 @@ app.route("/api/articles", articlesRoute);
 // article types route
 app.route("/api/article-types", articleTypesRoute);
 
+// parameter route
 app.route("/api/article-types", parametersRoute);
 
 app.get("/api/health", (c) => {

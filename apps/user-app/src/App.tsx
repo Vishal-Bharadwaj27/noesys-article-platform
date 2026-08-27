@@ -15,11 +15,11 @@ import Sidebar from "./admin/components/Sidebar";
 import AdminHeader from "./admin/components/AdminHeader";
 import ArticleDetailsPage from "./admin/components/articles/ArticleDetailsPage";
 import ArticleTypesForm from "./admin/components/articleTypes/ArticleTypesForm";
+import InsightsPage from "./admin/pages/insights/InsightsPage";
 
 function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex flex-col lg:flex-row">
-      <Sidebar />
       <div className="flex-1 min-w-0 flex flex-col">
         <AdminHeader />
         <div className="flex-1 min-w-0">{children}</div>
@@ -30,15 +30,27 @@ function AdminLayout({ children }: { children: ReactNode }) {
 
 function Protected({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50"><Loader2 size={28} className="animate-spin text-slate-400" /></div>;
+  if (loading)
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <Loader2 size={28} className="animate-spin text-slate-400" />
+      </div>
+    );
   if (!user) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }
+
 function RootRedirect() {
   const { user, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50"><Loader2 size={28} className="animate-spin text-slate-400" /></div>;
+  if (loading)
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <Loader2 size={28} className="animate-spin text-slate-400" />
+      </div>
+    );
   if (!user) return <Navigate to="/login" replace />;
-  if (user.auth_role === "admin" || user.auth_role === "super_admin") return <Navigate to="/admin/articles" replace />;
+  if (user.auth_role === "admin" || user.auth_role === "super_admin")
+    return <Navigate to="/admin/my-article" replace />;
   return <MyArticles />;
 }
 
@@ -47,6 +59,7 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/" element={<RootRedirect />} />
+
       <Route
         path="/articles/new"
         element={
@@ -65,6 +78,17 @@ export default function App() {
       />
 
       {/* Admin Routes */}
+      <Route
+        path="/admin/my-article"
+        element={
+          <RoleBasedRoute allowedRoles={["admin", "super_admin"]}>
+            <AdminLayout>
+              <MyArticles />
+            </AdminLayout>
+          </RoleBasedRoute>
+        }
+      />
+
       <Route
         path="/admin/articles"
         element={
@@ -139,6 +163,18 @@ export default function App() {
           </RoleBasedRoute>
         }
       />
+
+      <Route
+        path="/admin/insights"
+        element={
+          <RoleBasedRoute allowedRoles={["admin", "super_admin"]}>
+            <AdminLayout>
+              <InsightsPage />
+            </AdminLayout>
+          </RoleBasedRoute>
+        }
+      />
+
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

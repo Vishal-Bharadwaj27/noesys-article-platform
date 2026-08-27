@@ -476,7 +476,7 @@ export default function ArticleDetailsPage() {
   }
 
   return (
-    <div style={{ maxWidth: 960, margin: "0 auto", padding: 24 }}>
+    <div style={{ margin: "0 auto", padding: 24 }}>
       <Space direction="vertical" size={16} style={{ width: "100%" }}>
         {/* Header */}
         <Card>

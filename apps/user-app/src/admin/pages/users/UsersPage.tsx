@@ -1,10 +1,18 @@
 import React, { useEffect, useMemo, useState } from "react";
 import UserCard, { User } from "../../components/users/UserCard";
-import { getCurrentMonth } from "../../utils/date";
-import { Calendar, Search } from "lucide-react";
-import type { Dayjs } from "dayjs";
-import { DatePicker, AutoComplete } from "antd";
+import { Search } from "lucide-react";
+import { DatePicker, AutoComplete, Input } from "antd";
 import { useNavigate } from "react-router-dom";
+import dayjs, { type Dayjs } from "dayjs";
+
+import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { SearchOutlined } from "@ant-design/icons";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
@@ -34,7 +42,10 @@ const UsersPage = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedMonth, setSelectedMonth] = useState<Dayjs | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState<Dayjs>(
+    dayjs().startOf("month"),
+  );
+  const [focusedYear, setFocusedYear] = useState(dayjs().year());
 
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
@@ -105,12 +116,11 @@ const UsersPage = () => {
       <h1 className="text-4xl bold my-4 font-semibold">Users List</h1>
       <div className="flex flex-col gap-4  md:flex-row md:items-center md:justify-between my-6">
         {/* Search + toggle */}
-        <div className="flex flex-col sm:flex-row items-center gap-2 w-full max-w-xl">
-          <div className="relative flex-1">
+        <div className="flex flex-col sm:flex-row gap-2 w-full max-w-xl">
+          <div className="relative flex-1 ">
             <AutoComplete
-              className="[&_.ant-select-selector]:h-10 [&_.ant-select-selector]:items-center"
               value={search}
-              onChange={(v) => setSearch(v)}
+              onChange={setSearch}
               options={
                 search.trim()
                   ? filteredUsers.map((u) => ({
@@ -123,13 +133,13 @@ const UsersPage = () => {
               onSelect={(value) => setSearch(value)}
               style={{ width: "100%" }}
             >
-              <input
-                type="text"
+              <Input
+                prefix={<SearchOutlined className="text-slate-400" />}
                 placeholder="Search user"
-                className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 py-2 text-sm font-medium text-slate-700 placeholder:text-slate-400 outline-none transition-colors focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
+                size="small"
+                className="h-10"
               />
-            </AutoComplete>
-            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 z-10" />
+            </AutoComplete>{" "}
           </div>
 
           <button
@@ -155,13 +165,73 @@ const UsersPage = () => {
               Filter by month
             </label>
             <div className="relative">
-              <DatePicker
-                picker="month"
-                value={selectedMonth}
-                onChange={(date) => setSelectedMonth(date)}
-                placeholder="Select month"
-                className="w-[220px]"
-              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="justify-between font-normal w-[180px]"
+                  >
+                    {selectedMonth.format("MMMM YYYY")}
+                    <Calendar className="h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+
+                <PopoverContent className="w-64 p-3">
+                  <div className="flex items-center justify-between mb-3">
+                    <Button
+                      variant="ghost"
+                      className="h-7 w-7 p-0 opacity-50 hover:opacity-100"
+                      onClick={() => setFocusedYear((y) => y - 1)}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+
+                    <div className="font-bold text-sm">{focusedYear}</div>
+
+                    <Button
+                      variant="ghost"
+                      className="h-7 w-7 p-0 opacity-50 hover:opacity-100"
+                      onClick={() => setFocusedYear((y) => y + 1)}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    {Array.from({ length: 12 }).map((_, i) => {
+                      const month = dayjs()
+                        .year(focusedYear)
+                        .month(i)
+                        .startOf("month");
+
+                      const isSelected =
+                        selectedMonth.format("YYYY-MM") ===
+                        month.format("YYYY-MM");
+
+                      const isCurrent =
+                        dayjs().format("YYYY-MM") === month.format("YYYY-MM");
+
+                      return (
+                        <Button
+                          key={i}
+                          variant={isSelected ? "default" : "ghost"}
+                          onClick={() => setSelectedMonth(month)}
+                          className={`h-9 text-sm ${
+                            isSelected
+                              ? ""
+                              : "hover:bg-accent hover:text-accent-foreground"
+                          }`}
+                        >
+                          {month.format("MMM")}
+                          {isCurrent && (
+                            <span className="absolute top-1 right-1 h-1 w-1 rounded-full bg-primary" />
+                          )}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
         )}

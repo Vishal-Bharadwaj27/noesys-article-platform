@@ -1,5 +1,9 @@
 type ScopeType = "numeric" | "option";
-const VALID_OPTION_KEYS = ["ABC", "HIGH_MED_LOW"] as const;
+
+export interface ParameterOptionInput {
+  id?: string;
+  label: string;
+}
 
 export interface ParameterInput {
   name: string;
@@ -7,7 +11,7 @@ export interface ParameterInput {
   scopeType: ScopeType;
   minValue?: number;
   maxValue?: number;
-  options?: string;
+  options?: ParameterOptionInput[];
 }
 
 function validateScope(input: ParameterInput): string | null {
@@ -22,8 +26,8 @@ function validateScope(input: ParameterInput): string | null {
       return "maxValue must be greater than minValue";
     }
   } else if (input.scopeType === "option") {
-    if (!input.options || !VALID_OPTION_KEYS.includes(input.options as any)) {
-      return `options must be one of: ${VALID_OPTION_KEYS.join(", ")}`;
+    if (!input.options) {
+      return `options are not defined.`;
     }
   } else {
     return "scopeType must be 'numeric' or 'option'";
@@ -38,26 +42,59 @@ export async function getParametersByArticleType(
   if (articleTypeId?.trim() === "" || !articleTypeId) {
     throw new Error("article type ID is invalid");
   }
+  const parameters = await db
+    .prepare(
+      `
+      SELECT
+        id,
+        article_type_id,
+        name,
+        prompt,
+        scope_type,
+        min_value,
+        max_value,
+        is_active
+      FROM parameters
+      WHERE article_type_id = ?
+        AND is_active = 1
+      ORDER BY sort_order, created_at
+    `,
+    )
+    .bind(articleTypeId)
+    .all();
 
-  const sql = `
-    SELECT
-      id,
-      article_type_id,
-      name,
-      prompt,
-      scope_type,
-      min_value,
-      max_value,
+  const results = [];
+
+  for (const parameter of parameters.results ?? []) {
+    let options: any[] = [];
+
+    if (parameter.scope_type === "option") {
+      const optionResult = await db
+        .prepare(
+          `
+          SELECT
+            id,
+            label,
+            sort_order
+          FROM parameter_options
+          WHERE parameter_id = ?
+            AND is_active = 1
+          ORDER BY sort_order
+        `,
+        )
+        .bind(parameter.id)
+        .all();
+
+      options = optionResult.results ?? [];
+    }
+
+    results.push({
+      ...parameter,
       options,
-      is_active
-    FROM parameters
-    WHERE article_type_id = ?
-      AND is_active = 1
-  `;
+    });
+  }
 
-  const data = await db.prepare(sql).bind(articleTypeId).all();
-
-  return data.results;
+  return results;
 }
 
 export async function getParameterById(db: D1Database, parameterId: string) {
@@ -146,7 +183,6 @@ export async function createParameter(
         scope_type,
         min_value,
         max_value,
-        options,
         created_by,
         created_at,
         updated_at
@@ -162,12 +198,38 @@ export async function createParameter(
       input.scopeType,
       input.minValue ?? null,
       input.maxValue ?? null,
-      input.options ?? null,
       createdBy,
       now,
       now,
     )
     .run();
+
+  if (input.scopeType === "option" && input.options?.length) {
+    for (let i = 0; i < input.options?.length; i++)
+      await db
+        .prepare(
+          `
+        INSERT INTO parameter_options (
+        id,
+        parameter_id,
+        label,
+        sort_order,
+        created_at,
+        updated_at
+        )
+        VALUES(?, ?, ?, ?, ?, ?);
+      `,
+        )
+        .bind(
+          crypto.randomUUID(),
+          parameterId,
+          input.options[i].label.trim(),
+          i,
+          now,
+          now,
+        )
+        .run();
+  }
 
   return { id: parameterId };
 }
@@ -181,7 +243,6 @@ export async function updateParameter(
   if (scopeError) {
     throw new Error(scopeError);
   }
-
   const existing = await db
     .prepare(
       `SELECT article_type_id FROM parameters WHERE id = ? AND is_active = 1`,
@@ -225,7 +286,6 @@ export async function updateParameter(
         scope_type = ?,
         min_value = ?,
         max_value = ?,
-        options = ?,
         updated_at = ?
       WHERE id = ?
     `,
@@ -236,11 +296,49 @@ export async function updateParameter(
       input.scopeType,
       input.minValue ?? null,
       input.maxValue ?? null,
-      input.options ?? null,
       now,
       parameterId,
     )
     .run();
+
+  if (input.scopeType === "option" && input.options?.length) {
+    for (let i = 0; i < input.options?.length; i++) {
+      const option = input.options[i];
+
+      // update parameter option with regards to their id
+      if (option.id) {
+        await db
+          .prepare(
+            `
+          UPDATE parameter_options 
+          SET label=?,
+          sort_order=?
+          WHERE id=?
+          AND parameter_id=?
+          `,
+          )
+          .bind(option.label, i, option.id, parameterId)
+          .run();
+      } else {
+        await db
+          .prepare(
+            `
+            INSERT INTO parameter_options (
+              id,
+              parameter_id,
+              label,
+              sort_order,
+              created_at,
+              updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+          `,
+          )
+          .bind(crypto.randomUUID(), parameterId, option.label, i, now, now)
+          .run();
+      }
+    }
+  }
 }
 
 export async function deactivateParameter(db: D1Database, parameterId: string) {
@@ -264,5 +362,21 @@ export async function deactivateParameter(db: D1Database, parameterId: string) {
     `,
     )
     .bind(new Date().toISOString(), parameterId)
+    .run();
+
+  await db
+    .prepare(
+      `
+    UPDATE parameter_options
+    SET
+      is_active = 0,
+      updated_at = ?
+    WHERE parameter_id = ?    
+  `,
+    )
+    .bind(
+      new Date().toISOString(),
+      parameterId,
+    )
     .run();
 }
