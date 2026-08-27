@@ -75,8 +75,8 @@ export default function MyArticles() {
 
   const filteredArticles = useMemo(() => {
     if (typeFilter === "all") return articles;
-    return articles.filter((a) => a.type === typeFilter);
-  }, [articles, typeFilter]);
+    return articles.filter((a) => a.type === typeFilter || articleTypes.find(t => t.id === typeFilter)?.name === a.type);
+  }, [articles, typeFilter, articleTypes]);
 
   // toast from creation
   const [toast, setToast] = useState<string | null>(() => { try { const t = sessionStorage.getItem("toast"); if (t) sessionStorage.removeItem("toast"); return t; } catch { return null } });
@@ -262,7 +262,7 @@ function MyArticlesTable({ articles, loading, onRowClick, month, viewAll }: { ar
           pagination={{ pageSize: 10, hideOnSinglePage: true }}
           scroll={{ x: "max-content" }}
           onRow={(record) => ({ onClick: () => onRowClick(record.id), style: { cursor: "pointer", background: "#ffffff" } })}
-          locale={{ emptyText: <Empty description={viewAll ? "No articles found." : `No articles for ${month}.`} /> }}
+          locale={{ emptyText: <Empty description={viewAll ? "No articles found." : `No articles for ${dayjs(month).format("MMMM-YYYY")}.`} /> }}
         />
       </div>
     </ConfigProvider>
