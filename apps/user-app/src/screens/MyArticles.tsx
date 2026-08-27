@@ -17,15 +17,19 @@ import "react-resizable/css/styles.css";
 
 const { Text } = Typography;
 
-type ArticleStatus = "approved" | "rewrite_required" | "pending" | "processing" | "failed";
+type ArticleStatus = "accepted" | "rejected" | "scoring";
 
-const STATUS_CONFIG: Record<string, { color: string; label: string; icon?: boolean }> = {
-  approved: { color: "green", label: "Scored" },
-  rewrite_required: { color: "red", label: "Rewrite" },
-  pending: { color: "gold", label: "Pending", icon: true },
-  processing: { color: "blue", label: "Processing...", icon: true },
-  failed: { color: "default", label: "Failed" },
+const STATUS_CONFIG: Record<string, { color: string; label: string }> = {
+  accepted: { color: "green", label: "Accepted" },
+  rejected: { color: "red", label: "Rejected" },
+  scoring: { color: "default", label: "Scoring..." },
 };
+
+function getDisplayStatus(article: { status: string; ai_score: number | null }): { key: ArticleStatus; label: string; color: string } {
+  if (article.ai_score === null) return { key: "scoring", label: STATUS_CONFIG.scoring.label, color: STATUS_CONFIG.scoring.color };
+  if (article.ai_score === 10 && article.status === "approved") return { key: "accepted", label: STATUS_CONFIG.accepted.label, color: STATUS_CONFIG.accepted.color };
+  return { key: "rejected", label: STATUS_CONFIG.rejected.label, color: STATUS_CONFIG.rejected.color };
+}
 
 function scoreColorHex(score: number) {
   if (score >= 8) return "#389e0d";
@@ -154,6 +158,20 @@ export default function MyArticles() {
           >
             {viewAll ? "Current Month" : "View All"}
           </button>
+
+          <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value)}>
+            <SelectTrigger className="w-[180px] border border-slate-400 rounded-lg px-3 py-2 text-sm font-medium text-slate-6 00 hover:bg-slate-100">
+              <SelectValue placeholder="Filter by Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              {articleTypes.map((t) => (
+                <SelectItem key={t.id} value={t.id}>
+                  {t.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {toast && <div className="mb-4 rounded-lg bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-700">{toast}</div>}
@@ -165,7 +183,7 @@ export default function MyArticles() {
         )}
 
         {/* Table — same antd Table as admin ArticlesTable */}
-        <MyArticlesTable articles={articles} loading={loading} onRowClick={(id) => navigate(`/articles/${id}`)} month={month} viewAll={viewAll} />
+        <MyArticlesTable articles={filteredArticles} loading={loading} onRowClick={(id) => navigate(`/articles/${id}`)} month={month} viewAll={viewAll} />
 
         {/* Pagination */}
         {viewAll && totalPages > 1 && (
@@ -213,9 +231,9 @@ function MyArticlesTable({ articles, loading, onRowClick, month, viewAll }: { ar
         )
       },
       {
-        title: "Status", dataIndex: "status", key: "status", width: 140, render: (status: string) => {
-          const cfg = STATUS_CONFIG[status] ?? { color: "default", label: status };
-          return <Tag color={cfg.color} icon={cfg.icon ? <ClockCircleOutlined /> : undefined} style={{ fontSize: 13 }}>{cfg.label}</Tag>;
+        title: "Status", dataIndex: "status", key: "status", width: 140, render: (_: string, record: ArticleListItem) => {
+          const cfg = getDisplayStatus(record);
+          return <Tag color={cfg.color} style={{ fontSize: 13 }}>{cfg.label}</Tag>;
         }
       },
       { title: "Created", dataIndex: "created", key: "created", width: 135, render: (d: string) => <Text style={{ color: "#334155", fontSize: 13 }}>{dayjs(d).format("MMM D, YYYY")}</Text>, defaultSortOrder: "descend" as const },
