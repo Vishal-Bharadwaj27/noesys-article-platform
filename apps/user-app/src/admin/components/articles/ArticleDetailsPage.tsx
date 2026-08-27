@@ -24,6 +24,8 @@ import {
   ClockCircleOutlined,
   SortAscendingOutlined,
   SortDescendingOutlined,
+  DownOutlined,
+  UpOutlined,
 } from "@ant-design/icons";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -408,6 +410,7 @@ export default function ArticleDetailsPage() {
   const [selectedVersion, setSelectedVersion] = useState<HistoryVersion | null>(
     null,
   );
+  const [contentCollapsed, setContentCollapsed] = useState(true);
 
   useEffect(() => {
     async function loadArticle() {
@@ -494,7 +497,6 @@ export default function ArticleDetailsPage() {
                   <Tag>v{article.version}</Tag>
                 </Space>
               </div>
-              <ScoreDisplay score={article.ai_score} />
             </Space>
 
             <Divider style={{ margin: "8px 0" }} />
@@ -534,7 +536,14 @@ export default function ArticleDetailsPage() {
           </Space>
         </Card>
 
-        {/* Latest evaluation */}
+        {/* Current Score - MOVED TO TOP */}
+        <Card size="small" title="Current Score">
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <ScoreDisplay score={article.ai_score} />
+          </div>
+        </Card>
+
+        {/* Latest evaluation - Feedback */}
         <Card
           size="small"
           title="Latest evaluation"
@@ -691,8 +700,37 @@ export default function ArticleDetailsPage() {
           </div>
         </Card>
 
-        {/* Content */}
-        <ContentBlock content={article.content} />
+        {/* Content - COLLAPSIBLE */}
+        <Card
+          size="small"
+          title="Content"
+          extra={
+            <Space onClick={(e) => e.stopPropagation()}>
+              <Segmented
+                size="small"
+                value="rendered"
+                options={[
+                  { label: "Rendered", value: "rendered" },
+                  { label: "Markdown", value: "raw" },
+                ]}
+              />
+              <CopyButton text={article.content} />
+              <Button
+                size="small"
+                type="text"
+                icon={contentCollapsed ? <DownOutlined /> : <UpOutlined />}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setContentCollapsed(!contentCollapsed);
+                }}
+              />
+            </Space>
+          }
+          onClick={() => setContentCollapsed(!contentCollapsed)}
+          style={{ cursor: "pointer" }}
+        >
+          {!contentCollapsed && <ContentBlock content={article.content} />}
+        </Card>
 
         {/* History */}
         <Card
