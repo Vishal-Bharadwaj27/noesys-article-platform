@@ -11,8 +11,6 @@ export async function evaluateArticle(
   if (!apiKey) {
     throw new Error("Google Generative AI API key is missing.");
   }
-  console.log(apiKey)
-
   const google = createGoogleGenerativeAI({
     apiKey,
   });

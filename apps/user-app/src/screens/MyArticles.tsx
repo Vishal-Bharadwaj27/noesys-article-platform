@@ -26,6 +26,7 @@ const STATUS_CONFIG: Record<string, { color: string; label: string }> = {
 };
 
 function getDisplayStatus(article: { status: string; ai_score: number | null }): { key: ArticleStatus; label: string; color: string } {
+  if (article.status === "failed") return { key: "rejected", label: "Failed", color: "red" };
   if (article.ai_score === null) return { key: "scoring", label: STATUS_CONFIG.scoring.label, color: STATUS_CONFIG.scoring.color };
   if (article.ai_score === 10 && article.status === "approved") return { key: "accepted", label: STATUS_CONFIG.accepted.label, color: STATUS_CONFIG.accepted.color };
   return { key: "rejected", label: STATUS_CONFIG.rejected.label, color: STATUS_CONFIG.rejected.color };

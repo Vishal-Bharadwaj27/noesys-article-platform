@@ -76,7 +76,7 @@ export function useMyArticles(options: UseMyArticlesOptions = {}) {
 
   useEffect(() => { fetchArticles(true); }, [fetchArticles]);
 
-  const hasPending = articles.some((a) => a.ai_score === null);
+  const hasPending = articles.some((a) => a.ai_score === null && a.status !== "failed");
 
   useEffect(() => {
     const clear = () => { if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; } setIsPolling(false); };
