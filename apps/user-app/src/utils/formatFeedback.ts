@@ -1,5 +1,13 @@
+function stripOverallScore(feedback: string): string {
+  return feedback
+    .split("\n")
+    .filter((l) => !/^\s*Overall\s*Score\s*:/i.test(l.trim()))
+    .join("\n");
+}
+
 export function formatFeedbackAsMarkdown(feedback: string): string {
   if (!feedback) return "";
+  feedback = stripOverallScore(feedback);
 
   if (feedback.includes("##") || feedback.includes("###") || feedback.includes("- ")) {
     return feedback;
