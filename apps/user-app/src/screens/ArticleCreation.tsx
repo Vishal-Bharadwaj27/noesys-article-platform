@@ -575,7 +575,7 @@ export default function ArticleCreation() {
           Back to Articles
         </button>
 
-        <h1 className="text-2xl font-semibold text-slate-900 mb-6">
+        <h1 className="text-3xl font-bold text-slate-900 mb-6">
           Create New Article
         </h1>
 
@@ -588,7 +588,7 @@ export default function ArticleCreation() {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              <label className="block text-lg font-bold text-slate-900 mb-2">
                 Article Type
               </label>
 
@@ -616,7 +616,7 @@ export default function ArticleCreation() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              <label className="block text-lg font-bold text-slate-900 mb-2">
                 Title
               </label>
 
@@ -632,7 +632,7 @@ export default function ArticleCreation() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              <label className="block text-lg font-bold text-slate-900 mb-2">
                 Content
               </label>
 
@@ -643,7 +643,7 @@ export default function ArticleCreation() {
                     onClick={() => setEditorView("editor")}
                     className={`px-3 py-1 text-xs font-medium rounded-md ${editorView === "editor"
                       ? "bg-white text-slate-900 shadow-sm"
-                      : "text-slate-500 hover:text-slate-700"
+                      : "text-slate-700 hover:text-slate-900"
                       }`}
                   >
                     Editor
@@ -653,7 +653,7 @@ export default function ArticleCreation() {
                     onClick={() => setEditorView("preview")}
                     className={`px-3 py-1 text-xs font-medium rounded-md ${editorView === "preview"
                       ? "bg-white text-slate-900 shadow-sm"
-                      : "text-slate-500 hover:text-slate-700"
+                      : "text-slate-700 hover:text-slate-900"
                       }`}
                   >
                     Preview
@@ -668,9 +668,9 @@ export default function ArticleCreation() {
                 )}
 
                 {editorView === "preview" && (
-                  <div className="border border-slate-200 rounded-lg overflow-hidden bg-white">
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
-                      <span className="text-xs font-medium text-slate-500">
+                  <div className="border border-slate-400 rounded-lg overflow-hidden bg-white">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-slate-500">
+                      <span className="text-base font-semibold text-slate-900">
                         Preview
                       </span>
                       <CopyButton text={toMarkdown(values.content)} />

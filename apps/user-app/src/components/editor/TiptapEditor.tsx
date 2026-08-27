@@ -71,8 +71,8 @@ export default function TiptapEditor({ value, onChange }: { value: string; onCha
   const warn = len > 450000;
 
   return (
-    <div className="border border-slate-300 bg-white rounded-lg shadow-sm overflow-hidden">
-      <div className="flex flex-wrap items-center gap-1 px-2 py-1.5 bg-slate-50 border-b border-slate-300">
+    <div className="border border-slate-500 bg-white rounded-lg shadow-sm overflow-hidden">
+      <div className="flex flex-wrap items-center gap-1 px-2 py-1.5 bg-slate-50 border-b border-slate-500">
         <button type="button" onClick={() => editor.chain().focus().undo().run()} className="px-2 py-1 text-xs border rounded hover:bg-white">↺</button>
         <button type="button" onClick={() => editor.chain().focus().redo().run()} className="px-2 py-1 text-xs border rounded hover:bg-white">↻</button>
         <select onChange={(e) => { const v=e.target.value; if(v==="p") editor.chain().focus().setParagraph().run(); else editor.chain().focus().toggleHeading({level: Number(v) as any}).run(); }} className="text-xs border rounded px-1 py-1">
