@@ -14,7 +14,10 @@ export interface ArticleDetail {
 export interface HistoryItem {
   article_id: string;
   version: number;
+  title: string;
+  content: string;
   score: number | null;
+  feedback: string | null;
   status: string;
   submitted_at: string;
 }

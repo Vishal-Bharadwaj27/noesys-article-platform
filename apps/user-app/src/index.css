@@ -95,9 +95,23 @@ body {
 
   html {
     font-family: 'Geist Variable', sans-serif;
+    font-size: 15px;
+    color: #0f172a;
   }
 
   body {
     margin: 0;
+    color: #1e293b;
+    background-color: #f3f4f6;
+  }
+
+  /* User-side: darker fonts, slightly larger, no secondary washout */
+  .ant-typography, .ant-table, .ant-table-cell, .ant-empty-description {
+    color: #1e293b !important;
+    font-size: 14px;
+  }
+  .ant-table-thead > tr > th {
+    font-size: 13.5px !important;
+    font-weight: 700 !important;
   }
 }

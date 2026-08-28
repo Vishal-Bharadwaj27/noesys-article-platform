@@ -1,9 +1,23 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import Header from "../components/Header";
-import { ChevronLeft, Edit3, X, Check, Clock, Loader2, Copy } from "lucide-react";
+import {
+  ChevronLeft,
+  Edit3,
+  X,
+  Check,
+  Clock,
+  Loader2,
+  Copy,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import dayjs from "dayjs";
-import { useArticle, type HistoryItem, type ArticleDetailResponse } from "../hooks/useArticle";
+import {
+  useArticle,
+  type HistoryItem,
+  type ArticleDetailResponse,
+} from "../hooks/useArticle";
 import { api } from "../http-client";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -11,19 +25,49 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import type { CSSProperties } from "react";
 import { formatFeedbackAsMarkdown } from "../utils/formatFeedback";
+import { ConfigProvider, Table, Tag, Progress, theme as antdTheme } from "antd";
+import type { ColumnsType } from "antd/es/table";
+import { Resizable } from "react-resizable";
+import "react-resizable/css/styles.css";
 
 const syntaxTheme = oneDark as { [key: string]: CSSProperties };
 
-const MarkdownCode: Components["code"] = ({ className, children, ...props }) => {
+const ResizeableTitle = ({ onResize, width, children, ...restProps }: any) => {
+  if (!width || typeof width !== "number")
+    return <th {...restProps}>{children}</th>;
+  return (
+    <Resizable
+      width={width}
+      height={10}
+      onResize={onResize}
+      draggableOpts={{ enableUserSelectHack: false }}
+      handle={
+        <span
+          className="column-resize-handle"
+          onClick={(e) => e.stopPropagation()}
+        />
+      }
+    >
+      <th {...restProps}>{children}</th>
+    </Resizable>
+  );
+};
+function scoreColorHex(score: number) {
+  if (score >= 8) return "#389e0d";
+  if (score >= 6) return "#d48806";
+  return "#cf1322";
+}
+
+const MarkdownCode: Components["code"] = ({
+  className,
+  children,
+  ...props
+}) => {
   const match = /language-(\w+)/.exec(className || "");
 
   if (match) {
     return (
-      <SyntaxHighlighter
-        style={syntaxTheme}
-        language={match[1]}
-        PreTag="div"
-      >
+      <SyntaxHighlighter style={syntaxTheme} language={match[1]} PreTag="div">
         {String(children).replace(/\n$/, "")}
       </SyntaxHighlighter>
     );
@@ -38,17 +82,41 @@ const MarkdownCode: Components["code"] = ({ className, children, ...props }) => 
 
 const sharedMarkdownComponents: Components = {
   h1: ({ children, ...props }) => (
-    <h1 style={{ fontSize: "1.875rem", fontWeight: 700, marginTop: "1.5rem", marginBottom: "1rem" }} {...props}>
+    <h1
+      style={{
+        fontSize: "1.875rem",
+        fontWeight: 700,
+        marginTop: "1.5rem",
+        marginBottom: "1rem",
+      }}
+      {...props}
+    >
       {children}
     </h1>
   ),
   h2: ({ children, ...props }) => (
-    <h2 style={{ fontSize: "1.5rem", fontWeight: 600, marginTop: "1.5rem", marginBottom: "0.75rem" }} {...props}>
+    <h2
+      style={{
+        fontSize: "1.5rem",
+        fontWeight: 600,
+        marginTop: "1.5rem",
+        marginBottom: "0.75rem",
+      }}
+      {...props}
+    >
       {children}
     </h2>
   ),
   h3: ({ children, ...props }) => (
-    <h3 style={{ fontSize: "1.25rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }} {...props}>
+    <h3
+      style={{
+        fontSize: "1.25rem",
+        fontWeight: 600,
+        marginTop: "1rem",
+        marginBottom: "0.5rem",
+      }}
+      {...props}
+    >
       {children}
     </h3>
   ),
@@ -58,42 +126,127 @@ const sharedMarkdownComponents: Components = {
     </p>
   ),
   ul: ({ children, ...props }) => (
-    <ul style={{ marginLeft: "1.5rem", marginBottom: "1rem", listStyleType: "disc" }} {...props}>
+    <ul
+      style={{
+        marginLeft: "1.5rem",
+        marginBottom: "1rem",
+        listStyleType: "disc",
+      }}
+      {...props}
+    >
       {children}
     </ul>
   ),
   ol: ({ children, ...props }) => (
-    <ol style={{ marginLeft: "1.5rem", marginBottom: "1rem", listStyleType: "decimal" }} {...props}>
+    <ol
+      style={{
+        marginLeft: "1.5rem",
+        marginBottom: "1rem",
+        listStyleType: "decimal",
+      }}
+      {...props}
+    >
       {children}
     </ol>
   ),
-  li: ({ children, ...props }) => <li style={{ marginBottom: "0.5rem" }} {...props}>{children}</li>,
-  strong: ({ children, ...props }) => <strong style={{ fontWeight: 600 }} {...props}>{children}</strong>,
-  em: ({ children, ...props }) => <em style={{ fontStyle: "italic" }} {...props}>{children}</em>,
+  li: ({ children, ...props }) => (
+    <li style={{ marginBottom: "0.5rem" }} {...props}>
+      {children}
+    </li>
+  ),
+  strong: ({ children, ...props }) => (
+    <strong style={{ fontWeight: 600 }} {...props}>
+      {children}
+    </strong>
+  ),
+  em: ({ children, ...props }) => (
+    <em style={{ fontStyle: "italic" }} {...props}>
+      {children}
+    </em>
+  ),
   blockquote: ({ children, ...props }) => (
-    <blockquote style={{ borderLeft: "4px solid #d9d9d9", paddingLeft: "1rem", marginLeft: 0, marginBottom: "1rem", color: "#666", fontStyle: "italic" }} {...props}>
+    <blockquote
+      style={{
+        borderLeft: "4px solid #d9d9d9",
+        paddingLeft: "1rem",
+        marginLeft: 0,
+        marginBottom: "1rem",
+        color: "#666",
+        fontStyle: "italic",
+      }}
+      {...props}
+    >
       {children}
     </blockquote>
   ),
   pre: ({ children, ...props }) => (
-    <pre style={{ background: "#1e1e1e", border: "1px solid #444", borderRadius: 6, padding: 12, fontSize: 13, overflow: "auto", marginBottom: "1rem" }} {...props}>
+    <pre
+      style={{
+        background: "#1e1e1e",
+        border: "1px solid #444",
+        borderRadius: 6,
+        padding: 12,
+        fontSize: 13,
+        overflow: "auto",
+        marginBottom: "1rem",
+      }}
+      {...props}
+    >
       {children}
     </pre>
   ),
-    a: ({ href, children, ...props }) => (
-      <a href={href} style={{ color: "#1890ff", textDecoration: "underline" }} target="_blank" rel="noopener noreferrer" {...props}>
+  a: ({ href, children, ...props }) => (
+    <a
+      href={href}
+      style={{ color: "#1890ff", textDecoration: "underline" }}
+      target="_blank"
+      rel="noopener noreferrer"
+      {...props}
+    >
+      {children}
+    </a>
+  ),
+  code: MarkdownCode,
+  table: ({ children, ...props }) => (
+    <div style={{ overflowX: "auto", marginBottom: "1rem", maxWidth: "100%" }}>
+      <table
+        style={{
+          width: "100%",
+          borderCollapse: "collapse",
+          fontSize: "0.875rem",
+        }}
+        {...props}
+      >
         {children}
-      </a>
-    ),
-      code: MarkdownCode,
-        table: ({ children, ...props }) => (
-          <div style={{ overflowX: "auto", marginBottom: "1rem", maxWidth: "100%" }}><table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }} {...props}>{children}</table></div>
-        ),
-          thead: ({ children, ...props }) => <thead style={{ background: "#f8fafc" }} {...props}>{children}</thead>,
-            tbody: ({ children, ...props }) => <tbody {...props}>{children}</tbody>,
-              tr: ({ children, ...props }) => <tr {...props}>{children}</tr>,
-                th: ({ children, ...props }) => <th style={{ border: "1px solid #e2e8f0", padding: "8px 12px", fontWeight: 600, textAlign: "left", background: "#f8fafc" }} {...props}>{children}</th>,
-                  td: ({ children, ...props }) => <td style={{ border: "1px solid #e2e8f0", padding: "8px 12px" }} {...props}>{children}</td>,
+      </table>
+    </div>
+  ),
+  thead: ({ children, ...props }) => (
+    <thead style={{ background: "#f8fafc" }} {...props}>
+      {children}
+    </thead>
+  ),
+  tbody: ({ children, ...props }) => <tbody {...props}>{children}</tbody>,
+  tr: ({ children, ...props }) => <tr {...props}>{children}</tr>,
+  th: ({ children, ...props }) => (
+    <th
+      style={{
+        border: "1px solid #e2e8f0",
+        padding: "8px 12px",
+        fontWeight: 600,
+        textAlign: "left",
+        background: "#f8fafc",
+      }}
+      {...props}
+    >
+      {children}
+    </th>
+  ),
+  td: ({ children, ...props }) => (
+    <td style={{ border: "1px solid #e2e8f0", padding: "8px 12px" }} {...props}>
+      {children}
+    </td>
+  ),
 };
 
 const feedbackMarkdownComponents: Components = {
@@ -108,26 +261,18 @@ const feedbackMarkdownComponents: Components = {
     </h3>
   ),
   ul: ({ children }: any) => (
-    <ul className="list-disc list-inside ml-2 mb-3 space-y-1">
-      {children}
-    </ul>
+    <ul className="list-disc list-inside ml-2 mb-3 space-y-1">{children}</ul>
   ),
   li: ({ children }: any) => (
-    <li className="text-sm text-slate-700 leading-relaxed">
-      {children}
-    </li>
+    <li className="text-sm text-slate-700 leading-relaxed">{children}</li>
   ),
   p: ({ children }: any) => (
-    <p className="text-sm text-slate-600 mb-2">
-      {children}
-    </p>
+    <p className="text-sm text-slate-600 mb-2">{children}</p>
   ),
   strong: ({ children }: any) => (
     <strong className="font-semibold text-slate-900">{children}</strong>
   ),
-  em: ({ children }: any) => (
-    <em className="italic">{children}</em>
-  ),
+  em: ({ children }: any) => <em className="italic">{children}</em>,
 };
 
 function scoreColor(score: number) {
@@ -143,12 +288,19 @@ function scoreColor(score: number) {
 }
 
 const STATUS_STYLES: Record<string, string> = {
-  approved: "bg-indigo-50 text-indigo-700",
-  rewrite_required: "bg-red-50 text-red-600",
-  pending: "bg-amber-50 text-amber-700",
-  processing: "bg-blue-50 text-blue-700",
-  failed: "bg-slate-100 text-slate-600",
+  accepted: "bg-emerald-50 text-emerald-700",
+  rejected: "bg-red-50 text-red-600",
+  scoring: "bg-slate-100 text-slate-600",
 };
+
+function getDisplayStatus(
+  article: { status: string } | null | undefined,
+  score: number | null,
+): "accepted" | "rejected" | "scoring" {
+  if (score === null) return "scoring";
+  if (score === 10 && article?.status === "approved") return "accepted";
+  return "rejected";
+}
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -186,19 +338,21 @@ function ContentBlock({ content }: { content: string }) {
           <div className="flex bg-slate-100 rounded-lg p-0.5">
             <button
               onClick={() => setView("rendered")}
-              className={`px-3 py-1 text-xs font-medium rounded-md ${view === "rendered"
+              className={`px-3 py-1 text-xs font-medium rounded-md ${
+                view === "rendered"
                   ? "bg-white text-slate-900 shadow-sm"
                   : "text-slate-500 hover:text-slate-700"
-                }`}
+              }`}
             >
               Rendered
             </button>
             <button
               onClick={() => setView("raw")}
-              className={`px-3 py-1 text-xs font-medium rounded-md ${view === "raw"
+              className={`px-3 py-1 text-xs font-medium rounded-md ${
+                view === "raw"
                   ? "bg-white text-slate-900 shadow-sm"
                   : "text-slate-500 hover:text-slate-700"
-                }`}
+              }`}
             >
               Markdown
             </button>
@@ -211,7 +365,10 @@ function ContentBlock({ content }: { content: string }) {
       <div className="px-5 py-4">
         {view === "rendered" ? (
           <div className="markdown-body">
-            <ReactMarkdown remarkPlugins={[remarkGfm]} components={sharedMarkdownComponents}>
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={sharedMarkdownComponents}
+            >
               {content}
             </ReactMarkdown>
           </div>
@@ -254,19 +411,21 @@ function RewriteContentEditor({
         <div className="flex bg-slate-200 rounded-lg p-0.5">
           <button
             onClick={() => setView("rendered")}
-            className={`px-3 py-1 text-xs font-medium rounded-md ${view === "rendered"
+            className={`px-3 py-1 text-xs font-medium rounded-md ${
+              view === "rendered"
                 ? "bg-white text-slate-900 shadow-sm"
                 : "text-slate-500 hover:text-slate-700"
-              }`}
+            }`}
           >
             Rendered
           </button>
           <button
             onClick={() => setView("raw")}
-            className={`px-3 py-1 text-xs font-medium rounded-md ${view === "raw"
+            className={`px-3 py-1 text-xs font-medium rounded-md ${
+              view === "raw"
                 ? "bg-white text-slate-900 shadow-sm"
                 : "text-slate-500 hover:text-slate-700"
-              }`}
+            }`}
           >
             Markdown
           </button>
@@ -276,7 +435,10 @@ function RewriteContentEditor({
       <div className="p-3">
         {view === "rendered" ? (
           <div className="min-h-[250px] prose prose-sm prose-slate max-w-none px-1 py-1">
-            <ReactMarkdown remarkPlugins={[remarkGfm]} components={sharedMarkdownComponents}>
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={sharedMarkdownComponents}
+            >
               {content || "No content available."}
             </ReactMarkdown>
           </div>
@@ -295,10 +457,18 @@ function RewriteContentEditor({
 }
 
 function FeedbackBlock({ feedback }: { feedback: string }) {
-  const formattedFeedback = formatFeedbackAsMarkdown(feedback);
+  // Strip "Overall Score: X/10" line from feedback
+  const strippedFeedback = feedback
+    .replace(/^###\s*Overall\s*Score:.*?\/10.*$/m, "")
+    .trim();
+  const formattedFeedback = formatFeedbackAsMarkdown(strippedFeedback);
+
   return (
     <div className="prose prose-sm prose-slate max-w-none bg-white p-4 rounded-lg border border-slate-200">
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={feedbackMarkdownComponents}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={feedbackMarkdownComponents}
+      >
         {formattedFeedback}
       </ReactMarkdown>
     </div>
@@ -306,15 +476,36 @@ function FeedbackBlock({ feedback }: { feedback: string }) {
 }
 
 export default function ArticleDetail() {
-  const { id } = useParams<{ id: string }>();
+  const { id, version: routeVersion } = useParams<{
+    id: string;
+    version?: string;
+  }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const queryVersion = searchParams.get("version");
+  const rawVersion = routeVersion ?? queryVersion;
+  const parsedVersion = rawVersion ? parseInt(rawVersion, 10) : null;
+  const versionParam =
+    parsedVersion !== null && !isNaN(parsedVersion) ? parsedVersion : null;
 
-  const { article, history, currentScore, currentFeedback, loading, error, setCurrentScore, setCurrentFeedback, setArticle, setHistory } = useArticle(id ?? "");
+  const {
+    article,
+    history,
+    currentScore,
+    currentFeedback,
+    loading,
+    error,
+    setCurrentScore,
+    setCurrentFeedback,
+    setArticle,
+    setHistory,
+  } = useArticle(id ?? "");
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [contentCollapsed, setContentCollapsed] = useState(true);
 
   useEffect(() => {
     if (article) {
@@ -323,25 +514,57 @@ export default function ArticleDetail() {
     }
   }, [article]);
 
-  // Fallback polling for direct visits — exponential backoff, max 50 attempts
+  const isVersionSnapshot =
+    versionParam !== null &&
+    history.some((h) => h.version === versionParam) &&
+    versionParam !== article?.version;
+  // If version param matches a history entry, show snapshot; if it equals current version treat as live
+  const snapshot =
+    versionParam !== null
+      ? (history.find((h) => h.version === versionParam) ?? null)
+      : null;
+  const effectiveSnapshot = isVersionSnapshot ? snapshot : null;
+  const displayTitle = effectiveSnapshot?.title ?? article?.title ?? "";
+  const displayContent = effectiveSnapshot?.content ?? article?.content ?? "";
+  const displayScore = effectiveSnapshot
+    ? effectiveSnapshot.score
+    : currentScore;
+  const displayFeedback = effectiveSnapshot
+    ? (effectiveSnapshot.feedback ?? "")
+    : (currentFeedback ?? "");
+  const displaySubmittedAt = effectiveSnapshot?.submitted_at ?? null;
+
   useEffect(() => {
-    if (!article || (article.status !== "processing" && article.status !== "pending")) return;
-    let attempts = 0; let timeout: number | null = null; let stopped = false;
+    if (effectiveSnapshot || !article || currentScore !== null) return;
+    let attempts = 0;
+    let timeout: number | null = null;
+    let stopped = false;
     const schedule = () => {
       if (stopped || attempts >= 50) return;
       const delay = attempts < 5 ? 3000 : attempts < 15 ? 6000 : 10000;
       timeout = window.setTimeout(async () => {
         attempts++;
         try {
-          const result = await api<ArticleDetailResponse>(`/articles/mine/${article.id}`);
-          setArticle(result.article); setHistory(result.history ?? []); setCurrentScore(result.current_score); setCurrentFeedback(result.current_feedback ?? "");
-          if (result.article.status === "pending" || result.article.status === "processing") schedule();
-        } catch (e) { console.error(e); schedule(); }
+          const result = await api<ArticleDetailResponse>(
+            `/articles/mine/${article.id}`,
+          );
+          setArticle(result.article);
+          setHistory(result.history ?? []);
+          setCurrentScore(result.current_score);
+          setCurrentFeedback(result.current_feedback ?? "");
+          if (result.current_score === null) schedule();
+        } catch (e) {
+          console.error(e);
+          schedule();
+        }
       }, delay);
     };
     schedule();
-    return () => { stopped = true; if (timeout) clearTimeout(timeout); };
-  }, [article?.id, article?.status]);
+    return () => {
+      stopped = true;
+      if (timeout) clearTimeout(timeout);
+    };
+  }, [article?.id, currentScore, effectiveSnapshot]);
 
   async function handleSubmitRewrite() {
     if (!article) return;
@@ -365,13 +588,17 @@ export default function ArticleDetail() {
         }),
       });
 
-      setArticle({ ...article, status: "pending", version: article.version + 1 });
+      setArticle({
+        ...article,
+        status: "pending",
+        version: article.version + 1,
+      });
       setCurrentScore(null);
       setCurrentFeedback("");
       setEditing(false);
     } catch (err) {
       setSubmitError(
-        err instanceof Error ? err.message : "Failed to submit rewrite"
+        err instanceof Error ? err.message : "Failed to submit rewrite",
       );
     } finally {
       setSubmitting(false);
@@ -403,8 +630,8 @@ export default function ArticleDetail() {
     );
   }
 
-  const hasScore = currentScore !== null;
-  const colors = hasScore ? scoreColor(currentScore!) : null;
+  const hasScore = displayScore !== null;
+  const colors = hasScore ? scoreColor(displayScore!) : null;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -419,6 +646,18 @@ export default function ArticleDetail() {
           Back to Articles
         </button>
 
+        {effectiveSnapshot && (
+          <div className="mb-4 flex items-center gap-2">
+            <span className="text-xs px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 font-medium">
+              Version {effectiveSnapshot.version} Snapshot
+            </span>
+            {displaySubmittedAt && (
+              <span className="text-xs text-slate-400">
+                {dayjs(displaySubmittedAt).format("MMM D, YYYY h:mm A")}
+              </span>
+            )}
+          </div>
+        )}
         <div className="flex items-start justify-between gap-4 mb-6">
           {editing ? (
             <input
@@ -430,11 +669,11 @@ export default function ArticleDetail() {
             />
           ) : (
             <h1 className="text-2xl font-semibold text-slate-900 leading-snug">
-              {article?.title}
+              {displayTitle}
             </h1>
           )}
 
-          {editing ? (
+          {effectiveSnapshot ? null : editing ? (
             <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={() => {
@@ -478,8 +717,72 @@ export default function ArticleDetail() {
         </div>
 
         <div className="space-y-6">
+          {/* Current Score - MOVED TO TOP */}
+          <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+            <p className="text-md font-semibold uppercase tracking-wide text-slate-600 mb-1">
+              Current Score
+            </p>
+
+            <div className="flex items-center gap-3">
+              {displayScore === null ? (
+                <div className="flex items-center gap-2 text-sm text-slate-500 py-1">
+                  <Loader2 size={16} className="animate-spin text-slate-400" />
+                  <span>Scoring...</span>
+                </div>
+              ) : (
+                <>
+                  <p className="text-3xl font-semibold text-slate-900">
+                    {hasScore ? displayScore!.toFixed(1) : "—"}
+
+                    <span className="text-base text-slate-400 font-normal">
+                      {" "}
+                      / 10
+                    </span>
+                  </p>
+
+                  {hasScore && (
+                    <div className="flex-1 h-2 rounded-full bg-slate-200 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${colors!.bar}`}
+                        style={{
+                          width: `${(Math.min(displayScore!, 10) / 10) * 100}%`,
+                        }}
+                      />
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Feedback - BELOW SCORE */}
+          <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-md font-semibold uppercase tracking-wide text-slate-600">
+                Feedback
+              </p>
+
+              {displayFeedback && <CopyButton text={displayFeedback} />}
+            </div>
+
+            {displayScore === null ? (
+              <div className="flex items-center gap-2 text-sm text-slate-500 py-2 bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+                <Loader2 size={16} className="animate-spin text-slate-400" />
+                <span>Scoring...</span>
+              </div>
+            ) : (
+              <FeedbackBlock
+                feedback={displayFeedback || "No feedback available yet."}
+              />
+            )}
+          </div>
+
+          {/* Content - COLLAPSIBLE */}
           <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+            <div
+              className="flex items-center justify-between px-5 py-4 border-b border-slate-100 cursor-pointer"
+              onClick={() => setContentCollapsed(!contentCollapsed)}
+            >
               <h2 className="font-semibold text-slate-900">Article</h2>
 
               <div className="flex items-center gap-2">
@@ -488,158 +791,235 @@ export default function ArticleDetail() {
                     {article.article_type_name}
                   </span>
                 )}
-              </div>
-            </div>
-
-            <div className="px-5 py-4">
-              {editing ? (
-                <RewriteContentEditor
-                  content={content}
-                  onChange={setContent}
-                />
-              ) : (
-                <ContentBlock content={article?.content ?? ""} />
-              )}
-
-              {submitError && (
-                <p className="mt-3 text-sm text-red-600">{submitError}</p>
-              )}
-
-              <div className="mt-6 space-y-4">
-                <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                  <p className="text-xs uppercase tracking-wide text-slate-400 mb-1">
-                    Current Score
-                  </p>
-
-                  <div className="flex items-center gap-3">
-                    {article?.status === "pending" || article?.status === "processing" ? (
-                      <div className="flex items-center gap-2 text-sm text-slate-500 py-1">
-                        <Loader2 size={16} className="animate-spin text-indigo-600" />
-                        <span>Calculating score...</span>
-                      </div>
-                    ) : article?.status === "failed" ? (
-                      <p className="text-sm text-red-600">Feedback generation failed. Please try again.</p>
-                    ) : (
-                      <>
-                        <p className="text-3xl font-semibold text-slate-900">
-                          {hasScore ? currentScore!.toFixed(1) : "—"}
-
-                          <span className="text-base text-slate-400 font-normal">
-                            {" "}
-                            / 10
-                          </span>
-                        </p>
-
-                        {hasScore && (
-                          <div className="flex-1 h-2 rounded-full bg-slate-200 overflow-hidden">
-                            <div
-                              className={`h-full rounded-full ${colors!.bar}`}
-                              style={{
-                                width: `${(Math.min(currentScore!, 10) / 10) * 100}%`,
-                              }}
-                            />
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-xs uppercase tracking-wide text-slate-400">
-                      Feedback
-                    </p>
-
-                    {currentFeedback && (
-                      <CopyButton text={currentFeedback} />
-                    )}
-                  </div>
-
-                  {article?.status === "pending" || article?.status === "processing" ? (
-                    <div className="flex items-center gap-2 text-sm text-slate-500 py-2 bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-                      <Loader2 size={16} className="animate-spin text-indigo-600" />
-                      <span>Generating AI feedback (this may take up to 30 seconds)...</span>
-                    </div>
+                <span className="p-1 text-slate-400">
+                  {contentCollapsed ? (
+                    <ChevronDown size={18} />
                   ) : (
-                    <FeedbackBlock
-                      feedback={
-                        currentFeedback || "No feedback available yet."
-                      }
-                    />
+                    <ChevronUp size={18} />
                   )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-            <div className="px-5 py-4 border-b border-slate-100">
-              <h2 className="font-semibold text-slate-900">
-                Scoring History
-              </h2>
-            </div>
-
-            <div className="hidden md:grid grid-cols-4 gap-3 px-5 py-2.5 bg-slate-50 border-b border-slate-100">
-              {["VERSION", "SCORE", "STATUS", "SUBMITTED"].map((col) => (
-                <span
-                  key={col}
-                  className="text-[11px] font-medium text-slate-400 tracking-wide"
-                >
-                  {col}
                 </span>
-              ))}
+              </div>
             </div>
 
-            {history.length === 0 ? (
-              <div className="py-10 text-center text-slate-400 text-sm">
-                No scoring history yet.
+            {!contentCollapsed && (
+              <div className="px-5 py-4">
+                {editing ? (
+                  <RewriteContentEditor
+                    content={content}
+                    onChange={setContent}
+                  />
+                ) : (
+                  <ContentBlock content={displayContent} />
+                )}
+
+                {submitError && (
+                  <p className="mt-3 text-sm text-red-600">{submitError}</p>
+                )}
               </div>
-            ) : (
-              history.map((item) => (
-                <HistoryRow key={item.version} item={item} />
-              ))
             )}
           </div>
+
+          {!effectiveSnapshot && (
+            <ScoringHistoryTable
+              history={history}
+              articleId={article?.id ?? ""}
+            />
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-function HistoryRow({ item }: { item: HistoryItem }) {
-  const hasScore = item.score !== null;
-  const colors = hasScore ? scoreColor(item.score!) : null;
-
-  return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 px-5 py-3.5 border-b border-slate-100 last:border-b-0 items-center">
-      <span className="font-medium text-slate-700 text-sm">
-        v{item.version}
-      </span>
-
-      <div className="flex items-center gap-2">
-        {hasScore ? (
+function ScoringHistoryTable({
+  history,
+  articleId,
+}: {
+  history: HistoryItem[];
+  articleId: string;
+}) {
+  const navigate = useNavigate();
+  const [cols, setCols] = useState<ColumnsType<HistoryItem>>([]);
+  useEffect(() => {
+    const columns: ColumnsType<HistoryItem> = [
+      {
+        title: "Version",
+        dataIndex: "version",
+        key: "version",
+        width: 90,
+        sorter: (a, b) => a.version - b.version,
+        render: (v: number, r: HistoryItem) => (
           <span
-            className={`text-xs font-semibold rounded-full px-2 py-0.5 ${colors!.badge}`}
+            onClick={() =>
+              navigate(`/articles/${articleId}?version=${r.version}`)
+            }
+            style={{
+              color: "#0284c7",
+              fontWeight: 600,
+              fontSize: 14,
+              cursor: "pointer",
+              textUnderlineOffset: 3,
+            }}
           >
-            {item.score!.toFixed(1)}
+            Aritcle Version {v}
           </span>
-        ) : (
-          <span className="text-slate-300 text-sm">—</span>
-        )}
-      </div>
-
-      <span
-        className={`inline-flex w-fit items-center gap-1 text-xs font-medium rounded-full px-2.5 py-1 ${STATUS_STYLES[item.status] ?? "bg-slate-100 text-slate-600"
-          }`}
+        ),
+      },
+      {
+        title: "AI Score",
+        dataIndex: "score",
+        key: "score",
+        width: 130,
+        render: (s: number | null) =>
+          s === null ? (
+            <span style={{ color: "#94a3b8", fontSize: 13 }}>—</span>
+          ) : (
+            <span
+              style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
+            >
+              <Progress
+                percent={Math.min(Math.max(s, 0), 10) * 10}
+                size="small"
+                showInfo={false}
+                strokeColor={scoreColorHex(s)}
+                style={{ width: 56 }}
+              />
+              <span
+                style={{
+                  color: scoreColorHex(s),
+                  fontWeight: 600,
+                  fontSize: 13,
+                }}
+              >
+                {s.toFixed(1)}
+              </span>
+            </span>
+          ),
+      },
+      {
+        title: "Status",
+        dataIndex: "status",
+        key: "status",
+        width: 130,
+        render: (_: any, r: HistoryItem) => {
+          const ds =
+            r.score === null
+              ? "scoring"
+              : r.score === 10
+                ? "accepted"
+                : "rejected";
+          const label =
+            ds === "scoring"
+              ? "Scoring..."
+              : ds === "accepted"
+                ? "Accepted"
+                : "Rejected";
+          return (
+            <Tag
+              color={
+                ds === "accepted"
+                  ? "green"
+                  : ds === "rejected"
+                    ? "red"
+                    : "default"
+              }
+              style={{ fontSize: 13 }}
+            >
+              {label}
+            </Tag>
+          );
+        },
+      },
+      {
+        title: "Submitted",
+        dataIndex: "submitted_at",
+        key: "submitted_at",
+        width: 160,
+        sorter: (a, b) =>
+          new Date(a.submitted_at).getTime() -
+          new Date(b.submitted_at).getTime(),
+        render: (d: string) => (
+          <span style={{ color: "#334155", fontSize: 13 }}>
+            {dayjs(d).format("MMM D, YYYY h:mm A")}
+          </span>
+        ),
+      },
+    ];
+    setCols(columns);
+  }, [articleId]);
+  const handleResize =
+    (idx: number) =>
+    (_: any, { size }: { size: { width: number } }) =>
+      setCols((cur) => {
+        const n = [...cur];
+        n[idx] = { ...n[idx], width: size.width };
+        return n;
+      });
+  const merged = cols.map((c, i) => ({
+    ...c,
+    ...(typeof c.width === "number"
+      ? { onHeaderCell: () => ({ width: c.width, onResize: handleResize(i) }) }
+      : {}),
+  }));
+  return (
+    <ConfigProvider
+      theme={{
+        algorithm: antdTheme.defaultAlgorithm,
+        token: {
+          colorPrimary: "#111827",
+          borderRadius: 8,
+          colorText: "#111827",
+          colorTextSecondary: "#374151",
+          fontSize: 14,
+          colorBgContainer: "#ffffff",
+        },
+        components: {
+          Table: {
+            headerBg: "#ffffff",
+            headerColor: "#111827",
+            headerSplitColor: "#d1d5db",
+            borderColor: "#d1d5db",
+            rowHoverBg: "#f9fafb",
+            cellPaddingBlock: 14,
+          },
+        },
+      }}
+    >
+      <div
+        style={{
+          background: "#ffffff",
+          border: "1.5px solid #d1d5db",
+          borderRadius: 12,
+          overflow: "hidden",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+        }}
       >
-        {item.status === "pending" && <Clock size={11} />}
-        {item.status}
-      </span>
-
-      <span className="text-slate-400 text-sm">
-        {dayjs(item.submitted_at).format("MMM D, YYYY h:mm A")}
-      </span>
-    </div>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "14px 20px",
+            borderBottom: "1.5px solid #d1d5db",
+          }}
+        >
+          <span style={{ fontSize: 15, fontWeight: 600, color: "#111827" }}>
+            Scoring History
+          </span>
+          <span style={{ fontSize: 13, color: "#64748b" }}>
+            {history.length} versions
+          </span>
+        </div>
+        <Table<HistoryItem>
+          components={{ header: { cell: ResizeableTitle } }}
+          columns={merged}
+          dataSource={history}
+          rowKey="version"
+          pagination={false}
+          scroll={{ x: "max-content" }}
+          locale={{ emptyText: "No scoring history yet." }}
+        />
+      </div>
+    </ConfigProvider>
   );
 }

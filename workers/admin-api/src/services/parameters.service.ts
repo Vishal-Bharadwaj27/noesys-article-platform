@@ -187,7 +187,7 @@ export async function createParameter(
         created_at,
         updated_at
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
     )
     .bind(
@@ -374,9 +374,6 @@ export async function deactivateParameter(db: D1Database, parameterId: string) {
     WHERE parameter_id = ?    
   `,
     )
-    .bind(
-      new Date().toISOString(),
-      parameterId,
-    )
+    .bind(new Date().toISOString(), parameterId)
     .run();
 }

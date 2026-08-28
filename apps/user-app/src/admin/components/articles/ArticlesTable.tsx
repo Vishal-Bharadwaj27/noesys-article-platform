@@ -53,7 +53,7 @@ const STATUS_CONFIG: Record<
 };
 
 function scoreColor(score: number) {
-  if (score >= 8) return "#389e0d";
+  if (score >= 10) return "#389e0d";
   if (score >= 6) return "#d48806";
   return "#cf1322";
 }
@@ -156,7 +156,7 @@ function ArticleParameters({
 
 function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
   const [columns, setColumns] = useState<ColumnsType<ArticleSummary>>([]);
-
+  
   const { id } = useParams();
 
   const [titleFilter, setTitleFilter] = useState("");

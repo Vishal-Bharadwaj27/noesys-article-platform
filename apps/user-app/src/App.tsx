@@ -5,6 +5,7 @@ import Login from "./pages/Login";
 import MyArticles from "./screens/MyArticles";
 import ArticleCreation from "./screens/ArticleCreation";
 import ArticleDetail from "./screens/ArticleDetail";
+
 import type { ReactNode } from "react";
 import { RoleBasedRoute } from "./components/RoleBasedRoute";
 import AllArticles from "./admin/pages/articles/AllArticles";
@@ -65,6 +66,14 @@ export default function App() {
         element={
           <Protected>
             <ArticleCreation />
+          </Protected>
+        }
+      />
+      <Route
+        path="/articles/:id/history/:version"
+        element={
+          <Protected>
+            <ArticleDetail />
           </Protected>
         }
       />

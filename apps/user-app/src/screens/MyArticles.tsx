@@ -1,36 +1,52 @@
 import Header from "../components/Header";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Clock, Plus, ChevronLeft, ChevronRight, Calendar, Loader2 } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, Calendar, Loader2 } from "lucide-react";
 import dayjs from "dayjs";
 import { useMyArticles, type ArticleListItem } from "../hooks/useMyArticles";
 import { useAuth } from "../contexts/AuthContext";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { api } from "@/http-client";
+import { ConfigProvider, Table, Tag, Progress, Typography, Empty, theme as antdTheme } from "antd";
+import { ClockCircleOutlined } from "@ant-design/icons";
+import type { ColumnsType } from "antd/es/table";
+import { Resizable } from "react-resizable";
+import "react-resizable/css/styles.css";
 
-type ArticleStatus = "approved" | "rewrite_required" | "pending" | "processing" | "failed";
+const { Text } = Typography;
 
-const STATUS_STYLES: Record<string, string> = {
-  approved: "bg-indigo-50 text-indigo-700",
-  rewrite_required: "bg-red-50 text-red-600",
-  pending: "bg-amber-50 text-amber-700",
-  processing: "bg-blue-50 text-blue-700",
-  failed: "bg-slate-100 text-slate-600",
+type ArticleStatus = "accepted" | "rejected" | "scoring";
+
+const STATUS_CONFIG: Record<string, { color: string; label: string }> = {
+  accepted: { color: "green", label: "Accepted" },
+  rejected: { color: "red", label: "Rejected" },
+  scoring: { color: "default", label: "Scoring..." },
 };
 
-const STATUS_LABELS: Record<string, string> = {
-  approved: "Scored",
-  rewrite_required: "Rewrite",
-  pending: "Pending",
-  processing: "Processing...",
-  failed: "Failed",
-};
-
-function scoreColor(score: number) {
-  if (score >= 8) return { bar: "bg-emerald-500", badge: "bg-emerald-50 text-emerald-700" };
-  if (score >= 6) return { bar: "bg-amber-500", badge: "bg-amber-50 text-amber-700" };
-  return { bar: "bg-red-500", badge: "bg-red-50 text-red-600" };
+function getDisplayStatus(article: { status: string; ai_score: number | null }): { key: ArticleStatus; label: string; color: string } {
+  if (article.status === "failed") return { key: "rejected", label: "Failed", color: "red" };
+  if (article.ai_score === null) return { key: "scoring", label: STATUS_CONFIG.scoring.label, color: STATUS_CONFIG.scoring.color };
+  if (article.ai_score === 10 && article.status === "approved") return { key: "accepted", label: STATUS_CONFIG.accepted.label, color: STATUS_CONFIG.accepted.color };
+  return { key: "rejected", label: STATUS_CONFIG.rejected.label, color: STATUS_CONFIG.rejected.color };
 }
+
+function scoreColorHex(score: number) {
+  if (score >= 8) return "#389e0d";
+  if (score >= 6) return "#d48806";
+  return "#cf1322";
+}
+
+const ResizeableTitle = ({ onResize, width, children, ...restProps }: any) => {
+  if (!width || typeof width !== "number") return <th {...restProps}>{children}</th>;
+  return (
+    <Resizable width={width} height={10} onResize={onResize} draggableOpts={{ enableUserSelectHack: false }}
+      handle={<span className="column-resize-handle" onClick={(e) => e.stopPropagation()} />}>
+      <th {...restProps}>{children}</th>
+    </Resizable>
+  );
+};
 
 export default function MyArticles() {
   const navigate = useNavigate();
@@ -41,6 +57,12 @@ export default function MyArticles() {
   const [focusedYear, setFocusedYear] = useState(dayjs().year());
   const [viewAll, setViewAll] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [articleTypes, setArticleTypes] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    api<{ id: string; name: string }[]>("/article-types").then(setArticleTypes).catch(() => { });
+  }, []);
 
   const { articles, loading, error, pagination, isPolling } = useMyArticles({
     month: viewAll ? undefined : month,
@@ -51,12 +73,17 @@ export default function MyArticles() {
 
   const totalPages = pagination.totalPages || 1;
 
+  const filteredArticles = useMemo(() => {
+    if (typeFilter === "all") return articles;
+    return articles.filter((a) => a.type === typeFilter || articleTypes.find(t => t.id === typeFilter)?.name === a.type);
+  }, [articles, typeFilter, articleTypes]);
+
   // toast from creation
-  const [toast, setToast] = useState<string|null>(() => { try { const t=sessionStorage.getItem("toast"); if(t) sessionStorage.removeItem("toast"); return t; } catch{return null} });
-  useEffect(()=>{ if(toast){ const id=setTimeout(()=>setToast(null),3000); return()=>clearTimeout(id); } return; },[toast]);
+  const [toast, setToast] = useState<string | null>(() => { try { const t = sessionStorage.getItem("toast"); if (t) sessionStorage.removeItem("toast"); return t; } catch { return null } });
+  useEffect(() => { if (toast) { const id = setTimeout(() => setToast(null), 3000); return () => clearTimeout(id); } return; }, [toast]);
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-[#f3f4f6]">
       <Header />
 
       <div className="w-full px-4 md:px-8 py-8">
@@ -64,9 +91,6 @@ export default function MyArticles() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-semibold text-slate-900">My Articles</h1>
-            {user && (
-              <p className="text-sm text-slate-500 mt-0.5">{user.name} · {user.email}</p>
-            )}
           </div>
           <button
             onClick={() => navigate("/articles/new")}
@@ -83,7 +107,7 @@ export default function MyArticles() {
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
-                className="justify-between font-normal w-[180px]"
+                className="justify-between font-normal w-[180px] border border-slate-400"
                 disabled={viewAll}
               >
                 {dayjs(month).format("MMMM YYYY")}
@@ -131,72 +155,55 @@ export default function MyArticles() {
 
           <button
             onClick={() => { setViewAll((p) => !p); setCurrentPage(1); }}
-            className="text-sm font-medium text-slate-600 border border-slate-200 rounded-lg px-3 py-2 hover:bg-slate-100 transition-colors"
+            className="text-sm font-medium text-slate-600 border border-slate-400 rounded-lg px-3 py-2 hover:bg-slate-100 transition-colors"
           >
             {viewAll ? "Current Month" : "View All"}
           </button>
-          <span className="text-sm text-slate-400 ml-auto">
-            {viewAll
-              ? `All articles${pagination.total > 0 ? ` (${pagination.total} total)` : ""}`
-              : `Showing ${month}`}
-          </span>
+
+          <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value)}>
+            <SelectTrigger className="w-[180px] border border-slate-400 rounded-lg px-3 py-2 text-sm font-medium text-slate-6 00 hover:bg-slate-100">
+              <SelectValue placeholder="Filter by Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              {articleTypes.map((t) => (
+                <SelectItem key={t.id} value={t.id}>
+                  {t.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {toast && <div className="mb-4 rounded-lg bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-700">{toast}</div>}
-        {isPolling && <div className="mb-2 text-xs text-slate-400 flex items-center gap-1"><Loader2 size={12} className="animate-spin"/> Scoring in progress — auto-refreshing...</div>}
+        {isPolling && <div className="mb-2 text-xs text-slate-400 flex items-center gap-1"><Loader2 size={12} className="animate-spin" /> Scoring in progress — auto-refreshing...</div>}
         {error && (
           <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600">
             {error}
           </div>
         )}
 
-        {/* Table */}
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-          {/* Column headers */}
-          <div className="hidden md:grid grid-cols-[2fr_1fr_0.6fr_1fr_0.9fr_1fr] gap-3 px-5 py-2.5 bg-slate-50 border-b border-slate-100">
-            {["TITLE", "TYPE", "VERSION", "AI SCORE", "STATUS", "CREATED"].map((col) => (
-              <span key={col} className="text-[11px] font-medium text-slate-400 tracking-wide">
-                {col}
-              </span>
-            ))}
-          </div>
-
-          {/* Rows */}
-          {loading ? (
-            <div className="py-16 text-center text-slate-400 text-sm">Loading...</div>
-          ) : articles.length === 0 ? (
-            <div className="py-16 text-center text-slate-400 text-sm">
-              {viewAll ? "No articles found." : `No articles for ${month}.`}
-            </div>
-          ) : (
-            articles.map((article) => (
-              <ArticleRow
-                key={article.id}
-                article={article}
-                onClick={() => navigate(`/articles/${article.id}`)}
-              />
-            ))
-          )}
-        </div>
+        {/* Table — same antd Table as admin ArticlesTable */}
+        <MyArticlesTable articles={filteredArticles} loading={loading} onRowClick={(id) => navigate(`/articles/${id}`)} month={month} viewAll={viewAll} />
 
         {/* Pagination */}
         {viewAll && totalPages > 1 && (
           <div className="flex items-center justify-between mt-4">
-            <span className="text-sm text-slate-500">
-              Page {currentPage} of {totalPages}
+            <span className="text-[13.5px] text-slate-700 font-medium">
+              Page {currentPage} of {totalPages} 
             </span>
             <div className="flex gap-2">
               <button
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="p-2 rounded-lg border border-slate-200 hover:bg-slate-100 disabled:opacity-40 transition-colors"
+                className="p-2 rounded-lg border border-slate-400 hover:bg-slate-100 disabled:opacity-40 transition-colors"
               >
                 <ChevronLeft size={16} />
               </button>
               <button
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="p-2 rounded-lg border border-slate-200 hover:bg-slate-100 disabled:opacity-40 transition-colors"
+                className="p-2 rounded-lg border border-slate-400 hover:bg-slate-100 disabled:opacity-40 transition-colors"
               >
                 <ChevronRight size={16} />
               </button>
@@ -208,50 +215,56 @@ export default function MyArticles() {
   );
 }
 
-function ArticleRow({ article, onClick }: { article: ArticleListItem; onClick: () => void }) {
-  const { title, type, version, ai_score, status, created } = article;
-  const hasScore = ai_score !== null;
-  const colors = hasScore ? scoreColor(ai_score!) : null;
+function MyArticlesTable({ articles, loading, onRowClick, month, viewAll }: { articles: ArticleListItem[]; loading: boolean; onRowClick: (id: string) => void; month: string; viewAll: boolean }) {
+  const [columns, setColumns] = useState<ColumnsType<ArticleListItem>>([]);
+
+  useEffect(() => {
+    const cols: ColumnsType<ArticleListItem> = [
+      { title: "Title", dataIndex: "title", key: "title", ellipsis: true, width: 300, render: (v: string) => <Text style={{ color: "#1e293b", fontWeight: 600, fontSize: 14 }}>{v}</Text> },
+      { title: "Type", dataIndex: "type", key: "type", width: 150, render: (v: string) => <Tag bordered={false} style={{ color: "#334155", fontSize: 13 }}>{v}</Tag> },
+      { title: "Version", dataIndex: "version", key: "version", width: 90, render: (v: number) => <Text style={{ color: "#334155", fontSize: 13 }}>v{v}</Text> },
+      {
+        title: "AI Score", dataIndex: "ai_score", key: "ai_score", width: 130, render: (score: number | null) => score === null ? <Text style={{ color: "#334155", fontSize: 13 }}>—</Text> : (
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+            <Progress percent={Math.min(Math.max(score, 0), 10) * 10} size="small" showInfo={false} strokeColor={scoreColorHex(score)} style={{ width: 56 }} />
+            <Text strong style={{ color: scoreColorHex(score), fontSize: 13 }}>{score}</Text>
+          </span>
+        )
+      },
+      {
+        title: "Status", dataIndex: "status", key: "status", width: 140, render: (_: string, record: ArticleListItem) => {
+          const cfg = getDisplayStatus(record);
+          return <Tag color={cfg.color} style={{ fontSize: 13 }}>{cfg.label}</Tag>;
+        }
+      },
+      { title: "Created", dataIndex: "created", key: "created", width: 135, render: (d: string) => <Text style={{ color: "#334155", fontSize: 13 }}>{dayjs(d).format("MMM D, YYYY")}</Text>, defaultSortOrder: "descend" as const },
+    ];
+    setColumns(cols);
+  }, []);
+
+  const handleResize = (index: number) => (_: any, { size }: { size: { width: number } }) => {
+    setColumns((cur) => { const next = [...cur]; next[index] = { ...next[index], width: size.width }; return next; });
+  };
+  const mergedColumns = columns.map((col, idx) => ({ ...col, ...(typeof col.width === "number" ? { onHeaderCell: () => ({ width: col.width, onResize: handleResize(idx) }) } : {}) }));
 
   return (
-    <div
-      onClick={onClick}
-      className="grid grid-cols-1 md:grid-cols-[2fr_1fr_0.6fr_1fr_0.9fr_1fr] items-center gap-3 px-5 py-3.5 border-b border-slate-100 last:border-b-0 cursor-pointer hover:bg-slate-50 transition-colors"
-    >
-      <span className="text-indigo-700 font-medium text-sm truncate">{title}</span>
-      <span className="text-slate-500 text-sm truncate">{type}</span>
-      <span className="text-slate-500 text-sm">v{version}</span>
-
-      {/* AI Score */}
-      <div className="flex items-center gap-2">
-        {hasScore ? (
-          <>
-            <div className="w-12 h-1.5 rounded-full bg-slate-100 overflow-hidden">
-              <div
-                className={`h-full rounded-full ${colors!.bar}`}
-                style={{ width: `${(Math.min(ai_score!, 10) / 10) * 100}%` }}
-              />
-            </div>
-            <span className={`text-xs font-semibold rounded-full px-2 py-0.5 ${colors!.badge}`}>
-              {ai_score}
-            </span>
-          </>
-        ) : (
-          <span className="text-slate-300 text-sm">—</span>
-        )}
+    <ConfigProvider theme={{ algorithm: antdTheme.defaultAlgorithm, token: { colorPrimary: "#111827", borderRadius: 8, colorText: "#111827", colorTextSecondary: "#374151", fontSize: 14, colorBgContainer: "#ffffff" }, components: { Table: { headerBg: "#ffffff", headerColor: "#111827", headerSplitColor: "#d1d5db", borderColor: "#d1d5db", rowHoverBg: "#f9fafb", cellPaddingBlock: 14 } } }}>
+        <div style={{ background: "#ffffff", border: "1.5px solid #d1d5db", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", padding: "16px 20px", borderBottom: "1.5px solid #d1d5db", background: "#ffffff" }}>
+          <Text style={{ fontSize: 14, color: "#111827", fontWeight: 500 }}>{articles.length} shown</Text>
+        </div>
+        <Table<ArticleListItem>
+          components={{ header: { cell: ResizeableTitle } }}
+          columns={mergedColumns}
+          dataSource={articles}
+          rowKey="id"
+          loading={loading}
+          pagination={{ pageSize: 10, hideOnSinglePage: true }}
+          scroll={{ x: "max-content" }}
+          onRow={(record) => ({ onClick: () => onRowClick(record.id), style: { cursor: "pointer", background: "#ffffff" } })}
+          locale={{ emptyText: <Empty description={viewAll ? "No articles found." : `No articles for ${dayjs(month).format("MMMM-YYYY")}.`} /> }}
+        />
       </div>
-
-      {/* Status */}
-      <span
-        className={`inline-flex w-fit items-center gap-1 text-xs font-medium rounded-full px-2.5 py-1 ${STATUS_STYLES[status] ?? "bg-slate-100 text-slate-600"}`}
-      >
-        {(status === "pending" || status === "processing") && <Loader2 size={11} className="animate-spin" />}
-        {status === "pending" ? "Scoring..." : status === "processing" ? "Scoring..." : STATUS_LABELS[status] ?? status}
-      </span>
-
-      <span className="text-slate-400 text-sm">
-        {dayjs(created).format("MMM D, YYYY")}
-      </span>
-    </div>
+    </ConfigProvider>
   );
 }

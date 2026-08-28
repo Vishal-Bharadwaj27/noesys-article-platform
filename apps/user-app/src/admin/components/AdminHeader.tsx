@@ -1,4 +1,11 @@
-import { ChartNoAxesCombined, FileText, LogOut, Pen, Tags, Users } from "lucide-react";
+import {
+  ChartNoAxesCombined,
+  FileText,
+  LogOut,
+  Pen,
+  Tags,
+  Users,
+} from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import logoImage from "../../Logo/Noesys_logo.avif";
 import { NavLink } from "react-router-dom";
@@ -8,7 +15,7 @@ const NAV_ITEMS = [
     key: "Write an article",
     label: "write an article",
     icon: Pen,
-    to: "/admin/my-article"
+    to: "/admin/my-article",
   },
   {
     key: "articles",
@@ -27,25 +34,25 @@ const NAV_ITEMS = [
     label: "Users",
     icon: Users,
     to: "/admin/users",
-  }, 
+  },
   {
     key: "insights",
     label: "Insights",
     icon: ChartNoAxesCombined,
-    to: "/admin/insights"
-  }
+    to: "/admin/insights",
+  },
 ];
 
 export default function AdminHeader({ title }: { title?: string }) {
   const { user, logout } = useAuth();
   return (
-    <header className="bg-white border-b border-slate-200">
+    <header className="sticky top-0 bg-white border-b border-slate-200 z-50">
       <div className="w-full px-4 md:px-8 h-14 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <img src={logoImage} alt="Logo" className="h-12 w-20 rounded-lg" />
           <span className="font-semibold text-slate-900">
             Noesys Article Platform
-          </span> 
+          </span>
         </div>
         {title && (
           <span className="text-sm font-medium text-slate-700 hidden md:block">
@@ -77,7 +84,7 @@ export default function AdminHeader({ title }: { title?: string }) {
         <div className="flex items-center gap-3">
           {user && (
             <span className="text-sm text-slate-500 hidden sm:block">
-              {user.name}
+              {user.email}
             </span>
           )}
           <button

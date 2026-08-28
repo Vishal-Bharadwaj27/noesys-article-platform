@@ -52,6 +52,62 @@ function toListItem(article: {
   };
 }
 
+// Background evaluation function - runs asynchronously
+async function evaluateAndUpdate(
+  db: any,
+  env: any,
+  articleId: string,
+  article_type_id: string,
+  title: string,
+  content: string
+) {
+  try {
+    const prompt = await getPromptForArticleType(db, article_type_id);
+    if (!prompt) {
+      await db
+        .prepare(
+          `UPDATE articles SET status='failed', ai_feedback=? WHERE id=?`
+        )
+        .bind(
+          "Prompt not found for article type: " + article_type_id,
+          articleId
+        )
+        .run();
+      return;
+    }
+
+    const apiKey =
+      (env as any).GOOGLE_GENERATIVE_AI_API_KEY ||
+      (env as any).GOOGLE_API_KEY ||
+      "";
+    if (!apiKey) {
+      throw new Error(
+        "GOOGLE_GENERATIVE_AI_API_KEY not set in worker secrets. Run: wrangler secret put GOOGLE_GENERATIVE_AI_API_KEY"
+      );
+    }
+
+    const evaluation = await evaluateArticle(apiKey, prompt, title, content);
+    // Threshold changed to 10: only score of exactly 10 is approved
+    const status = evaluation.score === 10 ? "approved" : "rewrite_required";
+    await updateEvaluation(
+      db,
+      articleId,
+      evaluation.score,
+      evaluation.feedback,
+      status
+    );
+  } catch (err: any) {
+    const msg = err?.message || String(err);
+    console.error("Background evaluation error:", msg, err);
+    await db
+      .prepare(
+        `UPDATE articles SET status='failed', ai_feedback=? WHERE id=?`
+      )
+      .bind(`AI evaluation failed: ${msg}`.slice(0, 2000), articleId)
+      .run();
+  }
+}
+
 articleRoutes.get("/mine", async (c) => {
   const user = c.get("user");
   const db = c.env.DB;
@@ -67,7 +123,7 @@ articleRoutes.get("/mine", async (c) => {
         success: false,
         message: "Invalid month format. Expected YYYY-MM.",
       },
-      400,
+      400
     );
   }
 
@@ -90,7 +146,7 @@ articleRoutes.get("/mine", async (c) => {
     viewAll ? undefined : month || currentMonth(),
     viewAll,
     page,
-    limit,
+    limit
   );
 
   const data = articles.map((article) =>
@@ -104,7 +160,7 @@ articleRoutes.get("/mine", async (c) => {
       submitted_at: article.submitted_at,
       authorName: user.name,
       authorId: user.id,
-    }),
+    })
   );
 
   return c.json({
@@ -127,7 +183,7 @@ articleRoutes.get("/mine/:id", async (c) => {
         success: false,
         message: "Article not found",
       },
-      404,
+      404
     );
   }
 
@@ -137,8 +193,12 @@ articleRoutes.get("/mine/:id", async (c) => {
     history.sort((a, b) => a.version - b.version);
   }
 
-  const isPending = article.status === "pending" || article.status === "processing";
-  const currentFeedback = isPending ? "" : (article.ai_feedback || (history.length > 0 ? history[history.length - 1].ai_feedback || "" : ""));
+  const isPending =
+    article.status === "pending" || article.status === "processing";
+  const currentFeedback = isPending
+    ? ""
+    : article.ai_feedback ||
+      (history.length > 0 ? history[history.length - 1].ai_feedback || "" : "");
 
   return c.json({
     message: "Article fetched successfully",
@@ -157,15 +217,18 @@ articleRoutes.get("/mine/:id", async (c) => {
       current_feedback: currentFeedback,
       current_score: article.ai_score,
       history: history.map((item) => {
+        // Threshold changed to 10: only score of exactly 10 is approved
         let status = "pending";
 
         if (item.ai_score !== null) {
-          status = item.ai_score >= 7 ? "approved" : "rewrite_required";
+          status = item.ai_score === 10 ? "approved" : "rewrite_required";
         }
 
         return {
           article_id: item.article_id,
           version: item.version,
+          title: item.title ?? "",
+          content: item.content ?? "",
           score: item.ai_score,
           feedback: item.ai_feedback || null,
           status,
@@ -197,24 +260,20 @@ articleRoutes.post("/", async (c) => {
         success: false,
         message: "Invalid JSON body",
       },
-      400,
+      400
     );
   }
 
-  const {
-    id: requestedId,
-    article_type_id,
-    title,
-    content,
-  } = body;
+  const { id: requestedId, article_type_id, title, content } = body;
 
   if (!article_type_id || !title || !content) {
     return c.json(
       {
         success: false,
-        message: "Missing required fields: article_type_id, title, content",
+        message:
+          "Missing required fields: article_type_id, title, content",
       },
-      400,
+      400
     );
   }
 
@@ -224,12 +283,8 @@ articleRoutes.post("/", async (c) => {
   let articleId: string;
 
   if (requestedId) {
-    // Rewrite attempt
-    const existingArticle = await getArticleById(
-      db,
-      requestedId,
-      user.id,
-    );
+    // ==================== REWRITE ATTEMPT ====================
+    const existingArticle = await getArticleById(db, requestedId, user.id);
 
     if (!existingArticle) {
       return c.json(
@@ -237,58 +292,43 @@ articleRoutes.post("/", async (c) => {
           success: false,
           message: "Article not found or does not belong to user",
         },
-        404,
+        404
       );
     }
 
     const historyId = "hist_" + crypto.randomUUID();
 
-    await snapshotArticle(
-      db,
-      requestedId,
-      historyId,
-      now,
-    );
+    await snapshotArticle(db, requestedId, historyId, now);
 
-    await updateArticleForRewrite(
-      db,
-      requestedId,
-      title,
-      content,
-    );
+    await updateArticleForRewrite(db, requestedId, title, content);
 
     articleId = requestedId;
 
-    // Synchronous evaluation - ensures score/feedback before workers isolate shuts down
-    // (waitUntil is unreliable for D1 writes on some runtimes)
-    const prompt = await getPromptForArticleType(db, article_type_id);
-    if (!prompt) {
-      await db.prepare(`UPDATE articles SET status='failed', ai_feedback=? WHERE id=?`).bind("Prompt not found for article type: " + article_type_id, articleId).run();
-    } else {
-      try {
-        const apiKey = (c.env as any).GOOGLE_GENERATIVE_AI_API_KEY || (c.env as any).GOOGLE_API_KEY || "";
-        if (!apiKey) throw new Error("GOOGLE_GENERATIVE_AI_API_KEY not set in worker secrets. Run: wrangler secret put GOOGLE_GENERATIVE_AI_API_KEY");
-        const evaluation = await evaluateArticle(apiKey, prompt, title, content);
-        const status = evaluation.score >= 7 ? "approved" : "rewrite_required";
-        await updateEvaluation(db, articleId, evaluation.score, evaluation.feedback, status);
-      } catch (err: any) {
-        const msg = err?.message || String(err);
-        console.error("Gemini Error (rewrite):", msg, err);
-        await db.prepare(`UPDATE articles SET status='failed', ai_feedback=? WHERE id=?`).bind(`AI evaluation failed: ${msg}`.slice(0, 2000), articleId).run();
-      }
-    }
-    const finalArticle = await getArticleById(db, articleId, user.id);
+    // ❌ REMOVED: Synchronous evaluation (was blocking)
+    // ✅ ADDED: Background evaluation via waitUntil
+    c.executionCtx.waitUntil(
+      evaluateAndUpdate(
+        db,
+        c.env,
+        articleId,
+        article_type_id,
+        title,
+        content
+      )
+    );
+
+    // Return immediately with pending status
     return c.json({
-      message: "Article rewrite evaluated",
+      message: "Article rewrite submitted",
       data: {
         id: articleId,
-        status: finalArticle?.status || "failed",
-        ai_score: finalArticle?.ai_score ?? null,
-        ai_feedback: finalArticle?.ai_feedback ?? null,
+        status: "pending",
+        ai_score: null,
+        ai_feedback: null,
       },
     });
   } else {
-    // New article
+    // ==================== NEW ARTICLE ====================
     const newId = "art_" + crypto.randomUUID();
 
     await createArticle(db, {
@@ -306,32 +346,27 @@ articleRoutes.post("/", async (c) => {
 
     articleId = newId;
 
-    // Synchronous evaluation for new article
-    const prompt = await getPromptForArticleType(db, article_type_id);
-    if (!prompt) {
-      await db.prepare(`UPDATE articles SET status='failed', ai_feedback=? WHERE id=?`).bind("Prompt not found for article type: " + article_type_id, articleId).run();
-    } else {
-      try {
-        const apiKey = (c.env as any).GOOGLE_GENERATIVE_AI_API_KEY || (c.env as any).GOOGLE_API_KEY || "";
-        if (!apiKey) throw new Error("GOOGLE_GENERATIVE_AI_API_KEY not set in worker secrets. Run: wrangler secret put GOOGLE_GENERATIVE_AI_API_KEY");
-        const evaluation = await evaluateArticle(apiKey, prompt, title, content);
-        const status = evaluation.score >= 7 ? "approved" : "rewrite_required";
-        await updateEvaluation(db, articleId, evaluation.score, evaluation.feedback, status);
-      } catch (err: any) {
-        const msg = err?.message || String(err);
-        console.error("Gemini Error (new):", msg, err);
-        await db.prepare(`UPDATE articles SET status='failed', ai_feedback=? WHERE id=?`).bind(`AI evaluation failed: ${msg}`.slice(0, 2000), articleId).run();
-      }
-    }
-    const finalArticle = await getArticleById(db, articleId, user.id);
+    // ❌ REMOVED: Synchronous evaluation (was blocking 10-30s)
+    // ✅ ADDED: Background evaluation via waitUntil
+    c.executionCtx.waitUntil(
+      evaluateAndUpdate(
+        db,
+        c.env,
+        articleId,
+        article_type_id,
+        title,
+        content
+      )
+    );
+
+    // Return immediately with pending status (don't wait for AI)
     return c.json({
-      message: "Article submitted and evaluated",
+      message: "Article submitted",
       data: {
         id: articleId,
-        // status: "pending",
-        status: finalArticle?.status || "failed",
-        ai_score: finalArticle?.ai_score ?? null,
-        ai_feedback: finalArticle?.ai_feedback ?? null,
+        status: "pending",
+        ai_score: null,
+        ai_feedback: null,
       },
     });
   }
