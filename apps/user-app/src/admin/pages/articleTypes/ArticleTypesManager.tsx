@@ -109,35 +109,13 @@ export default function ArticleTypesManager({
   };
 
   return (
-    <div className="m-5">
+    <div className="w-full px-4 md:px-8 py-5">
       <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center shadow-sm shadow-indigo-600/20">
-            <Tag size={18} className="text-white" />
-          </div>
-
-          <div>
-            <h2 className="text-2xl font-semibold text-slate-900 leading-tight">
-              Article Types
-            </h2>
-
-            <p className="text-sm text-slate-500">
-              {articleTypes.length} type
-              {articleTypes.length !== 1 ? "s" : ""} · each has a scoring prompt
-            </p>
-          </div>
-        </div>
-
-        <Button
-          onClick={() => navigate("/admin/article-types/new")}
-          icon={<Plus size={16} />}
-          className="cursor-pointer"
-        >
-          New Type
-        </Button>
+        <h2 className="text-3xl font-semibold text-slate-900 leading-tight">Article Types</h2>
+        <button onClick={() => navigate("/admin/article-types/new")} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg px-4 h-9 transition-colors"><Plus size={16} />New Type</button>
       </div>
 
-      <div className="flex items-center gap-2 mb-4 w-[50vw]">
+      <div className="flex items-center gap-2 mb-4 w-full">
         <div className="relative flex-1">
           <Search
             size={15}
@@ -149,7 +127,7 @@ export default function ArticleTypesManager({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search article types..."
-            className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            className="w-full rounded-lg border border-slate-300 pl-9 pr-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent h-9"
           />
         </div>
       </div>

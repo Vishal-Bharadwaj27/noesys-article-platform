@@ -88,11 +88,11 @@ export default function MyArticles() {
     <div className="min-h-screen bg-[#f3f4f6]">
       {user?.auth_role === "user" && <Header />}
 
-      <div className="w-full px-4 md:px-8 py-8">
+      <div className="w-full px-4 md:px-8 py-5">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-semibold text-slate-900">My Articles</h1>
+            <h1 className="text-3xl font-semibold text-slate-900">My Articles</h1>
           </div>
           <button
             onClick={() => navigate("/articles/new")}
@@ -109,7 +109,7 @@ export default function MyArticles() {
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
-                className="justify-between font-normal w-[180px] h-9 bg-white border border-slate-300 rounded-lg text-sm"
+                className="justify-between font-normal w-[180px] h-9 bg-white border border-slate-300 rounded-lg text-sm shadow-none"
                 disabled={viewAll}
               >
                 {dayjs(month).format("MMMM YYYY")}

@@ -157,10 +157,7 @@ export default function UserCard({
 
           {/* promote/demote, hidden entirely for super_admin */}
           {user.auth_role === "user" && (
-            <button
-              onClick={() => openRoleChange("admin")}
-              className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors"
-            >
+            <button onClick={() => openRoleChange("admin")} className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium bg-teal-600 text-white hover:bg-teal-700 transition-colors">
               <ArrowUpCircle size={14} />
               Promote to Admin
             </button>

@@ -112,69 +112,32 @@ const UsersPage = () => {
   }, [users, search]);
 
   return (
-    <div className="m-5">
-      <h1 className="text-4xl bold my-4 font-semibold">Users List</h1>
-      <div className="flex flex-col gap-4  md:flex-row md:items-center md:justify-between my-6">
-        {/* Search + toggle */}
-        <div className="flex flex-col sm:flex-row gap-2 w-full max-w-xl">
-          <div className="relative flex-1 ">
-            <AutoComplete
-              value={search}
-              onChange={setSearch}
-              options={
-                search.trim()
-                  ? filteredUsers.map((u) => ({
-                      value: u.name,
-                      label: u.name,
-                      key: u.id,
-                    }))
-                  : []
-              }
-              onSelect={(value) => setSearch(value)}
-              style={{ width: "100%" }}
-            >
-              <Input
-                prefix={<SearchOutlined className="text-slate-400" />}
-                placeholder="Search user"
-                size="small"
-                className="h-10"
-              />
-            </AutoComplete>{" "}
-          </div>
-
-          <button
-            onClick={handleToggleNotSubmitted}
-            className={`h-10 flex shrink-0 items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors
-      ${
-        showNotSubmitted
-          ? "bg-amber-50 text-amber-700 border-amber-200"
-          : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-      }`}
-          >
-            Show Not Submitted
-          </button>
+    <div className="w-full px-4 md:px-8 py-5">
+      <h1 className="text-3xl font-semibold">Users List</h1>
+      <div className="flex gap-3 my-6">
+        <div className="w-[80%]">
+          <AutoComplete value={search} onChange={setSearch}
+            options={search.trim() ? filteredUsers.map((u) => ({ value: u.name, label: u.name, key: u.id })) : []}
+            onSelect={(value) => setSearch(value)} style={{ width: "100%" }}>
+            <Input prefix={<SearchOutlined className="text-slate-400" />} placeholder="Search user" className="h-9 rounded-lg !border-slate-300" style={{ borderRadius: 8, height: 36 }} />
+          </AutoComplete>
         </div>
+        <button onClick={handleToggleNotSubmitted}
+          className={`w-[20%] h-9 flex shrink-0 items-center justify-center gap-1.5 rounded-lg border px-3 text-sm font-medium transition-colors ${showNotSubmitted ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-white text-slate-600 border-slate-300 hover:bg-slate-50"}`}>
+          Show Not Submitted
+        </button>
+      </div>
+      <div className="flex gap-3 mb-6">
+        {showNotSubmitted && <span className="text-sm font-medium text-slate-700 whitespace-nowrap self-center">Filter by month</span>}
 
-        {/* Month filter, only when active */}
         {showNotSubmitted && (
-          <div className="flex items-center gap-2">
-            <label
-              htmlFor="sales-month"
-              className="whitespace-nowrap text-sm font-medium text-slate-700"
-            >
-              Filter by month
-            </label>
-            <div className="relative">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="justify-between font-normal w-[180px]"
-                  >
-                    {selectedMonth.format("MMMM YYYY")}
-                    <Calendar className="h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="justify-between font-normal w-[180px] h-9 bg-white border border-slate-300 rounded-lg text-sm shadow-none">
+                {selectedMonth.format("MMMM YYYY")}
+                <Calendar className="h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
 
                 <PopoverContent className="w-64 p-3">
                   <div className="flex items-center justify-between mb-3">
@@ -232,8 +195,6 @@ const UsersPage = () => {
                   </div>
                 </PopoverContent>
               </Popover>
-            </div>
-          </div>
         )}
       </div>
 
@@ -249,8 +210,8 @@ const UsersPage = () => {
       </div> */}
 
       {!loading && !error && (
-        <div className="flex items-center justify-center">
-          <div className="grid lg:grid-cols-3 grid-cols-1 gap-2">
+        <div className="w-full">
+          <div className="grid lg:grid-cols-3 grid-cols-1 gap-3 w-full">
             {filteredUsers.map((u) => (
               <UserCard
                 key={u.id}

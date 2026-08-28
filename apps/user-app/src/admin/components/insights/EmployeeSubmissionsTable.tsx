@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Table, Spin } from "antd";
+import { Table, Spin, ConfigProvider, theme as antdTheme } from "antd";
 import type { ColumnsType } from "antd/es/table";
 
 interface EmployeeSubmissionRow {
@@ -80,6 +80,8 @@ export function EmployeeSubmissionsTable({
   ];
 
   return (
+    <ConfigProvider theme={{ algorithm: antdTheme.defaultAlgorithm, token: { colorPrimary: "#534ab7", borderRadius: 8 }, components: { Table: { headerBg: "#e2e8f0", headerColor: "#1e293b", headerSplitColor: "#cbd5e1" } } }}>
+    <div style={{ background: "var(--ant-color-bg-container)", border: "1px solid var(--ant-color-border-secondary)", borderRadius: 12, overflow: "hidden" }}>
     <Table
       rowKey="userId"
       columns={columns}
@@ -89,20 +91,14 @@ export function EmployeeSubmissionsTable({
       summary={() => (
         <Table.Summary fixed>
           <Table.Summary.Row>
-            <Table.Summary.Cell index={0} colSpan={2}>
-              {data.rows.length} employees
-            </Table.Summary.Cell>
-            {data.months.map((m, i) => (
-              <Table.Summary.Cell key={m} index={i + 2} align="center">
-                {data.monthlyTotals[m]}
-              </Table.Summary.Cell>
-            ))}
-            <Table.Summary.Cell index={data.months.length + 2} align="center">
-              {data.grandTotal}
-            </Table.Summary.Cell>
+            <Table.Summary.Cell index={0} colSpan={2}>{data.rows.length} employees</Table.Summary.Cell>
+            {data.months.map((m, i) => (<Table.Summary.Cell key={m} index={i + 2} align="center">{data.monthlyTotals[m]}</Table.Summary.Cell>))}
+            <Table.Summary.Cell index={data.months.length + 2} align="center">{data.grandTotal}</Table.Summary.Cell>
           </Table.Summary.Row>
         </Table.Summary>
       )}
     />
+    </div>
+    </ConfigProvider>
   );
 }

@@ -42,7 +42,7 @@ export function MonthYearPicker({
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="outline" className="w-[150px] justify-start">
+        <Button variant="outline" className="w-[160px] h-9 bg-white border border-slate-300 rounded-lg text-sm shadow-none justify-between font-normal">
           {MONTHS[month - 1]} {year}
         </Button>
       </PopoverTrigger>
