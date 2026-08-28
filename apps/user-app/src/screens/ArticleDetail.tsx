@@ -15,6 +15,8 @@ import { ConfigProvider, Table, Tag, Progress, theme as antdTheme } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { Resizable } from "react-resizable";
 import "react-resizable/css/styles.css";
+import { useAuth } from "@/contexts/AuthContext";
+import AdminHeader from "@/admin/components/AdminHeader";
  
 const syntaxTheme = oneDark as { [key: string]: CSSProperties };
  
@@ -335,6 +337,7 @@ function FeedbackBlock({ feedback }: { feedback: string }) {
 }
  
 export default function ArticleDetail() {
+  const { user} = useAuth();
   const { id, version: routeVersion } = useParams<{ id: string; version?: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -452,7 +455,8 @@ export default function ArticleDetail() {
  
   return (
     <div className="min-h-screen bg-slate-50">
-      <Header />
+      {user?.auth_role === "user" ? <Header /> : <AdminHeader />}
+
  
       <div className="w-full px-4 md:px-8 py-8">
         <button
