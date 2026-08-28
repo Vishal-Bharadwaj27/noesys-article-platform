@@ -36,8 +36,6 @@ export function useArticle(
 
       const json = await res.json();
 
-      console.log("Article response:", json);
-
       if (adminMode) {
         const data = json.data;
 

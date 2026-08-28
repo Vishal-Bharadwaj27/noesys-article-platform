@@ -13,7 +13,7 @@ import { NavLink } from "react-router-dom";
 const NAV_ITEMS = [
   {
     key: "Write an article",
-    label: "write an article",
+    label: "Write An Article",
     icon: Pen,
     to: "/admin/my-article",
   },

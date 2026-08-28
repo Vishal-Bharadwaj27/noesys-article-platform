@@ -11,7 +11,7 @@ const currentMonthYear = () => {
 };
 
 const InsightsPage = () => {
-  const [insights, setInsights] = useState("Employee Submissions");
+  const [insights, setInsights] = useState("Summary");
   const [start, setStart] = useState(currentMonthYear());
   const [end, setEnd] = useState(currentMonthYear());
 
@@ -23,8 +23,8 @@ const InsightsPage = () => {
           value={insights}
           onChange={setInsights}
           options={[
-            { value: "Employee Submissions", label: "Employee Submissions" },
             { value: "Summary", label: "Summary" },
+            { value: "Employee Submissions", label: "Employee Submissions" },
           ]}
         />
         <span>Start Date</span>
