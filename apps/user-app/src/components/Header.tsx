@@ -9,7 +9,7 @@ export default function Header() {
       <div className="w-full px-4 md:px-8 h-14 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <img src={logoImage} alt="Logo" className="h-12 w-20 rounded-lg" />
-          <span className="font-semibold text-slate-900">Noesys Article Platform</span>
+          <span className="font-semibold text-slate-900">Article Platform</span>
         </div>
         <div className="flex items-center gap-3">
           {user && <span className="text-sm text-slate-500 hidden sm:block">{user.email}</span>}

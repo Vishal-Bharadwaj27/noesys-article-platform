@@ -32,7 +32,7 @@ interface ArticleRow {
   author?: { id: string; name: string };
 }
 
-const POLLING_INTERVAL = 5000;
+const POLLING_INTERVAL = 2500;
 
 export function useMyArticles(options: UseMyArticlesOptions = {}) {
   const { month, viewAll = false, page, limit = 10 } = options;
@@ -76,7 +76,7 @@ export function useMyArticles(options: UseMyArticlesOptions = {}) {
 
   useEffect(() => { fetchArticles(true); }, [fetchArticles]);
 
-  const hasPending = articles.some((a) => a.ai_score === null && a.status !== "failed");
+  const hasPending = articles.some((a) => a.status === "pending" || a.status === "processing" || (a.ai_score === null && a.status !== "failed"));
 
   useEffect(() => {
     const clear = () => { if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; } setIsPolling(false); };

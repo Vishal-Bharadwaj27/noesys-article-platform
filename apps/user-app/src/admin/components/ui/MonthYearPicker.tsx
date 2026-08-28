@@ -6,22 +6,10 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 
-const MONTHS = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
+const MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MONTHS_FULL = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
 interface MonthYearPickerProps {
   label: string;
@@ -42,8 +30,9 @@ export function MonthYearPicker({
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="outline" className="w-[150px] justify-start">
-          {MONTHS[month - 1]} {year}
+        <Button variant="outline" className="w-[180px] h-9 bg-white border border-slate-300 rounded-lg text-sm shadow-none justify-between font-normal">
+          {MONTHS_FULL[month - 1]} {year}
+          <Calendar className="h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[220px]">
@@ -67,7 +56,7 @@ export function MonthYearPicker({
         </div>
 
         <div className="grid grid-cols-3 gap-1">
-          {MONTHS.map((m, i) => {
+          {MONTHS_SHORT.map((m, i) => {
             const monthValue = `${viewYear}-${String(i + 1).padStart(2, "0")}`;
             const isDisabled = minValue ? monthValue < minValue : false;
 

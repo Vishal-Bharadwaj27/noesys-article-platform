@@ -60,6 +60,8 @@ const AllArticles = () => {
   const [selectedStatus, setSelectedStatus] = useState("all");
 
   const [selectedType, setSelectedType] = useState("all");
+  const [selectedAuthor, setSelectedAuthor] = useState("all");
+  const [authors, setAuthors] = useState<string[]>([]);
 
   const [loading, setLoading] = useState(false);
 
@@ -138,6 +140,11 @@ const AllArticles = () => {
   }, [fetchArticleTypes]);
 
   useEffect(() => {
+    const names = Array.from(new Set(articles.map((a) => a.author_name).filter(Boolean)));
+    setAuthors(names.sort((a, b) => a.localeCompare(b)));
+  }, [articles]);
+
+  useEffect(() => {
     fetchArticles();
   }, [fetchArticles]);
 
@@ -152,8 +159,13 @@ const AllArticles = () => {
   };
   const [sortBy, setSortBy] = useState("created_desc");
 
+  const filteredByAuthor = useMemo(() => {
+    if (selectedAuthor === "all") return articles;
+    return articles.filter((a) => a.author_name === selectedAuthor);
+  }, [articles, selectedAuthor]);
+
   const displayedArticles = useMemo(() => {
-    const sorted = [...articles];
+    const sorted = [...filteredByAuthor];
 
     switch (sortBy) {
       case "score_desc":
@@ -191,27 +203,23 @@ const AllArticles = () => {
     }
 
     return sorted;
-  }, [articles, sortBy]);
+  }, [filteredByAuthor, sortBy]);
 
   return (
-    <div className="m-5">
+    <div className="w-full px-4 md:px-8 py-5">
       <div className="mb-5">
-        <h1 className="text-3xl font-semibold">
+        <h1 className="text-3xl font-semibold text-slate-900">
           {id ? `${userName || "User"}'s Articles` : "All Articles"}
         </h1>
-
-        <p className="text-sm text-slate-500 mt-1">
-          Showing articles for {selectedMonth.format("MMMM YYYY")}
-        </p>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3 mb-5">
+      {/* Filters - 5 equal controls, same height/rounded/white, typable */}
+      <div className="grid grid-cols-5 gap-3 mb-5">
         <Popover>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
-              className="justify-between font-normal w-[180px]"
+              className="justify-between font-normal w-full h-9 bg-white border border-slate-300 rounded-lg text-sm shadow-none"
             >
               {selectedMonth.format("MMMM YYYY")}
               <Calendar className="h-4 w-4 shrink-0 opacity-50" />
@@ -274,60 +282,14 @@ const AllArticles = () => {
           </PopoverContent>
         </Popover>
 
-        <Select
-          value={selectedType}
-          onChange={setSelectedType}
-          className="w-[220px]"
-          options={[
-            {
-              value: "all",
-              label: "All Types",
-            },
-            ...articleTypes.map((type) => ({
-              value: type.id,
-              label: type.name,
-            })),
-          ]}
-        />
-
-        <Select
-          value={selectedStatus}
-          onChange={setSelectedStatus}
-          className="w-[220px]"
-          options={STATUS_OPTIONS}
-        />
-
-        <Select
-          value={sortBy}
-          onChange={setSortBy}
-          className="w-[240px]"
-          options={[
-            {
-              value: "created_desc",
-              label: "Created (Newest First)",
-            },
-            {
-              value: "created_asc",
-              label: "Created (Oldest First)",
-            },
-            {
-              value: "score_desc",
-              label: "AI Score (High → Low)",
-            },
-            {
-              value: "score_asc",
-              label: "AI Score (Low → High)",
-            },
-            {
-              value: "version_desc",
-              label: "Version (High → Low)",
-            },
-            {
-              value: "version_asc",
-              label: "Version (Low → High)",
-            },
-          ]}
-        />
+        <Select value={selectedType} onChange={setSelectedType} showSearch optionFilterProp="label" placeholder="All Types" className="w-full h-9 [&_.ant-select-selector]:!bg-white [&_.ant-select-selector]:!rounded-lg [&_.ant-select-selector]:!border-slate-300 [&_.ant-select-selector]:!h-9 text-sm" dropdownStyle={{ background: "#fff" }} listHeight={192}
+          options={[{ value: "all", label: "All Types" }, ...articleTypes.map((type) => ({ value: type.id, label: type.name }))]} filterOption={(input, opt) => (opt?.label as string).toLowerCase().includes(input.toLowerCase())} />
+        <Select value={selectedStatus} onChange={setSelectedStatus} showSearch optionFilterProp="label" placeholder="All Statuses" className="w-full h-9 [&_.ant-select-selector]:!bg-white [&_.ant-select-selector]:!rounded-lg [&_.ant-select-selector]:!border-slate-300 [&_.ant-select-selector]:!h-9 text-sm" dropdownStyle={{ background: "#fff" }} listHeight={192}
+          options={STATUS_OPTIONS} filterOption={(input, opt) => (opt?.label as string).toLowerCase().includes(input.toLowerCase())} />
+        <Select value={sortBy} onChange={setSortBy} showSearch optionFilterProp="label" placeholder="Sort" className="w-full h-9 [&_.ant-select-selector]:!bg-white [&_.ant-select-selector]:!rounded-lg [&_.ant-select-selector]:!border-slate-300 [&_.ant-select-selector]:!h-9 text-sm" dropdownStyle={{ background: "#fff" }} listHeight={192}
+          options={[{ value: "created_desc", label: "Created (Newest First)" }, { value: "created_asc", label: "Created (Oldest First)" }, { value: "score_desc", label: "AI Score (High → Low)" }, { value: "score_asc", label: "AI Score (Low → High)" }, { value: "version_desc", label: "Version (High → Low)" }, { value: "version_asc", label: "Version (Low → High)" }]} filterOption={(input, opt) => (opt?.label as string).toLowerCase().includes(input.toLowerCase())} />
+        <Select value={selectedAuthor} onChange={setSelectedAuthor} showSearch optionFilterProp="label" placeholder="All Authors" className="w-full h-9 [&_.ant-select-selector]:!bg-white [&_.ant-select-selector]:!rounded-lg [&_.ant-select-selector]:!border-slate-300 [&_.ant-select-selector]:!h-9 text-sm" dropdownStyle={{ background: "#fff" }} listHeight={192}
+          options={[{ value: "all", label: "All Authors" }, ...authors.map((name) => ({ value: name, label: name }))]} filterOption={(input, opt) => (opt?.label as string).toLowerCase().includes(input.toLowerCase())} notFoundContent="No authors found" />
       </div>
 
       {error ? (

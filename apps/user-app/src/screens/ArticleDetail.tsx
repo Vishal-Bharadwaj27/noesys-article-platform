@@ -371,58 +371,36 @@ export default function ArticleDetail() {
   const displayFeedback = effectiveSnapshot ? (effectiveSnapshot.feedback ?? "") : (currentFeedback ?? "");
   const displaySubmittedAt = effectiveSnapshot?.submitted_at ?? null;
  
+  // Poll every 2.5s while scoring; stops on unmount/complete (backend continues via waitUntil)
   useEffect(() => {
     if (effectiveSnapshot || !article || currentScore !== null) return;
-    let attempts = 0; let timeout: number | null = null; let stopped = false;
-    const schedule = () => {
-      if (stopped || attempts >= 50) return;
-      const delay = attempts < 5 ? 3000 : attempts < 15 ? 6000 : 10000;
-      timeout = window.setTimeout(async () => {
-        attempts++;
-        try {
-          const result = await api<ArticleDetailResponse>(`/articles/mine/${article.id}`);
-          setArticle(result.article); setHistory(result.history ?? []); setCurrentScore(result.current_score); setCurrentFeedback(result.current_feedback ?? "");
-          if (result.current_score === null) schedule();
-        } catch (e) { console.error(e); schedule(); }
-      }, delay);
+    let stopped = false; let timer: number | null = null;
+    const tick = async () => {
+      if (stopped || document.visibilityState === "hidden") return;
+      try {
+        const result = await api<ArticleDetailResponse>(`/articles/mine/${article.id}`);
+        setArticle(result.article); setHistory(result.history ?? []); setCurrentScore(result.current_score); setCurrentFeedback(result.current_feedback ?? "");
+        if (result.current_score !== null) { if (timer) clearInterval(timer); return; }
+      } catch (e) { console.error(e); }
     };
-    schedule();
-    return () => { stopped = true; if (timeout) clearTimeout(timeout); };
+    timer = window.setInterval(tick, 2500);
+    const onVis = () => { if (document.visibilityState === "visible") tick(); };
+    document.addEventListener("visibilitychange", onVis);
+    return () => { stopped = true; if (timer) clearInterval(timer); document.removeEventListener("visibilitychange", onVis); };
   }, [article?.id, currentScore, effectiveSnapshot]);
  
+  const isPending = currentScore === null && article?.status === "pending";
   async function handleSubmitRewrite() {
     if (!article) return;
- 
-    if (!title.trim() || !content.trim()) {
-      setSubmitError("Title and content are required");
-      return;
-    }
- 
+    if (!title.trim() || !content.trim()) { setSubmitError("Title and content are required"); return; }
     setSubmitError(null);
     setSubmitting(true);
- 
     try {
-      await api(`/articles`, {
-        method: "POST",
-        body: JSON.stringify({
-          id: article.id,
-          article_type_id: article.article_type_id,
-          title: title.trim(),
-          content: content.trim(),
-        }),
-      });
- 
-      setArticle({ ...article, status: "pending", version: article.version + 1 });
-      setCurrentScore(null);
-      setCurrentFeedback("");
-      setEditing(false);
-    } catch (err) {
-      setSubmitError(
-        err instanceof Error ? err.message : "Failed to submit rewrite"
-      );
-    } finally {
-      setSubmitting(false);
-    }
+      await api(`/articles`, { method: "POST", body: JSON.stringify({ id: article.id, article_type_id: article.article_type_id, title: title.trim(), content: content.trim() }) });
+      setArticle({ ...article, status: "pending", version: article.version + 1 } as any);
+      setCurrentScore(null); setCurrentFeedback(""); setEditing(false);
+    } catch (err) { setSubmitError(err instanceof Error ? err.message : "Failed to submit rewrite"); }
+    finally { setSubmitting(false); }
   }
  
   if (loading) {
@@ -473,6 +451,7 @@ export default function ArticleDetail() {
             {displaySubmittedAt && <span className="text-xs text-slate-400">{dayjs(displaySubmittedAt).format("MMM D, YYYY h:mm A")}</span>}
           </div>
         )}
+        {isPending && !effectiveSnapshot && <div className="mb-4 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800 flex items-center gap-2"><Loader2 size={14} className="animate-spin"/> Processing your submission — scoring in background...</div>}
         <div className="flex items-start justify-between gap-4 mb-6">
           {editing ? (
             <input
@@ -488,7 +467,7 @@ export default function ArticleDetail() {
             </h1>
           )}
  
-          {effectiveSnapshot ? null : editing ? (
+          {effectiveSnapshot ? null : isPending ? <span className="text-xs px-3 py-2 rounded-lg bg-amber-100 text-amber-700 font-medium">Scoring — edits disabled</span> : editing ? (
             <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={() => {

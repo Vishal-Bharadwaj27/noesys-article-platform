@@ -7,9 +7,8 @@ import { useMyArticles, type ArticleListItem } from "../hooks/useMyArticles";
 import { useAuth } from "../contexts/AuthContext";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { api } from "@/http-client";
-import { ConfigProvider, Table, Tag, Progress, Typography, Empty, theme as antdTheme } from "antd";
+import { ConfigProvider, Table, Tag, Progress, Typography, Empty, Select as AntSelect, Tooltip, theme as antdTheme } from "antd";
 import { ClockCircleOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import { Resizable } from "react-resizable";
@@ -26,7 +25,7 @@ const STATUS_CONFIG: Record<string, { color: string; label: string }> = {
 };
 
 function getDisplayStatus(article: { status: string; ai_score: number | null }): { key: ArticleStatus; label: string; color: string } {
-  if (article.status === "failed") return { key: "rejected", label: "Failed", color: "red" };
+  if (article.status === "failed") return { key: "rejected", label: "Failed", color: "orange" };
   if (article.ai_score === null) return { key: "scoring", label: STATUS_CONFIG.scoring.label, color: STATUS_CONFIG.scoring.color };
   if (article.ai_score === 10 && article.status === "approved") return { key: "accepted", label: STATUS_CONFIG.accepted.label, color: STATUS_CONFIG.accepted.color };
   return { key: "rejected", label: STATUS_CONFIG.rejected.label, color: STATUS_CONFIG.rejected.color };
@@ -58,6 +57,7 @@ export default function MyArticles() {
   const [viewAll, setViewAll] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [typeFilter, setTypeFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [articleTypes, setArticleTypes] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
@@ -74,9 +74,11 @@ export default function MyArticles() {
   const totalPages = pagination.totalPages || 1;
 
   const filteredArticles = useMemo(() => {
-    if (typeFilter === "all") return articles;
-    return articles.filter((a) => a.type === typeFilter || articleTypes.find(t => t.id === typeFilter)?.name === a.type);
-  }, [articles, typeFilter, articleTypes]);
+    let out = articles;
+    if (typeFilter !== "all") out = out.filter((a) => a.type === typeFilter || articleTypes.find(t => t.id === typeFilter)?.name === a.type);
+    if (statusFilter !== "all") out = out.filter((a) => getDisplayStatus(a).key === statusFilter);
+    return out;
+  }, [articles, typeFilter, statusFilter, articleTypes]);
 
   // toast from creation
   const [toast, setToast] = useState<string | null>(() => { try { const t = sessionStorage.getItem("toast"); if (t) sessionStorage.removeItem("toast"); return t; } catch { return null } });
@@ -86,11 +88,11 @@ export default function MyArticles() {
     <div className="min-h-screen bg-[#f3f4f6]">
       {user?.auth_role === "user" && <Header />}
 
-      <div className="w-full px-4 md:px-8 py-8">
+      <div className="w-full px-4 md:px-8 py-5">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-semibold text-slate-900">My Articles</h1>
+            <h1 className="text-3xl font-semibold text-slate-900">My Articles</h1>
           </div>
           <button
             onClick={() => navigate("/articles/new")}
@@ -107,7 +109,7 @@ export default function MyArticles() {
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
-                className="justify-between font-normal w-[180px] border border-slate-400"
+                className="justify-between font-normal w-[180px] h-9 bg-white border border-slate-300 rounded-lg text-sm shadow-none"
                 disabled={viewAll}
               >
                 {dayjs(month).format("MMMM YYYY")}
@@ -155,28 +157,19 @@ export default function MyArticles() {
 
           <button
             onClick={() => { setViewAll((p) => !p); setCurrentPage(1); }}
-            className="text-sm font-medium text-slate-600 border border-slate-400 rounded-lg px-3 py-2 hover:bg-slate-100 transition-colors"
+            className="h-9 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-lg px-3 hover:bg-slate-50 transition-colors"
           >
             {viewAll ? "Current Month" : "View All"}
           </button>
 
-          <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value)}>
-            <SelectTrigger className="w-[180px] border border-slate-400 rounded-lg px-3 py-2 text-sm font-medium text-slate-6 00 hover:bg-slate-100">
-              <SelectValue placeholder="Filter by Type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              {articleTypes.map((t) => (
-                <SelectItem key={t.id} value={t.id}>
-                  {t.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <AntSelect value={typeFilter} onChange={setTypeFilter} showSearch optionFilterProp="label" placeholder="Filter by Type" style={{ width: 180, height: 36 }} className="[&_.ant-select-selector]:!bg-white [&_.ant-select-selector]:!rounded-lg [&_.ant-select-selector]:!border-slate-300 [&_.ant-select-selector]:!h-9" dropdownStyle={{ background: "#fff" }}
+            options={[{ value: "all", label: "All Types" }, ...articleTypes.map((t) => ({ value: t.id, label: t.name }))]} filterOption={(input, option) => (option?.label as string).toLowerCase().includes(input.toLowerCase())} />
+          <AntSelect value={statusFilter} onChange={setStatusFilter} showSearch optionFilterProp="label" placeholder="Filter by Status" style={{ width: 180, height: 36 }} className="[&_.ant-select-selector]:!bg-white [&_.ant-select-selector]:!rounded-lg [&_.ant-select-selector]:!border-slate-300 [&_.ant-select-selector]:!h-9" dropdownStyle={{ background: "#fff" }}
+            options={[{ value: "all", label: "All Status" }, { value: "accepted", label: "Accepted" }, { value: "rejected", label: "Rejected" }]} filterOption={(input, option) => (option?.label as string).toLowerCase().includes(input.toLowerCase())} />
         </div>
 
         {toast && <div className="mb-4 rounded-lg bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-700">{toast}</div>}
-        {isPolling && <div className="mb-2 text-xs text-slate-400 flex items-center gap-1"><Loader2 size={12} className="animate-spin" /> Scoring in progress — auto-refreshing...</div>}
+        {isPolling && <div className="mb-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 flex items-center gap-1"><Loader2 size={12} className="animate-spin" /> Processing your submission — auto-refreshing...</div>}
         {error && (
           <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600">
             {error}
@@ -219,25 +212,14 @@ function MyArticlesTable({ articles, loading, onRowClick, month, viewAll }: { ar
   const [columns, setColumns] = useState<ColumnsType<ArticleListItem>>([]);
 
   useEffect(() => {
+    const fs = 13;
     const cols: ColumnsType<ArticleListItem> = [
-      { title: "Title", dataIndex: "title", key: "title", ellipsis: true, width: 300, render: (v: string) => <Text style={{ color: "#1e293b", fontWeight: 600, fontSize: 14 }}>{v}</Text> },
-      { title: "Type", dataIndex: "type", key: "type", width: 150, render: (v: string) => <Tag bordered={false} style={{ color: "#334155", fontSize: 13 }}>{v}</Tag> },
-      { title: "Version", dataIndex: "version", key: "version", width: 90, render: (v: number) => <Text style={{ color: "#334155", fontSize: 13 }}>v{v}</Text> },
-      {
-        title: "AI Score", dataIndex: "ai_score", key: "ai_score", width: 130, render: (score: number | null) => score === null ? <Text style={{ color: "#334155", fontSize: 13 }}>—</Text> : (
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-            <Progress percent={Math.min(Math.max(score, 0), 10) * 10} size="small" showInfo={false} strokeColor={scoreColorHex(score)} style={{ width: 56 }} />
-            <Text strong style={{ color: scoreColorHex(score), fontSize: 13 }}>{score}</Text>
-          </span>
-        )
-      },
-      {
-        title: "Status", dataIndex: "status", key: "status", width: 140, render: (_: string, record: ArticleListItem) => {
-          const cfg = getDisplayStatus(record);
-          return <Tag color={cfg.color} style={{ fontSize: 13 }}>{cfg.label}</Tag>;
-        }
-      },
-      { title: "Created", dataIndex: "created", key: "created", width: 135, render: (d: string) => <Text style={{ color: "#334155", fontSize: 13 }}>{dayjs(d).format("MMM D, YYYY")}</Text>, defaultSortOrder: "descend" as const },
+      { title: "Title", dataIndex: "title", key: "title", ellipsis: { showTitle: false }, width: 340, render: (v: string) => <Tooltip title={v}><Text ellipsis style={{ color: "#1e293b", fontWeight: 600, fontSize: fs }}>{v}</Text></Tooltip> },
+      { title: "Type", dataIndex: "type", key: "type", width: 130, render: (v: string) => <Tag bordered={false} style={{ color: "#334155", fontSize: fs }}>{v}</Tag> },
+      { title: "Version", dataIndex: "version", key: "version", width: 85, render: (v: number) => <Text style={{ color: "#334155", fontSize: fs }}>v{v}</Text> },
+      { title: "AI Score", dataIndex: "ai_score", key: "ai_score", width: 130, render: (score: number | null) => score === null ? <Text style={{ color: "#334155", fontSize: fs }}>—</Text> : (<span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><Progress percent={Math.min(Math.max(score, 0), 10) * 10} size="small" showInfo={false} strokeColor={scoreColorHex(score)} style={{ width: 56 }} /><Text strong style={{ color: scoreColorHex(score), fontSize: fs }}>{score}</Text></span>) },
+      { title: "Status", dataIndex: "status", key: "status", width: 115, render: (_: string, record: ArticleListItem) => { const cfg = getDisplayStatus(record); return <Tag color={cfg.color} style={{ fontSize: fs }}>{cfg.label}</Tag>; } },
+      { title: "Created", dataIndex: "created", key: "created", width: 125, render: (d: string) => <Text style={{ color: "#334155", fontSize: fs }}>{dayjs(d).format("MMM D, YYYY")}</Text>, defaultSortOrder: "descend" as const },
     ];
     setColumns(cols);
   }, []);
@@ -248,11 +230,8 @@ function MyArticlesTable({ articles, loading, onRowClick, month, viewAll }: { ar
   const mergedColumns = columns.map((col, idx) => ({ ...col, ...(typeof col.width === "number" ? { onHeaderCell: () => ({ width: col.width, onResize: handleResize(idx) }) } : {}) }));
 
   return (
-    <ConfigProvider theme={{ algorithm: antdTheme.defaultAlgorithm, token: { colorPrimary: "#111827", borderRadius: 8, colorText: "#111827", colorTextSecondary: "#374151", fontSize: 14, colorBgContainer: "#ffffff" }, components: { Table: { headerBg: "#ffffff", headerColor: "#111827", headerSplitColor: "#d1d5db", borderColor: "#d1d5db", rowHoverBg: "#f9fafb", cellPaddingBlock: 14 } } }}>
-        <div style={{ background: "#ffffff", border: "1.5px solid #d1d5db", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", padding: "16px 20px", borderBottom: "1.5px solid #d1d5db", background: "#ffffff" }}>
-          <Text style={{ fontSize: 14, color: "#111827", fontWeight: 500 }}>{articles.length} shown</Text>
-        </div>
+    <ConfigProvider theme={{ algorithm: antdTheme.defaultAlgorithm, token: { colorPrimary: "#534ab7", borderRadius: 8 }, components: { Table: { headerBg: "#e2e8f0", headerColor: "#1e293b", headerSplitColor: "#cbd5e1" } } }}>
+        <div style={{ background: "var(--ant-color-bg-container)", border: "1px solid var(--ant-color-border-secondary)", borderRadius: 12, overflow: "hidden" }}>
         <Table<ArticleListItem>
           components={{ header: { cell: ResizeableTitle } }}
           columns={mergedColumns}
@@ -260,7 +239,7 @@ function MyArticlesTable({ articles, loading, onRowClick, month, viewAll }: { ar
           rowKey="id"
           loading={loading}
           pagination={{ pageSize: 10, hideOnSinglePage: true }}
-          scroll={{ x: "max-content" }}
+          scroll={{ x: 925 }}
           onRow={(record) => ({ onClick: () => onRowClick(record.id), style: { cursor: "pointer", background: "#ffffff" } })}
           locale={{ emptyText: <Empty description={viewAll ? "No articles found." : `No articles for ${dayjs(month).format("MMMM-YYYY")}.`} /> }}
         />

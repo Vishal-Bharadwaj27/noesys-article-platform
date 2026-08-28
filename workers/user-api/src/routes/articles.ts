@@ -351,6 +351,25 @@ articleRoutes.post("/", async (c) => {
   }
 });
 
+articleRoutes.get("/:id/status", async (c) => {
+  const user = c.get("user");
+  const db = c.env.DB;
+  const articleId = c.req.param("id");
+  const article = await getArticleById(db, articleId, user.id);
+  if (!article) return c.json({ success: false, message: "Article not found" }, 404);
+  // Map internal status to spec status: pending / accepted / rejected
+  let status: string = article.status;
+  if (article.ai_score !== null) {
+    status = article.status === "approved" ? "accepted" : article.status === "failed" ? "rejected" : article.status === "rewrite_required" ? "rejected" : status;
+    // normalize approved/rewrite_required to accepted/rejected for spec compatibility
+    if (status === "approved") status = "accepted";
+    if (status === "rewrite_required") status = "rejected";
+  } else {
+    status = "pending";
+  }
+  return c.json({ success: true, data: { id: article.id, status, ai_score: article.ai_score, ai_feedback: article.ai_feedback || null, version: article.version } });
+});
+
 articleRoutes.get("/article-types", async (c) => {
   const db = c.env.DB;
 
