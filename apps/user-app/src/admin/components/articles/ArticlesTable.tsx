@@ -35,11 +35,11 @@ const STATUS_CONFIG: Record<
 > = {
   approved: {
     color: "green",
-    label: "Approved",
+    label: "accepted",
   },
   rewrite_required: {
     color: "red",
-    label: "Rewrite required",
+    label: "Rejected",
   },
   pending: {
     color: "gold",
@@ -53,7 +53,7 @@ const STATUS_CONFIG: Record<
 };
 
 function scoreColor(score: number) {
-  if (score >= 8) return "#389e0d";
+  if (score >= 10) return "#389e0d";
   if (score >= 6) return "#d48806";
   return "#cf1322";
 }
@@ -156,7 +156,7 @@ function ArticleParameters({
 
 function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
   const [columns, setColumns] = useState<ColumnsType<ArticleSummary>>([]);
-
+  
   const { id } = useParams();
 
   const [titleFilter, setTitleFilter] = useState("");
@@ -426,7 +426,7 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
 
         <Col xs={24} sm={12} md={8} lg={5}>
           <Card size="small">
-            <Text type="secondary">Approved</Text>
+            <Text type="secondary">Accepted</Text>
 
             <div className="text-2xl font-semibold text-emerald-600 mt-1">
               {dashboard.approved}
@@ -446,15 +446,15 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
 
         <Col xs={24} sm={12} md={8} lg={5}>
           <Card size="small">
-            <Text type="secondary">Rewrite Required</Text>
+            <Text type="secondary">Rejected</Text>
 
             <div className="text-2xl font-semibold text-red-600 mt-1">
               {dashboard.rewriteRequired}
             </div>
           </Card>
         </Col>
-
-        {/* <Col xs={24} sm={12} md={8} lg={5}>
+        {/* 
+        <Col xs={24} sm={12} md={8} lg={5}>
           <Card size="small">
             <Text type="secondary">Average AI Score</Text>
 
@@ -468,26 +468,27 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
       </Row>
 
       {/* Local search */}
-      <div className="flex flex-wrap gap-3">
-        <Input
-          allowClear
-          value={titleFilter}
-          onChange={(event) => setTitleFilter(event.target.value)}
-          placeholder="Search title..."
-          prefix={<SearchOutlined />}
-          className="w-[240px]"
-        />
 
-        {!id && (
+      <div>
+        <div className="flex flex-col gap-3 w-[50vw]">
           <Input
             allowClear
-            value={authorFilter}
-            onChange={(event) => setAuthorFilter(event.target.value)}
-            placeholder="Search author..."
+            value={titleFilter}
+            onChange={(event) => setTitleFilter(event.target.value)}
+            placeholder="Search title..."
             prefix={<SearchOutlined />}
-            className="w-[240px]"
           />
-        )}
+
+          {!id && (
+            <Input
+              allowClear
+              value={authorFilter}
+              onChange={(event) => setAuthorFilter(event.target.value)}
+              placeholder="Search author..."
+              prefix={<SearchOutlined />}
+            />
+          )}
+        </div>
       </div>
 
       {/* Table */}
@@ -507,15 +508,7 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
             padding: "16px 20px",
             borderBottom: "1px solid var(--ant-color-border-secondary)",
           }}
-        >
-          <Text strong style={{ fontSize: 15 }}>
-            Articles
-          </Text>
-
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            {visibleRows.length} shown
-          </Text>
-        </div>
+        ></div>
 
         <Table<ArticleSummary>
           components={{

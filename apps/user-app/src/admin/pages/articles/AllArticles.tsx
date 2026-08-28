@@ -6,6 +6,14 @@ import { DatePicker, Select, Empty } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { api } from "@/http-client";
 
+import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 type ArticleTypeOption = {
@@ -20,7 +28,7 @@ const STATUS_OPTIONS = [
   },
   {
     value: "approved",
-    label: "Approved",
+    label: "Accepted",
   },
   {
     value: "pending",
@@ -28,7 +36,7 @@ const STATUS_OPTIONS = [
   },
   {
     value: "rewrite_required",
-    label: "Rewrite Required",
+    label: "Rejected",
   },
 ];
 
@@ -46,6 +54,8 @@ const AllArticles = () => {
   const [selectedMonth, setSelectedMonth] = useState<Dayjs>(
     dayjs().startOf("month"),
   );
+
+  const [focusedYear, setFocusedYear] = useState(dayjs().year());
 
   const [selectedStatus, setSelectedStatus] = useState("all");
 
@@ -197,14 +207,72 @@ const AllArticles = () => {
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 mb-5">
-        <DatePicker
-          picker="month"
-          value={selectedMonth}
-          onChange={handleMonthChange}
-          allowClear
-          placeholder="Select month"
-          className="w-[220px]"
-        />
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className="justify-between font-normal w-[180px]"
+            >
+              {selectedMonth.format("MMMM YYYY")}
+              <Calendar className="h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+
+          <PopoverContent className="w-64 p-3">
+            <div className="flex items-center justify-between mb-3">
+              <Button
+                variant="ghost"
+                className="h-7 w-7 p-0 opacity-50 hover:opacity-100"
+                onClick={() => setFocusedYear((y) => y - 1)}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+
+              <div className="font-bold text-sm">{focusedYear}</div>
+
+              <Button
+                variant="ghost"
+                className="h-7 w-7 p-0 opacity-50 hover:opacity-100"
+                onClick={() => setFocusedYear((y) => y + 1)}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              {Array.from({ length: 12 }).map((_, i) => {
+                const month = dayjs()
+                  .year(focusedYear)
+                  .month(i)
+                  .startOf("month");
+
+                const isSelected =
+                  selectedMonth.format("YYYY-MM") === month.format("YYYY-MM");
+
+                const isCurrent =
+                  dayjs().format("YYYY-MM") === month.format("YYYY-MM");
+
+                return (
+                  <Button
+                    key={i}
+                    variant={isSelected ? "default" : "ghost"}
+                    onClick={() => setSelectedMonth(month)}
+                    className={`h-9 text-sm ${
+                      isSelected
+                        ? ""
+                        : "hover:bg-accent hover:text-accent-foreground"
+                    }`}
+                  >
+                    {month.format("MMM")}
+                    {isCurrent && (
+                      <span className="absolute top-1 right-1 h-1 w-1 rounded-full bg-primary" />
+                    )}
+                  </Button>
+                );
+              })}
+            </div>
+          </PopoverContent>
+        </Popover>
 
         <Select
           value={selectedType}
@@ -268,7 +336,7 @@ const AllArticles = () => {
         </div>
       ) : loading ? (
         <div className="rounded-xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">
-          Loading articles...
+          Loading articles
         </div>
       ) : articles.length === 0 ? (
         <Empty

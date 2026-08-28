@@ -67,45 +67,6 @@ type ArticleTypesManagerProps = {
   onDelete?: (id: string) => void | Promise<void>;
 };
 
-const EMPTY_PARAM_DRAFT: Omit<ParameterDraft, "id" | "isNew"> = {
-  name: "",
-  prompt: "",
-  scopeType: "numeric",
-  minValue: "0",
-  maxValue: "10",
-  options: "ABC",
-};
-
-const EMPTY_FORM: FormState = {
-  name: "",
-  description: "",
-  promptContent: "",
-  parameters: [],
-};
-
-function toParameterInput(
-  parameter: ParameterDraft,
-): ArticleTypeParameterInput {
-  if (parameter.scopeType === "numeric") {
-    return {
-      ...(parameter.isNew ? {} : { id: parameter.id }),
-      name: parameter.name.trim(),
-      prompt: parameter.prompt.trim(),
-      scopeType: "numeric",
-      minValue: Number(parameter.minValue),
-      maxValue: Number(parameter.maxValue),
-    };
-  }
-
-  return {
-    ...(parameter.isNew ? {} : { id: parameter.id }),
-    name: parameter.name.trim(),
-    prompt: parameter.prompt.trim(),
-    scopeType: "option",
-    options: parameter.options,
-  };
-}
-
 export default function ArticleTypesManager({
   articleTypes,
   onDelete,
@@ -193,11 +154,11 @@ export default function ArticleTypesManager({
         </div>
       </div>
 
-      <div className="w-[50vw]">
+      <div className="w-full">
         {articleTypes.length === 0 ? (
           <EmptyState
             icon={<Tag size={20} />}
-            title={"Loading articles."}
+            title={"Loading Article Types."}
             description=" Please wait..."
           />
         ) : filtered.length === 0 ? (

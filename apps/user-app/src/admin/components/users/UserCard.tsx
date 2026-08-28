@@ -11,6 +11,7 @@ import {
   ArrowUpCircle,
 } from "lucide-react";
 import { formatDate } from "../../utils/date";
+import { useAuth } from "@/contexts/AuthContext";
 
 export type AuthRole = "super_admin" | "admin" | "user";
 
@@ -67,6 +68,7 @@ export default function UserCard({
   const [submitting, setSubmitting] = useState(false);
 
   const isActive = user.is_active === 1;
+  const { user: currentUser } = useAuth();
 
   const handleConfirm = async () => {
     setSubmitting(true);
@@ -164,12 +166,14 @@ export default function UserCard({
             </button>
           )}
 
-          {(user.auth_role === 'user') && <button
-            className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium bg-indigo-50 text-indigo-700 hover:bg"
-            onClick={() => onUserClick?.(user.id)}
-          >
-            View user articles
-          </button>}
+          {user.auth_role === "user" && (
+            <button
+              className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium bg-indigo-50 text-indigo-700 hover:bg"
+              onClick={() => onUserClick?.(user.id)}
+            >
+              View user articles
+            </button>
+          )}
 
           {user.auth_role === "admin" && (
             <>
@@ -223,7 +227,10 @@ export default function UserCard({
             </div>
 
             <h2 className="mt-3 font-semibold text-slate-900">
-              {isActive ? "Deactivate" : "Activate"} {user.name}?
+              {/* {isActive ? "Deactivate" : "Activate"} {user.name}? */}
+              {isActive && currentUser && user.email !== currentUser.email
+                ? "Deactivate"
+                : "Activate"}
             </h2>
             <p className="mt-1 text-sm text-slate-500">
               {isActive

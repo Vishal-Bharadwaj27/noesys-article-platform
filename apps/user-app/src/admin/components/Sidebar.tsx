@@ -64,14 +64,6 @@ export default function Sidebar() {
           </NavLink>
         );
       })}
-
-      <button
-        onClick={handleLogout}
-        className="w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100"
-      >
-        <LogOut size={18} />
-        Logout
-      </button>
     </nav>
   );
 
@@ -104,7 +96,9 @@ export default function Sidebar() {
           ${open ? "translate-x-0" : "-translate-x-full"}`}
       >
         <div className="flex items-center justify-between px-4 h-14 border-b border-slate-200">
-          <span className="text-sm font-semibold text-slate-900">Navigation</span>
+          <span className="text-sm font-semibold text-slate-900">
+            Navigation
+          </span>
           <button
             onClick={() => setOpen(false)}
             aria-label="Close menu"
@@ -123,7 +117,6 @@ export default function Sidebar() {
 
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex flex-col w-60 h-screen bg-white border-r border-slate-200 sticky top-0">
-
         <NavList />
 
         <div className="px-3 py-4 border-t border-slate-200 text-xs text-slate-400">

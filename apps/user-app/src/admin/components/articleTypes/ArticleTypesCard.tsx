@@ -9,6 +9,7 @@ import {
 import { ArticleTypeWithPrompt } from "../../pages/articleTypes/ArticleTypesManager";
 import { formatDate } from "../../utils/date";
 import Badge from "../ui/Badge";
+import { ParameterOptionDraft } from "./ArticleTypesForm";
 
 type ArticleTypesCardProps = {
   type: ArticleTypeWithPrompt;
@@ -137,11 +138,11 @@ function ArticleTypesCard({
 
             <div>
               <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500 mb-2">
-                <FileText size={13} />
+                <FileText size={15} />
                 Scoring Prompt
               </div>
               {type.score_prompt ? (
-                <pre className="whitespace-pre-wrap text-sm text-slate-700 font-sans leading-relaxed bg-white border border-slate-200 rounded-lg p-3 max-h-56 overflow-y-auto shadow-sm">
+                <pre className="whitespace-pre-wrap text-sm text-slate-700 font-sans leading-relaxed bg-white border border-slate-200 rounded-lg p-3 max-h-85 overflow-y-auto shadow-sm">
                   {type.score_prompt}
                 </pre>
               ) : (
@@ -157,24 +158,38 @@ function ArticleTypesCard({
               </div>
 
               {type.parameters.length > 0 ? (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {type.parameters.map((param: any) => (
                     <div
                       key={param.id}
-                      className="bg-white border border-slate-200 rounded-lg p-3"
+                      className="rounded-xl border border-slate-200 bg-white p-4"
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-900">
-                          {param.name}
-                        </span>
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-medium text-slate-900">
+                            {param.name}
+                          </h4>
+
+                          <p className="mt-1 text-sm text-slate-500">
+                            {param.prompt}
+                          </p>
+                        </div>
 
                         <Badge variant="indigo">{param.scopeType}</Badge>
                       </div>
 
-                      {param.options && (
-                        <div className="mt-2 text-sm text-slate-500">
-                          Options: {param.options}
-                        </div>
+                      <div className="flex gap-1 my-1">
+                        {param.options?.map((option: ParameterOptionDraft) => (
+                          <Badge key={option.id} variant="indigo">
+                            {option.label}
+                          </Badge>
+                        ))}
+                      </div>
+
+                      {param.options.length === 0 && (
+                        <Badge variant="indigo">
+                          {param.minValue} - {param.maxValue}
+                        </Badge>
                       )}
                     </div>
                   ))}

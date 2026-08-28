@@ -54,7 +54,6 @@ parametersRoute.get("/:articleTypeId/parameters/:id", async (c) => {
 });
 
 parametersRoute.post("/:articleTypeId/parameters", async (c) => {
-  
   const articleTypeId = c.req.param("articleTypeId");
 
   const body = await c.req.json();
@@ -64,26 +63,36 @@ parametersRoute.post("/:articleTypeId/parameters", async (c) => {
     return c.json({ message: parsed.error }, 400);
   }
 
-  const data = await createParameter(c.env.DB, parsed, c.get("user").id, articleTypeId);
-
-  return c.json(
-    { message: "Parameter created successfully.", data },
-    201,
+  const data = await createParameter(
+    c.env.DB,
+    parsed,
+    c.get("user").id,
+    articleTypeId,
   );
+
+  return c.json({ message: "Parameter created successfully.", data }, 201);
 });
 
 parametersRoute.patch("/:articleTypeId/parameters/:id", async (c) => {
-  const id = c.req.param("id");
-  const body = await c.req.json();
-  const parsed = parseParameterBody(body);
+  try {
+    const id = c.req.param("id");
+    const body = await c.req.json();
+    const parsed = parseParameterBody(body);
 
-  if ("error" in parsed) {
-    return c.json({ message: parsed.error }, 400);
+    if ("error" in parsed) {
+      return c.json({ message: parsed.error }, 400);
+    }
+    await updateParameter(c.env.DB, id, parsed);
+
+    return c.json({ message: "Parameter updated successfully" });
+  } catch (error) {
+    return c.json(
+      {
+        error: error instanceof Error ? error.message : "Unknown error",
+      },
+      400,
+    );
   }
-
-  await updateParameter(c.env.DB, id, parsed);
-
-  return c.json({ message: "Parameter updated successfully" });
 });
 
 parametersRoute.delete("/:articleTypeId/parameters/:id", async (c) => {

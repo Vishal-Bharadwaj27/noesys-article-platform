@@ -102,6 +102,7 @@ body {
   body {
     margin: 0;
     color: #1e293b;
+    background-color: #f3f4f6;
   }
 
   /* User-side: darker fonts, slightly larger, no secondary washout */
