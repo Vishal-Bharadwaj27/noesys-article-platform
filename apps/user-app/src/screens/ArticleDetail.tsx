@@ -18,6 +18,7 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import type { CSSProperties } from "react";
 import TurndownService from "turndown";
+import { useAuth } from "@/contexts/AuthContext";
  
 const syntaxTheme = oneDark as { [key: string]: CSSProperties };
  
@@ -469,6 +470,7 @@ type FormValues = { article_type_id: string; title: string; content: string };
 type ArticleType = { id: string; name: string; description: string | null };
  
 export default function ArticleCreation() {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [types, setTypes] = useState<ArticleType[]>([]);
   const [loadingTypes, setLoadingTypes] = useState(true);
@@ -564,7 +566,7 @@ export default function ArticleCreation() {
  
   return (
     <div className="min-h-screen bg-slate-50">
-      <Header />
+      {user?.auth_role === 'user' && <Header />}
  
       <div className="w-full px-4 md:px-8 py-5">
         <button

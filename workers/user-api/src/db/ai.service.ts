@@ -1,13 +1,12 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { generateText, Output } from "ai";
+import { generateText } from "ai";
 import { ArticleEvaluationSchema } from "../schemas/articleEvaluation.schema";
+import type { AIEvaluationResponse } from "../types/evaluation";
 
 export async function evaluateArticle(
   apiKey: string,
   prompt: string,
-  title: string,
-  content: string,
-) {
+): Promise<AIEvaluationResponse> {
   if (!apiKey) {
     throw new Error("Google Generative AI API key is missing.");
   }
@@ -15,45 +14,19 @@ export async function evaluateArticle(
     apiKey,
   });
 
-  const markdownFormattingInstructions = `
-IMPORTANT: Format your feedback response using Markdown with the following structure:
-- Use ### for main sections (e.g., ### Overall Score: X/10)
-- Use **bold** for key terms and subsection headers
-- Use - for bullet points in lists
-- Use numbered lists (1. 2. 3.) for ordered items
-- Use > for blockquotes if needed
-- Ensure consistent spacing between sections
-
-Example format:
-### Overall Score: 8.5/10
-### Strengths
-- **Item 1:** Description
-- **Item 2:** Description
-### Weaknesses
-- **Item 1:** Description
-### Specific Improvement Suggestions
-1. First suggestion
-2. Second suggestion
-### Justification
-Your justification here.
-`;
-
-  const { output } = await generateText({
-   model: google("gemini-3.6-flash"),
-    system: `${prompt}\n\n${markdownFormattingInstructions}`,
-    prompt: `
-Title:
-
-${title}
-
-Article:
-
-${content}
-`,
-    output: Output.object({
-      schema: ArticleEvaluationSchema,
-    }),
+  const response = await generateText({
+    model: google("gemini-1.5-flash"),
+    messages: [
+      {
+        role: "system",
+        content: prompt,
+      },
+    ],
   });
 
-  return output;
+  // Parse the response as JSON and validate against schema
+  const parsed = JSON.parse(response.text);
+  const validated = ArticleEvaluationSchema.parse(parsed);
+  
+  return validated as AIEvaluationResponse;
 }

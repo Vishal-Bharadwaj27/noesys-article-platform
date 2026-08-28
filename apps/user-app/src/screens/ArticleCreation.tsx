@@ -18,18 +18,20 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import type { CSSProperties } from "react";
 import TurndownService from "turndown";
+import { useAuth } from "@/contexts/AuthContext";
+import AdminHeader from "@/admin/components/AdminHeader";
 
 const syntaxTheme = oneDark as { [key: string]: CSSProperties };
 
-const MarkdownCode: Components["code"] = ({ className, children, ...props }) => {
+const MarkdownCode: Components["code"] = ({
+  className,
+  children,
+  ...props
+}) => {
   const match = /language-(\w+)/.exec(className || "");
   if (match) {
     return (
-      <SyntaxHighlighter
-        style={syntaxTheme}
-        language={match[1]}
-        PreTag="div"
-      >
+      <SyntaxHighlighter style={syntaxTheme} language={match[1]} PreTag="div">
         {String(children).replace(/\n$/, "")}
       </SyntaxHighlighter>
     );
@@ -169,13 +171,21 @@ const sharedMarkdownComponents: Components = {
   ),
   code: MarkdownCode,
   table: ({ children, ...props }) => (
-    <div style={{ overflowX: "auto", margin: "16px 0", maxWidth: "100%", borderRadius: "6px", border: "1px solid #ddd" }}>
+    <div
+      style={{
+        overflowX: "auto",
+        margin: "16px 0",
+        maxWidth: "100%",
+        borderRadius: "6px",
+        border: "1px solid #ddd",
+      }}
+    >
       <table
         style={{
           borderCollapse: "collapse",
           width: "100%",
           fontSize: "0.875rem",
-          backgroundColor: "#fff"
+          backgroundColor: "#fff",
         }}
         {...props}
       >
@@ -184,20 +194,16 @@ const sharedMarkdownComponents: Components = {
     </div>
   ),
   thead: ({ children, ...props }) => (
-    <thead style={{ background: "#f8fafc", borderBottom: "2px solid #ddd" }} {...props}>
+    <thead
+      style={{ background: "#f8fafc", borderBottom: "2px solid #ddd" }}
+      {...props}
+    >
       {children}
     </thead>
   ),
-  tbody: ({ children, ...props }) => (
-    <tbody {...props}>
-      {children}
-    </tbody>
-  ),
+  tbody: ({ children, ...props }) => <tbody {...props}>{children}</tbody>,
   tr: ({ children, ...props }) => (
-    <tr
-      style={{ borderBottom: "1px solid #e0e0e0" }}
-      {...props}
-    >
+    <tr style={{ borderBottom: "1px solid #e0e0e0" }} {...props}>
       {children}
     </tr>
   ),
@@ -209,7 +215,7 @@ const sharedMarkdownComponents: Components = {
         textAlign: "left",
         backgroundColor: "#f5f5f5",
         fontWeight: 700,
-        color: "#333"
+        color: "#333",
       }}
       {...props}
     >
@@ -221,7 +227,7 @@ const sharedMarkdownComponents: Components = {
       style={{
         border: "1px solid #ddd",
         padding: "12px",
-        color: "#555"
+        color: "#555",
       }}
       {...props}
     >
@@ -229,13 +235,21 @@ const sharedMarkdownComponents: Components = {
     </td>
   ),
   hr: () => (
-    <hr style={{ margin: "2rem 0", border: "none", borderTop: "1px solid #ddd" }} />
+    <hr
+      style={{ margin: "2rem 0", border: "none", borderTop: "1px solid #ddd" }}
+    />
   ),
   img: ({ src, alt, ...props }) => (
     <img
       src={src}
       alt={alt ?? ""}
-      style={{ maxWidth: "100%", height: "auto", borderRadius: 8, margin: "12px 0", display: "block" }}
+      style={{
+        maxWidth: "100%",
+        height: "auto",
+        borderRadius: 8,
+        margin: "12px 0",
+        display: "block",
+      }}
       {...props}
     />
   ),
@@ -244,54 +258,54 @@ const sharedMarkdownComponents: Components = {
 const turndown = new TurndownService({
   headingStyle: "atx",
   codeBlockStyle: "fenced",
-  bulletListMarker: "-"
+  bulletListMarker: "-",
 });
 
 // Add GFM table support to turndown
-turndown.addRule('table', {
-  filter: 'table',
+turndown.addRule("table", {
+  filter: "table",
   replacement: function (content) {
-    return '\n' + content + '\n';
-  }
+    return "\n" + content + "\n";
+  },
 });
 
-turndown.addRule('tableHead', {
-  filter: 'thead',
+turndown.addRule("tableHead", {
+  filter: "thead",
   replacement: function (content) {
     return content;
-  }
+  },
 });
 
-turndown.addRule('tableBody', {
-  filter: 'tbody',
+turndown.addRule("tableBody", {
+  filter: "tbody",
   replacement: function (content) {
     return content;
-  }
+  },
 });
 
-turndown.addRule('tableRow', {
-  filter: 'tr',
+turndown.addRule("tableRow", {
+  filter: "tr",
   replacement: function (content) {
-    let line = '| ' + content.trim() + ' |';
-    return line + '\n';
-  }
+    let line = "| " + content.trim() + " |";
+    return line + "\n";
+  },
 });
 
-turndown.addRule('tableCell', {
-  filter: ['th', 'td'],
+turndown.addRule("tableCell", {
+  filter: ["th", "td"],
   replacement: function (content) {
-    return content.trim() + ' | ';
-  }
+    return content.trim() + " | ";
+  },
 });
 
 // Add IMAGE support to turndown - converts <img> to markdown ![alt](src)
-turndown.addRule('image', {
-  filter: 'img',
+turndown.addRule("image", {
+  filter: "img",
   replacement: function (content, node) {
-    const alt = node.getAttribute('alt') || '';
-    const src = node.getAttribute('src') || '';
-    return '![' + alt + '](' + src + ')';
-  }
+    const alt = node.getAttribute("alt") || "";
+    const src = node.getAttribute("src") || "";
+    return "![" + alt + "](" + src + ")";
+  },
 });
 
 function toMarkdown(content: string): string {
@@ -307,7 +321,9 @@ function toMarkdown(content: string): string {
   };
 
   // Detect rich HTML (from .docx paste or Tiptap formatting) vs raw markdown wrapped in <p>
-  const hasRichElements = !!temp.querySelector("h1,h2,h3,ul,ol,blockquote,pre,table,strong,em,u");
+  const hasRichElements = !!temp.querySelector(
+    "h1,h2,h3,ul,ol,blockquote,pre,table,strong,em,u",
+  );
   const hasImages = !!temp.querySelector("img");
   const hasTable = !!temp.querySelector("table");
 
@@ -348,10 +364,13 @@ function toMarkdown(content: string): string {
       md = decode(md);
 
       // Clean up escaped characters except in code blocks
-      md = md.split("\n").map((line) => {
-        if (line.includes("|")) return line;
-        return line.replace(/\\([#*_\-[\]`>])/g, "$1");
-      }).join("\n");
+      md = md
+        .split("\n")
+        .map((line) => {
+          if (line.includes("|")) return line;
+          return line.replace(/\\([#*_\-[\]`>])/g, "$1");
+        })
+        .join("\n");
 
       // Fix GFM table format: ensure delimiter row immediately follows header
       md = md.replace(/(\|[^\n]*\|)\n\s*\n\s*(\|[\s\-:|]+\|)/g, "$1\n$2");
@@ -402,7 +421,7 @@ function toMarkdown(content: string): string {
     const imgs = Array.from(el.querySelectorAll("img"));
     if (imgs.length > 0) {
       const clone = el.cloneNode(true) as HTMLElement;
-      clone.querySelectorAll("img").forEach(n => n.remove());
+      clone.querySelectorAll("img").forEach((n) => n.remove());
       clone.querySelectorAll("br").forEach((br) => br.replaceWith("\n"));
       const text = decode((clone.textContent ?? "").trim());
       if (text) parts.push(text);
@@ -435,7 +454,7 @@ function toMarkdown(content: string): string {
   if (hasImages) {
     try {
       return decode(turndown.turndown(content)).trim();
-    } catch { }
+    } catch {}
   }
 
   const raw = decode((temp as HTMLElement).innerText ?? temp.textContent ?? "");
@@ -481,7 +500,7 @@ export default function ArticleCreation() {
     content: "",
   });
   const [editorView, setEditorView] = useState<"editor" | "preview">("editor");
-
+  const { user } = useAuth();
   useEffect(() => {
     let active = true;
 
@@ -492,9 +511,7 @@ export default function ArticleCreation() {
       } catch (err) {
         if (active) {
           setTypesError(
-            err instanceof Error
-              ? err.message
-              : "Failed to load article types"
+            err instanceof Error ? err.message : "Failed to load article types",
           );
         }
       } finally {
@@ -548,15 +565,13 @@ export default function ArticleCreation() {
       try {
         sessionStorage.setItem(
           "toast",
-          "Article submitted! Scoring in progress..."
+          "Article submitted! Scoring in progress...",
         );
-      } catch { }
+      } catch {}
 
       navigate("/");
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to submit article"
-      );
+      setError(err instanceof Error ? err.message : "Failed to submit article");
     } finally {
       setSubmitting(false);
     }
@@ -564,7 +579,7 @@ export default function ArticleCreation() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <Header />
+      {user?.auth_role === "user" ? <Header /> : <AdminHeader />}
 
       <div className="w-full px-4 md:px-8 py-5">
         <button
@@ -606,9 +621,7 @@ export default function ArticleCreation() {
                 <SelectContent>
                   {types.map((t) => (
                     <SelectItem key={t.id} value={t.id}>
-                      {t.description
-                        ? `${t.name} — ${t.description}`
-                        : t.name}
+                      {t.description ? `${t.name} — ${t.description}` : t.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -641,20 +654,22 @@ export default function ArticleCreation() {
                   <button
                     type="button"
                     onClick={() => setEditorView("editor")}
-                    className={`px-3 py-1 text-xs font-medium rounded-md ${editorView === "editor"
-                      ? "bg-white text-slate-900 shadow-sm"
-                      : "text-slate-500 hover:text-slate-700"
-                      }`}
+                    className={`px-3 py-1 text-xs font-medium rounded-md ${
+                      editorView === "editor"
+                        ? "bg-white text-slate-900 shadow-sm"
+                        : "text-slate-500 hover:text-slate-700"
+                    }`}
                   >
                     Editor
                   </button>
                   <button
                     type="button"
                     onClick={() => setEditorView("preview")}
-                    className={`px-3 py-1 text-xs font-medium rounded-md ${editorView === "preview"
-                      ? "bg-white text-slate-900 shadow-sm"
-                      : "text-slate-500 hover:text-slate-700"
-                      }`}
+                    className={`px-3 py-1 text-xs font-medium rounded-md ${
+                      editorView === "preview"
+                        ? "bg-white text-slate-900 shadow-sm"
+                        : "text-slate-500 hover:text-slate-700"
+                    }`}
                   >
                     Preview
                   </button>
@@ -667,76 +682,88 @@ export default function ArticleCreation() {
                   />
                 )}
 
-                {editorView === "preview" && (() => {
-                  const isEmpty = !values.content || !values.content.trim() || values.content.trim() === "<p></p>";
+                {editorView === "preview" &&
+                  (() => {
+                    const isEmpty =
+                      !values.content ||
+                      !values.content.trim() ||
+                      values.content.trim() === "<p></p>";
 
-                  if (isEmpty) {
+                    if (isEmpty) {
+                      return (
+                        <div className="border border-slate-200 rounded-lg overflow-hidden bg-white">
+                          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+                            <span className="text-xs font-medium text-slate-500">
+                              Preview
+                            </span>
+                          </div>
+                          <div className="p-6 min-h-[300px] overflow-auto text-slate-400 text-sm">
+                            No content available.
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    // Determine if the content is typed or pasted markdown.
+                    // Markdown syntax uses lines starting with #, -, *, >, or contains markdown formatting symbols.
+                    const temp = document.createElement("div");
+                    temp.innerHTML = values.content;
+                    const plainText = temp.innerText || temp.textContent || "";
+
+                    // Check for markdown patterns: headings (#), lists (- or * at starts), bold/italic (** or *), blockquotes (>), tables (|), links/images ([...](...))
+                    const hasMarkdownPatterns =
+                      /(?:^|\n)\s*(?:#+\s+|- \s+|\* \s+|\d+\.\s+|> )/m.test(
+                        plainText,
+                      ) ||
+                      /\*\*[^*]+\*\*/.test(plainText) ||
+                      /\*[^*]+\*/.test(plainText) ||
+                      /\[[^\]]+\]\([^)]+\)/.test(plainText) ||
+                      /\|[^|]+\|/.test(plainText);
+
+                    // Has rich HTML tags (headings, lists, code, tables) other than basic paragraph tags (<p>, <br>)
+                    const hasRichHTMLTags = !!temp.querySelector(
+                      "h1,h2,h3,ul,ol,blockquote,pre,table,strong,em,u,img",
+                    );
+
+                    // It's a markdown file if the text contains markdown syntax patterns,
+                    // or if it doesn't contain any rich formatting tags (i.e. user just typed basic text).
+                    const isMarkdown = hasMarkdownPatterns || !hasRichHTMLTags;
+
                     return (
                       <div className="border border-slate-200 rounded-lg overflow-hidden bg-white">
                         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
-                          <span className="text-xs font-medium text-slate-500">Preview</span>
+                          <span className="text-xs font-medium text-slate-500">
+                            Preview
+                          </span>
+                          <CopyButton text={toMarkdown(values.content)} />
                         </div>
-                        <div className="p-6 min-h-[300px] overflow-auto text-slate-400 text-sm">
-                          No content available.
+                        <div className="p-6 min-h-[300px] overflow-auto">
+                          {!isMarkdown ? (
+                            // Formatted docx / rich text / images toolbar input -> render HTML directly
+                            <div
+                              className="tiptap-preview"
+                              dangerouslySetInnerHTML={{
+                                __html: values.content,
+                              }}
+                            />
+                          ) : (
+                            // Markdown formatted file/pasted text -> process to markdown and render via ReactMarkdown
+                            <ReactMarkdown
+                              remarkPlugins={[remarkGfm]}
+                              rehypePlugins={[rehypeRaw]}
+                              components={sharedMarkdownComponents}
+                            >
+                              {toMarkdown(values.content)}
+                            </ReactMarkdown>
+                          )}
                         </div>
                       </div>
                     );
-                  }
-
-                  // Determine if the content is typed or pasted markdown.
-                  // Markdown syntax uses lines starting with #, -, *, >, or contains markdown formatting symbols.
-                  const temp = document.createElement("div");
-                  temp.innerHTML = values.content;
-                  const plainText = temp.innerText || temp.textContent || "";
-                  
-                  // Check for markdown patterns: headings (#), lists (- or * at starts), bold/italic (** or *), blockquotes (>), tables (|), links/images ([...](...))
-                  const hasMarkdownPatterns = 
-                    /(?:^|\n)\s*(?:#+\s+|- \s+|\* \s+|\d+\.\s+|> )/m.test(plainText) ||
-                    /\*\*[^*]+\*\*/.test(plainText) ||
-                    /\*[^*]+\*/.test(plainText) ||
-                    /\[[^\]]+\]\([^)]+\)/.test(plainText) ||
-                    /\|[^|]+\|/.test(plainText);
-
-                  // Has rich HTML tags (headings, lists, code, tables) other than basic paragraph tags (<p>, <br>)
-                  const hasRichHTMLTags = !!temp.querySelector("h1,h2,h3,ul,ol,blockquote,pre,table,strong,em,u,img");
-
-                  // It's a markdown file if the text contains markdown syntax patterns, 
-                  // or if it doesn't contain any rich formatting tags (i.e. user just typed basic text).
-                  const isMarkdown = hasMarkdownPatterns || !hasRichHTMLTags;
-
-                  return (
-                    <div className="border border-slate-200 rounded-lg overflow-hidden bg-white">
-                      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
-                        <span className="text-xs font-medium text-slate-500">Preview</span>
-                        <CopyButton text={toMarkdown(values.content)} />
-                      </div>
-                      <div className="p-6 min-h-[300px] overflow-auto">
-                        {!isMarkdown ? (
-                          // Formatted docx / rich text / images toolbar input -> render HTML directly
-                          <div
-                            className="tiptap-preview"
-                            dangerouslySetInnerHTML={{ __html: values.content }}
-                          />
-                        ) : (
-                          // Markdown formatted file/pasted text -> process to markdown and render via ReactMarkdown
-                          <ReactMarkdown
-                            remarkPlugins={[remarkGfm]}
-                            rehypePlugins={[rehypeRaw]}
-                            components={sharedMarkdownComponents}
-                          >
-                            {toMarkdown(values.content)}
-                          </ReactMarkdown>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })()}
+                  })()}
               </div>
             </div>
 
-            {error && (
-              <p className="text-sm text-red-600">{error}</p>
-            )}
+            {error && <p className="text-sm text-red-600">{error}</p>}
 
             <button
               type="submit"
