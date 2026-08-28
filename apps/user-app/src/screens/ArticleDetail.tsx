@@ -1,29 +1,37 @@
+import { useEffect, useState, useCallback, useRef } from "react";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import Header from "../components/Header";
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { ChevronLeft, Send, Loader2, Copy, Check } from "lucide-react";
+import { ChevronLeft, Edit3, X, Check, Clock, Loader2, Copy, ChevronDown, ChevronUp } from "lucide-react";
+import dayjs from "dayjs";
+import { useArticle, type HistoryItem, type ArticleDetailResponse } from "../hooks/useArticle";
 import { api } from "../http-client";
-import TiptapEditor from "@/components/editor/TiptapEditor";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
-import rehypeRaw from "rehype-raw";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import type { CSSProperties } from "react";
-import TurndownService from "turndown";
-import { useAuth } from "@/contexts/AuthContext";
+import { formatFeedbackAsMarkdown } from "../utils/formatFeedback";
+import { ConfigProvider, Table, Tag, Progress, theme as antdTheme } from "antd";
+import type { ColumnsType } from "antd/es/table";
+import { Resizable } from "react-resizable";
+import "react-resizable/css/styles.css";
  
 const syntaxTheme = oneDark as { [key: string]: CSSProperties };
  
+const ResizeableTitle = ({ onResize, width, children, ...restProps }: any) => {
+  if (!width || typeof width !== "number") return <th {...restProps}>{children}</th>;
+  return (
+    <Resizable width={width} height={10} onResize={onResize} draggableOpts={{ enableUserSelectHack: false }}
+      handle={<span className="column-resize-handle" onClick={(e) => e.stopPropagation()} />}>
+      <th {...restProps}>{children}</th>
+    </Resizable>
+  );
+};
+function scoreColorHex(score: number) { if (score >= 8) return "#389e0d"; if (score >= 6) return "#d48806"; return "#cf1322"; }
+ 
 const MarkdownCode: Components["code"] = ({ className, children, ...props }) => {
   const match = /language-(\w+)/.exec(className || "");
+ 
   if (match) {
     return (
       <SyntaxHighlighter
@@ -35,6 +43,7 @@ const MarkdownCode: Components["code"] = ({ className, children, ...props }) => 
       </SyntaxHighlighter>
     );
   }
+ 
   return (
     <code className={className} {...props}>
       {children}
@@ -44,41 +53,17 @@ const MarkdownCode: Components["code"] = ({ className, children, ...props }) => 
  
 const sharedMarkdownComponents: Components = {
   h1: ({ children, ...props }) => (
-    <h1
-      style={{
-        fontSize: "1.875rem",
-        fontWeight: 700,
-        marginTop: "1.5rem",
-        marginBottom: "1rem",
-      }}
-      {...props}
-    >
+    <h1 style={{ fontSize: "1.875rem", fontWeight: 700, marginTop: "1.5rem", marginBottom: "1rem" }} {...props}>
       {children}
     </h1>
   ),
   h2: ({ children, ...props }) => (
-    <h2
-      style={{
-        fontSize: "1.5rem",
-        fontWeight: 600,
-        marginTop: "1.5rem",
-        marginBottom: "0.75rem",
-      }}
-      {...props}
-    >
+    <h2 style={{ fontSize: "1.5rem", fontWeight: 600, marginTop: "1.5rem", marginBottom: "0.75rem" }} {...props}>
       {children}
     </h2>
   ),
   h3: ({ children, ...props }) => (
-    <h3
-      style={{
-        fontSize: "1.25rem",
-        fontWeight: 600,
-        marginTop: "1rem",
-        marginBottom: "0.5rem",
-      }}
-      {...props}
-    >
+    <h3 style={{ fontSize: "1.25rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }} {...props}>
       {children}
     </h3>
   ),
@@ -88,368 +73,118 @@ const sharedMarkdownComponents: Components = {
     </p>
   ),
   ul: ({ children, ...props }) => (
-    <ul
-      style={{
-        marginLeft: "1.5rem",
-        marginBottom: "1rem",
-        listStyleType: "disc",
-      }}
-      {...props}
-    >
+    <ul style={{ marginLeft: "1.5rem", marginBottom: "1rem", listStyleType: "disc" }} {...props}>
       {children}
     </ul>
   ),
   ol: ({ children, ...props }) => (
-    <ol
-      style={{
-        marginLeft: "1.5rem",
-        marginBottom: "1rem",
-        listStyleType: "decimal",
-      }}
-      {...props}
-    >
+    <ol style={{ marginLeft: "1.5rem", marginBottom: "1rem", listStyleType: "decimal" }} {...props}>
       {children}
     </ol>
   ),
-  li: ({ children, ...props }) => (
-    <li style={{ marginBottom: "0.5rem" }} {...props}>
-      {children}
-    </li>
-  ),
-  strong: ({ children, ...props }) => (
-    <strong style={{ fontWeight: 600 }} {...props}>
-      {children}
-    </strong>
-  ),
-  em: ({ children, ...props }) => (
-    <em style={{ fontStyle: "italic" }} {...props}>
-      {children}
-    </em>
-  ),
+  li: ({ children, ...props }) => <li style={{ marginBottom: "0.5rem" }} {...props}>{children}</li>,
+  strong: ({ children, ...props }) => <strong style={{ fontWeight: 600 }} {...props}>{children}</strong>,
+  em: ({ children, ...props }) => <em style={{ fontStyle: "italic" }} {...props}>{children}</em>,
   blockquote: ({ children, ...props }) => (
-    <blockquote
-      style={{
-        borderLeft: "4px solid #d9d9d9",
-        paddingLeft: "1rem",
-        marginLeft: 0,
-        marginBottom: "1rem",
-        color: "#666",
-        fontStyle: "italic",
-      }}
-      {...props}
-    >
+    <blockquote style={{ borderLeft: "4px solid #d9d9d9", paddingLeft: "1rem", marginLeft: 0, marginBottom: "1rem", color: "#666", fontStyle: "italic" }} {...props}>
       {children}
     </blockquote>
   ),
   pre: ({ children, ...props }) => (
-    <pre
-      style={{
-        background: "#1e1e1e",
-        border: "1px solid #444",
-        borderRadius: 6,
-        padding: 12,
-        fontSize: 13,
-        overflow: "auto",
-        marginBottom: "1rem",
-      }}
-      {...props}
-    >
+    <pre style={{ background: "#1e1e1e", border: "1px solid #444", borderRadius: 6, padding: 12, fontSize: 13, overflow: "auto", marginBottom: "1rem" }} {...props}>
       {children}
     </pre>
   ),
-  a: ({ href, children, ...props }) => (
-    <a
-      href={href}
-      style={{ color: "#1890ff", textDecoration: "underline" }}
-      target="_blank"
-      rel="noopener noreferrer"
-      {...props}
-    >
-      {children}
-    </a>
-  ),
-  code: MarkdownCode,
-  table: ({ children, ...props }) => (
-    <div style={{ overflowX: "auto", margin: "16px 0", maxWidth: "100%", borderRadius: "6px", border: "1px solid #ddd" }}>
-      <table
-        style={{
-          borderCollapse: "collapse",
-          width: "100%",
-          fontSize: "0.875rem",
-          backgroundColor: "#fff"
-        }}
-        {...props}
-      >
+    a: ({ href, children, ...props }) => (
+      <a href={href} style={{ color: "#1890ff", textDecoration: "underline" }} target="_blank" rel="noopener noreferrer" {...props}>
         {children}
-      </table>
-    </div>
-  ),
-  thead: ({ children, ...props }) => (
-    <thead style={{ background: "#f8fafc", borderBottom: "2px solid #ddd" }} {...props}>
+      </a>
+    ),
+      code: MarkdownCode,
+      img: ({ src, alt }: any) => (
+  <img
+    src={src}
+    alt={alt}
+    style={{ maxWidth: "100%", display: "block", borderRadius: 8, margin: "1rem 0" }}
+  />
+),
+        table: ({ children, ...props }) => (
+          <div style={{ overflowX: "auto", marginBottom: "1rem", maxWidth: "100%" }}><table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }} {...props}>{children}</table></div>
+        ),
+          thead: ({ children, ...props }) => <thead style={{ background: "#f8fafc" }} {...props}>{children}</thead>,
+            tbody: ({ children, ...props }) => <tbody {...props}>{children}</tbody>,
+              tr: ({ children, ...props }) => <tr {...props}>{children}</tr>,
+                th: ({ children, ...props }) => <th style={{ border: "1px solid #e2e8f0", padding: "8px 12px", fontWeight: 600, textAlign: "left", background: "#f8fafc" }} {...props}>{children}</th>,
+                  td: ({ children, ...props }) => <td style={{ border: "1px solid #e2e8f0", padding: "8px 12px" }} {...props}>{children}</td>,
+};
+ 
+const feedbackMarkdownComponents: Components = {
+  h2: ({ children }: any) => (
+    <h2 className="text-lg font-bold text-slate-900 mt-4 mb-3 border-b border-slate-200 pb-2">
       {children}
-    </thead>
+    </h2>
   ),
-  tbody: ({ children, ...props }) => (
-    <tbody {...props}>
+  h3: ({ children }: any) => (
+    <h3 className="text-base font-semibold text-slate-800 mt-3 mb-2">
       {children}
-    </tbody>
+    </h3>
   ),
-  tr: ({ children, ...props }) => (
-    <tr
-      style={{ borderBottom: "1px solid #e0e0e0" }}
-      {...props}
-    >
+  ul: ({ children }: any) => (
+    <ul className="list-disc list-inside ml-2 mb-3 space-y-1">
       {children}
-    </tr>
+    </ul>
   ),
-  th: ({ children, ...props }) => (
-    <th
-      style={{
-        border: "1px solid #ddd",
-        padding: "12px",
-        textAlign: "left",
-        backgroundColor: "#f5f5f5",
-        fontWeight: 700,
-        color: "#333"
-      }}
-      {...props}
-    >
+  li: ({ children }: any) => (
+    <li className="text-sm text-slate-700 leading-relaxed">
       {children}
-    </th>
+    </li>
   ),
-  td: ({ children, ...props }) => (
-    <td
-      style={{
-        border: "1px solid #ddd",
-        padding: "12px",
-        color: "#555"
-      }}
-      {...props}
-    >
+  p: ({ children }: any) => (
+    <p className="text-sm text-slate-600 mb-2">
       {children}
-    </td>
+    </p>
   ),
-  hr: () => (
-    <hr style={{ margin: "2rem 0", border: "none", borderTop: "1px solid #ddd" }} />
+  strong: ({ children }: any) => (
+    <strong className="font-semibold text-slate-900">{children}</strong>
   ),
-  img: ({ src, alt, ...props }) => (
-    <img
-      src={src}
-      alt={alt ?? ""}
-      style={{ maxWidth: "100%", height: "auto", borderRadius: 8, margin: "12px 0", display: "block" }}
-      {...props}
-    />
+  em: ({ children }: any) => (
+    <em className="italic">{children}</em>
   ),
 };
  
-const turndown = new TurndownService({
-  headingStyle: "atx",
-  codeBlockStyle: "fenced",
-  bulletListMarker: "-"
-});
- 
-// Add GFM table support to turndown
-turndown.addRule('table', {
-  filter: 'table',
-  replacement: function (content) {
-    return '\n' + content + '\n';
-  }
-});
- 
-turndown.addRule('tableHead', {
-  filter: 'thead',
-  replacement: function (content) {
-    return content;
-  }
-});
- 
-turndown.addRule('tableBody', {
-  filter: 'tbody',
-  replacement: function (content) {
-    return content;
-  }
-});
- 
-turndown.addRule('tableRow', {
-  filter: 'tr',
-  replacement: function (content) {
-    let line = '| ' + content.trim() + ' |';
-    return line + '\n';
-  }
-});
- 
-turndown.addRule('tableCell', {
-  filter: ['th', 'td'],
-  replacement: function (content) {
-    return content.trim() + ' | ';
-  }
-});
- 
-// Add IMAGE support to turndown - converts <img> to markdown ![alt](src)
-turndown.addRule('image', {
-  filter: 'img',
-  replacement: function (content, node) {
-    const alt = node.getAttribute('alt') || '';
-    const src = node.getAttribute('src') || '';
-    return '![' + alt + '](' + src + ')';
-  }
-});
- 
-function toMarkdown(content: string): string {
-  if (!content.trim() || content.trim() === "<p></p>") return "";
- 
-  const temp = document.createElement("div");
-  temp.innerHTML = content;
- 
-  const decode = (s: string) => {
-    const ta = document.createElement("textarea");
-    ta.innerHTML = s;
-    return ta.value;
-  };
- 
-  // Detect rich HTML (from .docx paste or Tiptap formatting) vs raw markdown wrapped in <p>
-  const hasRichElements = !!temp.querySelector("h1,h2,h3,ul,ol,blockquote,pre,table,strong,em,u");
-  const hasImages = !!temp.querySelector("img");
-  const hasTable = !!temp.querySelector("table");
- 
-  // Case 1: Rich HTML (formatted docx / Tiptap tables/bold/headings/images) -> use Turndown
-  if (hasRichElements || hasImages) {
-    try {
-      if (hasTable) {
-        const div = document.createElement("div");
-        div.innerHTML = content;
- 
-        // Fix tables that might have empty headers
-        div.querySelectorAll("table").forEach((tbl) => {
-          const headerRow = tbl.querySelector("thead tr");
-          if (!headerRow || !headerRow.querySelector("th")) {
-            const firstBodyRow = tbl.querySelector("tbody tr");
-            if (firstBodyRow) {
-              const thead = document.createElement("thead");
-              const headerTr = document.createElement("tr");
-              firstBodyRow.querySelectorAll("td").forEach((td) => {
-                const th = document.createElement("th");
-                th.innerHTML = td.innerHTML;
-                headerTr.appendChild(th);
-              });
-              thead.appendChild(headerTr);
-              const tbody = tbl.querySelector("tbody");
-              if (tbody) {
-                tbl.insertBefore(thead, tbody);
-                firstBodyRow.remove();
-              }
-            }
-          }
-        });
- 
-        content = div.innerHTML;
-      }
- 
-      let md = turndown.turndown(content);
-      md = decode(md);
- 
-      // Clean up escaped characters except in code blocks
-      md = md.split("\n").map((line) => {
-        if (line.includes("|")) return line;
-        return line.replace(/\\([#*_\-[\]`>])/g, "$1");
-      }).join("\n");
- 
-      // Fix GFM table format: ensure delimiter row immediately follows header
-      md = md.replace(/(\|[^\n]*\|)\n\s*\n\s*(\|[\s\-:|]+\|)/g, "$1\n$2");
- 
-      // Collapse multiple blank lines inside table blocks
-      md = md.replace(/(\|[^\n]*\|)\n\n(?=\|)/g, "$1\n");
- 
-      // Ensure proper spacing between table and other content
-      md = md.replace(/(\|[\s\-:|]+\|)\n(?!\|)/g, "$1\n\n");
- 
-      // Clean up multiple consecutive blank lines (except in tables)
-      md = md.replace(/\n\n\n+/g, "\n\n");
- 
-      return md.trim();
-    } catch (e) {
-      console.error("Turndown error:", e);
-      /* fallthrough */
-    }
+function scoreColor(score: number) {
+  if (score >= 8) {
+    return { bar: "bg-emerald-500", badge: "bg-emerald-50 text-emerald-700" };
   }
  
-  // Case 2: raw markdown pasted (wrapped in <p>) + optional images
-  const getTextWithBreaks = (el: HTMLElement): string => {
-    const clone = el.cloneNode(true) as HTMLElement;
-    clone.querySelectorAll("br").forEach((br) => br.replaceWith("\n"));
-    return decode((clone.textContent ?? "").trim());
-  };
- 
-  const parts: string[] = [];
-  for (const node of Array.from(temp.childNodes) as ChildNode[]) {
-    if (node.nodeType === Node.TEXT_NODE) {
-      const tx = decode((node.textContent ?? "").trim());
-      if (tx) parts.push(tx);
-      continue;
-    }
-    if (node.nodeType !== Node.ELEMENT_NODE) continue;
- 
-    const el = node as HTMLElement;
- 
-    // Handle top-level images
-    if (el.tagName.toLowerCase() === "img") {
-      const src = el.getAttribute("src") ?? "";
-      const alt = el.getAttribute("alt") ?? "";
-      if (src) parts.push("![" + alt + "](" + src + ")");
-      continue;
-    }
- 
-    // Handle images inside other elements
-    const imgs = Array.from(el.querySelectorAll("img"));
-    if (imgs.length > 0) {
-      const clone = el.cloneNode(true) as HTMLElement;
-      clone.querySelectorAll("img").forEach(n => n.remove());
-      clone.querySelectorAll("br").forEach((br) => br.replaceWith("\n"));
-      const text = decode((clone.textContent ?? "").trim());
-      if (text) parts.push(text);
-      for (const img of imgs) {
-        const src = (img as HTMLImageElement).getAttribute("src") ?? "";
-        const alt = img.getAttribute("alt") ?? "";
-        if (src) parts.push("![" + alt + "](" + src + ")");
-      }
-      continue;
-    }
- 
-    const text = getTextWithBreaks(el);
-    if (!text) continue;
- 
-    if (text.includes("|") && text.includes("\n")) {
-      parts.push(text);
-    } else {
-      parts.push(text);
-    }
+  if (score >= 6) {
+    return { bar: "bg-amber-500", badge: "bg-amber-50 text-amber-700" };
   }
  
-  if (parts.length > 0) {
-    let out = parts.join("\n\n").trim();
-    // GFM tables must have header and delimiter on consecutive lines
-    out = out.replace(/(\|[^\n]*\|)\n\s*\n(?=\|)/g, "$1\n");
-    return out;
-  }
+  return { bar: "bg-red-500", badge: "bg-red-50 text-red-600" };
+}
  
-  // Fallback: images at deeper nesting or Turndown for edge cases
-  if (hasImages) {
-    try {
-      return decode(turndown.turndown(content)).trim();
-    } catch { }
-  }
+const STATUS_STYLES: Record<string, string> = {
+  accepted: "bg-emerald-50 text-emerald-700",
+  rejected: "bg-red-50 text-red-600",
+  scoring: "bg-slate-100 text-slate-600",
+};
  
-  const raw = decode((temp as HTMLElement).innerText ?? temp.textContent ?? "");
-  return raw.trim();
+function getDisplayStatus(article: { status: string } | null | undefined, score: number | null): "accepted" | "rejected" | "scoring" {
+  if (score === null) return "scoring";
+  if (score === 10 && article?.status === "approved") return "accepted";
+  return "rejected";
 }
  
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
+ 
   const handleCopy = () => {
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+ 
   return (
     <button
       onClick={handleCopy}
@@ -465,110 +200,261 @@ function CopyButton({ text }: { text: string }) {
   );
 }
  
-type CreateResponse = { id: string; status: string };
-type FormValues = { article_type_id: string; title: string; content: string };
-type ArticleType = { id: string; name: string; description: string | null };
+function ContentBlock({ content }: { content: string }) {
+  const [view, setView] = useState<"rendered" | "raw">("rendered");
  
-export default function ArticleCreation() {
-  const { user } = useAuth();
+  return (
+    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+      <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
+        <h2 className="font-semibold text-slate-900">Content</h2>
+ 
+        <div className="flex items-center gap-2">
+          <div className="flex bg-slate-100 rounded-lg p-0.5">
+            <button
+              onClick={() => setView("rendered")}
+              className={`px-3 py-1 text-xs font-medium rounded-md ${view === "rendered"
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+                }`}
+            >
+              Rendered
+            </button>
+            <button
+              onClick={() => setView("raw")}
+              className={`px-3 py-1 text-xs font-medium rounded-md ${view === "raw"
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+                }`}
+            >
+              Markdown
+            </button>
+          </div>
+ 
+          <CopyButton text={content} />
+        </div>
+      </div>
+ 
+      <div className="px-5 py-4">
+        {view === "rendered" ? (
+          <div className="markdown-body">
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={sharedMarkdownComponents}>
+              {content}
+            </ReactMarkdown>
+          </div>
+        ) : (
+          <pre
+            style={{
+              background: "#fafafa",
+              border: "1px solid #f0f0f0",
+              borderRadius: 6,
+              padding: 12,
+              fontSize: 13,
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+            }}
+          >
+            {content}
+          </pre>
+        )}
+      </div>
+    </div>
+  );
+}
+ 
+function RewriteContentEditor({
+  content,
+  onChange,
+}: {
+  content: string;
+  onChange: (value: string) => void;
+}) {
+  const [view, setView] = useState<"rendered" | "raw">("raw");
+ 
+  return (
+    <div className="border border-slate-200 rounded-lg overflow-hidden">
+      <div className="flex items-center justify-between px-3 py-2 bg-slate-50 border-b border-slate-200">
+        <span className="text-xs font-medium text-slate-500">
+          Article Content
+        </span>
+ 
+        <div className="flex bg-slate-200 rounded-lg p-0.5">
+          <button
+            onClick={() => setView("rendered")}
+            className={`px-3 py-1 text-xs font-medium rounded-md ${view === "rendered"
+                ? "bg-white text-slate-900 shadow-sm"
+                : "text-slate-500 hover:text-slate-700"
+              }`}
+          >
+            Rendered
+          </button>
+          <button
+            onClick={() => setView("raw")}
+            className={`px-3 py-1 text-xs font-medium rounded-md ${view === "raw"
+                ? "bg-white text-slate-900 shadow-sm"
+                : "text-slate-500 hover:text-slate-700"
+              }`}
+          >
+            Markdown
+          </button>
+        </div>
+      </div>
+ 
+      <div className="p-3">
+        {view === "rendered" ? (
+          <div className="min-h-[250px] prose prose-sm prose-slate max-w-none px-1 py-1">
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={sharedMarkdownComponents}>
+              {content || "No content available."}
+            </ReactMarkdown>
+          </div>
+        ) : (
+          <textarea
+            rows={10}
+            value={content}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder="Article content"
+            className="w-full min-h-[250px] rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y"
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+ 
+function FeedbackBlock({ feedback }: { feedback: string }) {
+  // Strip "Overall Score: X/10" line from feedback
+  const strippedFeedback = feedback.replace(/^###\s*Overall\s*Score:.*?\/10.*$/m, '').trim();
+  const formattedFeedback = formatFeedbackAsMarkdown(strippedFeedback);
+ 
+  return (
+    <div className="prose prose-sm prose-slate max-w-none bg-white p-4 rounded-lg border border-slate-200">
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={feedbackMarkdownComponents}>
+        {formattedFeedback}
+      </ReactMarkdown>
+    </div>
+  );
+}
+ 
+export default function ArticleDetail() {
+  const { id, version: routeVersion } = useParams<{ id: string; version?: string }>();
   const navigate = useNavigate();
-  const [types, setTypes] = useState<ArticleType[]>([]);
-  const [loadingTypes, setLoadingTypes] = useState(true);
-  const [typesError, setTypesError] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+  const queryVersion = searchParams.get("version");
+  const rawVersion = routeVersion ?? queryVersion;
+  const parsedVersion = rawVersion ? parseInt(rawVersion, 10) : null;
+  const versionParam = parsedVersion !== null && !isNaN(parsedVersion) ? parsedVersion : null;
+ 
+  const { article, history, currentScore, currentFeedback, loading, error, setCurrentScore, setCurrentFeedback, setArticle, setHistory } = useArticle(id ?? "");
+  const [editing, setEditing] = useState(false);
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [values, setValues] = useState<FormValues>({
-    article_type_id: "",
-    title: "",
-    content: "",
-  });
-  const [editorView, setEditorView] = useState<"editor" | "preview">("editor");
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [contentCollapsed, setContentCollapsed] = useState(true);
  
   useEffect(() => {
-    let active = true;
- 
-    async function loadTypes() {
-      try {
-        const result = await api<ArticleType[]>("/article-types");
-        if (active) setTypes(result);
-      } catch (err) {
-        if (active) {
-          setTypesError(
-            err instanceof Error
-              ? err.message
-              : "Failed to load article types"
-          );
-        }
-      } finally {
-        if (active) setLoadingTypes(false);
-      }
+    if (article) {
+      setTitle(article.title);
+      setContent(article.content);
     }
+  }, [article]);
  
-    loadTypes();
+  const isVersionSnapshot = versionParam !== null && history.some(h => h.version === versionParam) && versionParam !== article?.version;
+  // If version param matches a history entry, show snapshot; if it equals current version treat as live
+  const snapshot = versionParam !== null ? history.find(h => h.version === versionParam) ?? null : null;
+  const effectiveSnapshot = isVersionSnapshot ? snapshot : null;
+  const displayTitle = effectiveSnapshot?.title ?? article?.title ?? "";
+  const displayContent = effectiveSnapshot?.content ?? article?.content ?? "";
+  const displayScore = effectiveSnapshot ? effectiveSnapshot.score : currentScore;
+  const displayFeedback = effectiveSnapshot ? (effectiveSnapshot.feedback ?? "") : (currentFeedback ?? "");
+  const displaySubmittedAt = effectiveSnapshot?.submitted_at ?? null;
  
-    return () => {
-      active = false;
+  useEffect(() => {
+    if (effectiveSnapshot || !article || currentScore !== null) return;
+    let attempts = 0; let timeout: number | null = null; let stopped = false;
+    const schedule = () => {
+      if (stopped || attempts >= 50) return;
+      const delay = attempts < 5 ? 3000 : attempts < 15 ? 6000 : 10000;
+      timeout = window.setTimeout(async () => {
+        attempts++;
+        try {
+          const result = await api<ArticleDetailResponse>(`/articles/mine/${article.id}`);
+          setArticle(result.article); setHistory(result.history ?? []); setCurrentScore(result.current_score); setCurrentFeedback(result.current_feedback ?? "");
+          if (result.current_score === null) schedule();
+        } catch (e) { console.error(e); schedule(); }
+      }, delay);
     };
-  }, []);
+    schedule();
+    return () => { stopped = true; if (timeout) clearTimeout(timeout); };
+  }, [article?.id, currentScore, effectiveSnapshot]);
  
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
+  async function handleSubmitRewrite() {
+    if (!article) return;
  
-    if (!values.article_type_id) {
-      setError("Please select an article type");
+    if (!title.trim() || !content.trim()) {
+      setSubmitError("Title and content are required");
       return;
     }
  
-    if (!values.title.trim()) {
-      setError("Please enter a title");
-      return;
-    }
- 
-    if (!values.content.trim()) {
-      setError("Please enter content");
-      return;
-    }
- 
-    if (values.content.length > 500000) {
-      setError("Content exceeds 500KB limit");
-      return;
-    }
- 
+    setSubmitError(null);
     setSubmitting(true);
  
     try {
-      await api<CreateResponse>("/articles", {
+      await api(`/articles`, {
         method: "POST",
         body: JSON.stringify({
-          article_type_id: values.article_type_id,
-          title: values.title.trim(),
-          content: toMarkdown(values.content.trim()),
+          id: article.id,
+          article_type_id: article.article_type_id,
+          title: title.trim(),
+          content: content.trim(),
         }),
       });
  
-      try {
-        sessionStorage.setItem(
-          "toast",
-          "Article submitted! Scoring in progress..."
-        );
-      } catch { }
- 
-      navigate("/");
+      setArticle({ ...article, status: "pending", version: article.version + 1 });
+      setCurrentScore(null);
+      setCurrentFeedback("");
+      setEditing(false);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to submit article"
+      setSubmitError(
+        err instanceof Error ? err.message : "Failed to submit rewrite"
       );
     } finally {
       setSubmitting(false);
     }
   }
  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <Loader2 size={28} className="animate-spin text-slate-400" />
+      </div>
+    );
+  }
+ 
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="text-center">
+          <p className="text-slate-500 mb-4">{error}</p>
+ 
+          <button
+            onClick={() => navigate("/")}
+            className="text-sm text-indigo-600 hover:underline"
+          >
+            Back to Articles
+          </button>
+        </div>
+      </div>
+    );
+  }
+ 
+  const hasScore = displayScore !== null;
+  const colors = hasScore ? scoreColor(displayScore!) : null;
+ 
   return (
     <div className="min-h-screen bg-slate-50">
-      {user?.auth_role === 'user' && <Header />}
+      <Header />
  
-      <div className="w-full px-4 md:px-8 py-5">
+      <div className="w-full px-4 md:px-8 py-8">
         <button
           onClick={() => navigate("/")}
           className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-6"
@@ -577,185 +463,203 @@ export default function ArticleCreation() {
           Back to Articles
         </button>
  
-        <h1 className="text-2xl font-semibold text-slate-900 mb-6">
-          Create New Article
-        </h1>
- 
-        <div>
-          {typesError && (
-            <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600">
-              {typesError}
-            </div>
+        {effectiveSnapshot && (
+          <div className="mb-4 flex items-center gap-2">
+            <span className="text-xs px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 font-medium">Version {effectiveSnapshot.version} Snapshot</span>
+            {displaySubmittedAt && <span className="text-xs text-slate-400">{dayjs(displaySubmittedAt).format("MMM D, YYYY h:mm A")}</span>}
+          </div>
+        )}
+        <div className="flex items-start justify-between gap-4 mb-6">
+          {editing ? (
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Article title"
+              className="flex-1 text-lg font-medium rounded-lg border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          ) : (
+            <h1 className="text-2xl font-semibold text-slate-900 leading-snug">
+              {displayTitle}
+            </h1>
           )}
  
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                Article Type
-              </label>
+          {effectiveSnapshot ? null : editing ? (
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => {
+                  setEditing(false);
  
-              <Select
-                value={values.article_type_id}
-                onValueChange={(value: string) =>
-                  setValues({ ...values, article_type_id: value })
-                }
-                disabled={loadingTypes}
-              >
-                <SelectTrigger className="w-full border-slate-400 bg-white shadow-sm text-slate-900 [&_span[data-placeholder]]:text-slate-500">
-                  <SelectValue placeholder="Select an article type" />
-                </SelectTrigger>
- 
-                <SelectContent>
-                  {types.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      {t.description
-                        ? `${t.name} — ${t.description}`
-                        : t.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
- 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                Title
-              </label>
- 
-              <input
-                type="text"
-                value={values.title}
-                onChange={(e) =>
-                  setValues({ ...values, title: e.target.value })
-                }
-                placeholder="Enter article title"
-                className="w-full rounded-lg border border-slate-400 bg-white px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
- 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                Content
-              </label>
- 
-              <div className="space-y-2">
-                <div className="flex bg-slate-100 rounded-lg p-0.5 w-fit">
-                  <button
-                    type="button"
-                    onClick={() => setEditorView("editor")}
-                    className={`px-3 py-1 text-xs font-medium rounded-md ${editorView === "editor"
-                      ? "bg-white text-slate-900 shadow-sm"
-                      : "text-slate-500 hover:text-slate-700"
-                      }`}
-                  >
-                    Editor
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setEditorView("preview")}
-                    className={`px-3 py-1 text-xs font-medium rounded-md ${editorView === "preview"
-                      ? "bg-white text-slate-900 shadow-sm"
-                      : "text-slate-500 hover:text-slate-700"
-                      }`}
-                  >
-                    Preview
-                  </button>
-                </div>
- 
-                {editorView === "editor" && (
-                  <TiptapEditor
-                    value={values.content}
-                    onChange={(content) => setValues({ ...values, content })}
-                  />
-                )}
- 
-                {editorView === "preview" && (() => {
-                  const isEmpty = !values.content || !values.content.trim() || values.content.trim() === "<p></p>";
- 
-                  if (isEmpty) {
-                    return (
-                      <div className="border border-slate-200 rounded-lg overflow-hidden bg-white">
-                        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
-                          <span className="text-xs font-medium text-slate-500">Preview</span>
-                        </div>
-                        <div className="p-6 min-h-[300px] overflow-auto text-slate-400 text-sm">
-                          No content available.
-                        </div>
-                      </div>
-                    );
+                  if (article) {
+                    setTitle(article.title);
+                    setContent(article.content);
                   }
  
-                  // Determine if the content is typed or pasted markdown.
-                  // Markdown syntax uses lines starting with #, -, *, >, or contains markdown formatting symbols.
-                  const temp = document.createElement("div");
-                  temp.innerHTML = values.content;
-                  const plainText = temp.innerText || temp.textContent || "";
-                 
-                  // Check for markdown patterns: headings (#), lists (- or * at starts), bold/italic (** or *), blockquotes (>), tables (|), links/images ([...](...))
-                  const hasMarkdownPatterns =
-                    /(?:^|\n)\s*(?:#+\s+|- \s+|\* \s+|\d+\.\s+|> )/m.test(plainText) ||
-                    /\*\*[^*]+\*\*/.test(plainText) ||
-                    /\*[^*]+\*/.test(plainText) ||
-                    /\[[^\]]+\]\([^)]+\)/.test(plainText) ||
-                    /\|[^|]+\|/.test(plainText);
+                  setSubmitError(null);
+                }}
+                className="flex items-center gap-1.5 text-sm text-slate-600 border border-slate-200 rounded-lg px-3 py-2 hover:bg-slate-100 transition-colors"
+              >
+                <X size={14} />
+                Cancel
+              </button>
  
-                  // Has rich HTML tags (headings, lists, code, tables) other than basic paragraph tags (<p>, <br>)
-                  const hasRichHTMLTags = !!temp.querySelector("h1,h2,h3,ul,ol,blockquote,pre,table,strong,em,u,img");
+              <button
+                onClick={handleSubmitRewrite}
+                disabled={submitting}
+                className="flex items-center gap-1.5 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white rounded-lg px-3 py-2 transition-colors"
+              >
+                {submitting ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <Check size={14} />
+                )}
+                Submit Rewrite
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setEditing(true)}
+              className="flex items-center gap-1.5 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-3 py-2 transition-colors shrink-0"
+            >
+              <Edit3 size={14} />
+              Rewrite Article
+            </button>
+          )}
+        </div>
  
-                  // It's a markdown file if the text contains markdown syntax patterns,
-                  // or if it doesn't contain any rich formatting tags (i.e. user just typed basic text).
-                  const isMarkdown = hasMarkdownPatterns || !hasRichHTMLTags;
+        <div className="space-y-6">
+          {/* Current Score - MOVED TO TOP */}
+          <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+            <p className="text-md font-semibold uppercase tracking-wide text-slate-600 mb-1">
+              Current Score
+            </p>
  
-                  return (
-                    <div className="border border-slate-200 rounded-lg overflow-hidden bg-white">
-                      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
-                        <span className="text-xs font-medium text-slate-500">Preview</span>
-                        <CopyButton text={toMarkdown(values.content)} />
-                      </div>
-                      <div className="p-6 min-h-[300px] overflow-auto">
-                        {!isMarkdown ? (
-                          // Formatted docx / rich text / images toolbar input -> render HTML directly
-                          <div
-                            className="tiptap-preview"
-                            dangerouslySetInnerHTML={{ __html: values.content }}
-                          />
-                        ) : (
-                          // Markdown formatted file/pasted text -> process to markdown and render via ReactMarkdown
-                          <ReactMarkdown
-                            remarkPlugins={[remarkGfm]}
-                            rehypePlugins={[rehypeRaw]}
-                            components={sharedMarkdownComponents}
-                          >
-                            {toMarkdown(values.content)}
-                          </ReactMarkdown>
-                        )}
-                      </div>
+            <div className="flex items-center gap-3">
+              {displayScore === null ? (
+                <div className="flex items-center gap-2 text-sm text-slate-500 py-1">
+                  <Loader2 size={16} className="animate-spin text-slate-400" />
+                  <span>Scoring...</span>
+                </div>
+              ) : (
+                <>
+                  <p className="text-3xl font-semibold text-slate-900">
+                    {hasScore ? displayScore!.toFixed(1) : "—"}
+ 
+                    <span className="text-base text-slate-400 font-normal">
+                      {" "}
+                      / 10
+                    </span>
+                  </p>
+ 
+                  {hasScore && (
+                    <div className="flex-1 h-2 rounded-full bg-slate-200 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${colors!.bar}`}
+                        style={{
+                          width: `${(Math.min(displayScore!, 10) / 10) * 100}%`,
+                        }}
+                      />
                     </div>
-                  );
-                })()}
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+ 
+          {/* Feedback - BELOW SCORE */}
+          <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-md font-semibold uppercase tracking-wide text-slate-600">
+                Feedback
+              </p>
+ 
+              {displayFeedback && (
+                <CopyButton text={displayFeedback} />
+              )}
+            </div>
+ 
+            {displayScore === null ? (
+              <div className="flex items-center gap-2 text-sm text-slate-500 py-2 bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+                <Loader2 size={16} className="animate-spin text-slate-400" />
+                <span>Scoring...</span>
+              </div>
+            ) : (
+              <FeedbackBlock
+                feedback={
+                  displayFeedback || "No feedback available yet."
+                }
+              />
+            )}
+          </div>
+ 
+          {/* Content - COLLAPSIBLE */}
+          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 cursor-pointer" onClick={() => setContentCollapsed(!contentCollapsed)}>
+              <h2 className="font-semibold text-slate-900">Article</h2>
+ 
+              <div className="flex items-center gap-2">
+                {article && (
+                  <span className="text-xs font-medium text-slate-600 bg-slate-100 rounded-full px-2.5 py-1">
+                    {article.article_type_name}
+                  </span>
+                )}
+                <span className="p-1 text-slate-400">
+ 
+                  {contentCollapsed ? (
+                    <ChevronDown size={18} />
+                  ) : (
+                    <ChevronUp size={18} />
+                  )}
+                </span>
               </div>
             </div>
  
-            {error && (
-              <p className="text-sm text-red-600">{error}</p>
-            )}
+            {!contentCollapsed && (
+              <div className="px-5 py-4">
+                {editing ? (
+                  <RewriteContentEditor
+                    content={content}
+                    onChange={setContent}
+                  />
+                ) : (
+                  <ContentBlock content={displayContent} />
+                )}
  
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-medium rounded-lg py-2.5 transition-colors"
-            >
-              {submitting ? (
-                <Loader2 size={15} className="animate-spin" />
-              ) : (
-                <Send size={15} />
-              )}
-              {submitting ? "Submitting..." : "Submit Article"}
-            </button>
-          </form>
+                {submitError && (
+                  <p className="mt-3 text-sm text-red-600">{submitError}</p>
+                )}
+              </div>
+            )}
+          </div>
+ 
+          {!effectiveSnapshot && <ScoringHistoryTable history={history} articleId={article?.id ?? ""} />}
         </div>
       </div>
     </div>
+  );
+}
+ 
+function ScoringHistoryTable({ history, articleId }: { history: HistoryItem[]; articleId: string }) {
+  const navigate = useNavigate();
+  const [cols, setCols] = useState<ColumnsType<HistoryItem>>([]);
+  useEffect(() => {
+    const columns: ColumnsType<HistoryItem> = [
+      { title: "Version", dataIndex: "version", key: "version", width: 90, sorter: (a, b) => a.version - b.version, render: (v: number, r: HistoryItem) => <span onClick={() => navigate(`/articles/${articleId}?version=${r.version}`)} style={{ color: "#0284c7", fontWeight: 600, fontSize: 14, cursor: "pointer", textUnderlineOffset: 3 }}>Aritcle Version {v}</span> },
+      { title: "AI Score", dataIndex: "score", key: "score", width: 130, render: (s: number | null) => s === null ? <span style={{ color: "#94a3b8", fontSize: 13 }}>—</span> : <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><Progress percent={Math.min(Math.max(s, 0), 10) * 10} size="small" showInfo={false} strokeColor={scoreColorHex(s)} style={{ width: 56 }} /><span style={{ color: scoreColorHex(s), fontWeight: 600, fontSize: 13 }}>{s.toFixed(1)}</span></span> },
+      { title: "Status", dataIndex: "status", key: "status", width: 130, render: (_: any, r: HistoryItem) => { const ds = r.score === null ? "scoring" : r.score === 10 ? "accepted" : "rejected"; const label = ds === "scoring" ? "Scoring..." : ds === "accepted" ? "Accepted" : "Rejected"; return <Tag color={ds === "accepted" ? "green" : ds === "rejected" ? "red" : "default"} style={{ fontSize: 13 }}>{label}</Tag>; } },
+      { title: "Submitted", dataIndex: "submitted_at", key: "submitted_at", width: 160, sorter: (a, b) => new Date(a.submitted_at).getTime() - new Date(b.submitted_at).getTime(), render: (d: string) => <span style={{ color: "#334155", fontSize: 13 }}>{dayjs(d).format("MMM D, YYYY h:mm A")}</span> },
+    ];
+    setCols(columns);
+  }, [articleId]);
+  const handleResize = (idx: number) => (_: any, { size }: { size: { width: number } }) => setCols(cur => { const n = [...cur]; n[idx] = { ...n[idx], width: size.width }; return n; });
+  const merged = cols.map((c, i) => ({ ...c, ...(typeof c.width === "number" ? { onHeaderCell: () => ({ width: c.width, onResize: handleResize(i) }) } : {}) }));
+  return (
+    <ConfigProvider theme={{ algorithm: antdTheme.defaultAlgorithm, token: { colorPrimary: "#111827", borderRadius: 8, colorText: "#111827", colorTextSecondary: "#374151", fontSize: 14, colorBgContainer: "#ffffff" }, components: { Table: { headerBg: "#ffffff", headerColor: "#111827", headerSplitColor: "#d1d5db", borderColor: "#d1d5db", rowHoverBg: "#f9fafb", cellPaddingBlock: 14 } } }}>
+      <div style={{ background: "#ffffff", border: "1.5px solid #d1d5db", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", borderBottom: "1.5px solid #d1d5db" }}><span style={{ fontSize: 15, fontWeight: 600, color: "#111827" }}>Scoring History</span><span style={{ fontSize: 13, color: "#64748b" }}>{history.length} versions</span></div>
+        <Table<HistoryItem> components={{ header: { cell: ResizeableTitle } }} columns={merged} dataSource={history} rowKey="version" pagination={false} scroll={{ x: "max-content" }} locale={{ emptyText: "No scoring history yet." }} />
+      </div>
+    </ConfigProvider>
   );
 }
  
