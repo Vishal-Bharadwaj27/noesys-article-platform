@@ -27,7 +27,9 @@ const InsightsPage = () => {
             { value: "Summary", label: "Summary" },
           ]}
         />
+        <span>Start Date</span>
         <MonthYearPicker label="Start" value={start} onChange={setStart} />
+        <span>End Date</span>
         <MonthYearPicker
           label="End"
           value={end}
