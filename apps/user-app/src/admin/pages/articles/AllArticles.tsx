@@ -219,7 +219,7 @@ const AllArticles = () => {
           <PopoverTrigger asChild>
             <Button
               variant="outline"
-              className="justify-between font-normal w-full h-9 bg-white border-slate-300 rounded-lg text-sm"
+              className="justify-between font-normal w-full h-9 bg-white border border-slate-300 rounded-lg text-sm shadow-none"
             >
               {selectedMonth.format("MMMM YYYY")}
               <Calendar className="h-4 w-4 shrink-0 opacity-50" />
