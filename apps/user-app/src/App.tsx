@@ -14,7 +14,7 @@ import ArticleTypesPage from "./admin/pages/articleTypes/ArticleTypesPage";
 
 import Sidebar from "./admin/components/Sidebar";
 import AdminHeader from "./admin/components/AdminHeader";
-import ArticleDetailsPage from "./admin/components/articles/ArticleDetailsPage";
+import AdminArticleDetail from "./admin/components/articles/AdminArticleDetail";
 import ArticleTypesForm from "./admin/components/articleTypes/ArticleTypesForm";
 import InsightsPage from "./admin/pages/insights/InsightsPage";
 
@@ -125,7 +125,7 @@ export default function App() {
         element={
           <RoleBasedRoute allowedRoles={["admin", "super_admin"]}>
             <AdminLayout>
-              <ArticleDetailsPage />
+              <AdminArticleDetail />
             </AdminLayout>
           </RoleBasedRoute>
         }

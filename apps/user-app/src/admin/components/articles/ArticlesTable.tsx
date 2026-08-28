@@ -16,7 +16,8 @@ import {
   Tooltip,
 } from "antd";
 import type { ColumnsType, TableProps } from "antd/es/table";
-import { ClockCircleOutlined, SearchOutlined } from "@ant-design/icons";
+import { ClockCircleOutlined } from "@ant-design/icons";
+import { Search } from "lucide-react";
 import { Resizable } from "react-resizable";
 import "react-resizable/css/styles.css";
 
@@ -375,9 +376,8 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
         </Col> */}
       </Row>
 
-      {/* Title search - full width */}
       <div>
-        <Input allowClear value={titleFilter} onChange={(event) => setTitleFilter(event.target.value)} placeholder="Search title..." prefix={<SearchOutlined />} className="w-full" />
+        <Input allowClear value={titleFilter} onChange={(event) => setTitleFilter(event.target.value)} placeholder="Search title..." prefix={<Search size={15} className="text-slate-400" />} className="w-full h-9 rounded-lg" style={{ height: 36, borderColor: "#cbd5e1", background: "#fff" }} />
       </div>
 
       {/* Table */}

@@ -208,7 +208,7 @@ const AllArticles = () => {
   return (
     <div className="w-full px-4 md:px-8 py-5">
       <div className="mb-5">
-        <h1 className="text-3xl font-semibold">
+        <h1 className="text-3xl font-semibold text-slate-900">
           {id ? `${userName || "User"}'s Articles` : "All Articles"}
         </h1>
       </div>

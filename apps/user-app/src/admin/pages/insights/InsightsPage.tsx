@@ -21,9 +21,9 @@ const InsightsPage = () => {
       <h1 className="text-3xl font-semibold mb-5">Insights</h1>
       <div className="flex items-center gap-3 mb-5">
         <Select className="w-[200px] h-9 [&_.ant-select-selector]:!bg-white [&_.ant-select-selector]:!rounded-lg [&_.ant-select-selector]:!border-slate-300 [&_.ant-select-selector]:!h-9 text-sm" dropdownStyle={{ background: "#fff" }} showSearch optionFilterProp="label" filterOption={(input, opt) => (opt?.label as string).toLowerCase().includes(input.toLowerCase())} value={insights} onChange={setInsights} options={[{ value: "Employee Submissions", label: "Employee Submissions" }, { value: "Summary", label: "Summary" }]} />
-        <span className="font-bold text-sm flex items-center gap-1"><Calendar size={14} className="opacity-50" />Start Date</span>
+        <span className="font-bold text-sm">Start Date</span>
         <MonthYearPicker label="Start" value={start} onChange={setStart} />
-        <span className="font-bold text-sm flex items-center gap-1"><Calendar size={14} className="opacity-50" />End Date</span>
+        <span className="font-bold text-sm">End Date</span>
         <MonthYearPicker label="End" value={end} onChange={setEnd} minValue={start} />
       </div>
       <div>
