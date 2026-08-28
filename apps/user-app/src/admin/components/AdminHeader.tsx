@@ -13,7 +13,7 @@ import { NavLink } from "react-router-dom";
 const NAV_ITEMS = [
   {
     key: "Write an article",
-    label: "write an article",
+    label: "Write An Article",
     icon: Pen,
     to: "/admin/my-article",
   },
@@ -51,7 +51,7 @@ export default function AdminHeader({ title }: { title?: string }) {
         <div className="flex items-center gap-2">
           <img src={logoImage} alt="Logo" className="h-12 w-20 rounded-lg" />
           <span className="font-semibold text-slate-900">
-            Noesys Article Platform
+            Article Platform
           </span>
         </div>
         {title && (
