@@ -176,7 +176,7 @@ export default function MyArticles() {
         </div>
 
         {toast && <div className="mb-4 rounded-lg bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-700">{toast}</div>}
-        {isPolling && <div className="mb-2 text-xs text-slate-400 flex items-center gap-1"><Loader2 size={12} className="animate-spin" /> Scoring in progress — auto-refreshing...</div>}
+        {isPolling && <div className="mb-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 flex items-center gap-1"><Loader2 size={12} className="animate-spin" /> Processing your submission — auto-refreshing...</div>}
         {error && (
           <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600">
             {error}
