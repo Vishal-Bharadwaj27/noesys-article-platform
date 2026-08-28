@@ -13,6 +13,7 @@ import {
   Card,
   Row,
   Col,
+  Tooltip,
 } from "antd";
 import type { ColumnsType, TableProps } from "antd/es/table";
 import { ClockCircleOutlined, SearchOutlined } from "@ant-design/icons";
@@ -35,7 +36,7 @@ const STATUS_CONFIG: Record<
 > = {
   approved: {
     color: "green",
-    label: "accepted",
+    label: "Accepted",
   },
   rewrite_required: {
     color: "red",
@@ -47,8 +48,8 @@ const STATUS_CONFIG: Record<
     icon: true,
   },
   failed: {
-    color: "blue",
-    label: "failed",
+    color: "orange",
+    label: "Failed",
   },
 };
 
@@ -156,11 +157,8 @@ function ArticleParameters({
 
 function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
   const [columns, setColumns] = useState<ColumnsType<ArticleSummary>>([]);
-  
-  const { id } = useParams();
 
   const [titleFilter, setTitleFilter] = useState("");
-  const [authorFilter, setAuthorFilter] = useState("");
 
   const [visibleRows, setVisibleRows] = useState<ArticleSummary[]>(articles);
 
@@ -170,20 +168,9 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
 
   const locallyFilteredArticles = useMemo(() => {
     const normalizedTitle = titleFilter.trim().toLowerCase();
-    const normalizedAuthor = authorFilter.trim().toLowerCase();
-
-    return articles.filter((article) => {
-      const matchesTitle =
-        !normalizedTitle ||
-        article.title.toLowerCase().includes(normalizedTitle);
-
-      const matchesAuthor =
-        !normalizedAuthor ||
-        article.author_name.toLowerCase().includes(normalizedAuthor);
-
-      return matchesTitle && matchesAuthor;
-    });
-  }, [articles, titleFilter, authorFilter]);
+    if (!normalizedTitle) return articles;
+    return articles.filter((article) => article.title.toLowerCase().includes(normalizedTitle));
+  }, [articles, titleFilter]);
 
   useEffect(() => {
     setVisibleRows(locallyFilteredArticles);
@@ -222,147 +209,81 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
   }, [visibleRows]);
 
   useEffect(() => {
+    const fs = 13;
     const initialColumns: ColumnsType<ArticleSummary> = [
       {
         title: "Title",
         dataIndex: "title",
         key: "title",
-        ellipsis: true,
-        width: 300,
-        filterIcon: () => <SearchOutlined />,
+        ellipsis: { showTitle: false },
+        width: 340,
         render: (title: string) => (
-          <Text
-            style={{
-              color: "var(--ant-color-link, #2f54eb)",
-              fontWeight: 500,
-            }}
-          >
-            {title}
-          </Text>
+          <Tooltip title={title}>
+            <Text ellipsis style={{ color: "var(--ant-color-link, #2f54eb)", fontWeight: 500, fontSize: fs }}>
+              {title}
+            </Text>
+          </Tooltip>
         ),
       },
-
       {
         title: "Author",
         dataIndex: "author_name",
         key: "author_name",
-        width: 190,
+        width: 160,
         ellipsis: true,
         render: (name: string) => (
           <Space size={8}>
-            <Avatar
-              size={26}
-              style={{
-                backgroundColor: "#7f77dd",
-                fontSize: 11,
-              }}
-            >
-              {initials(name)}
-            </Avatar>
-
-            <Text ellipsis>{name}</Text>
+            <Avatar size={26} style={{ backgroundColor: "#7f77dd", fontSize: 11 }}>{initials(name)}</Avatar>
+            <Text ellipsis style={{ fontSize: fs }}>{name}</Text>
           </Space>
         ),
       },
-
       {
         title: "Type",
         dataIndex: "article_type_name",
         key: "type",
-        width: 170,
-        render: (type: string) => <Tag bordered={false}>{type}</Tag>,
+        width: 130,
+        render: (type: string) => <Tag bordered={false} style={{ fontSize: fs }}>{type}</Tag>,
       },
-
-      {
-        title: "Parameters",
-        dataIndex: "parameters",
-        key: "parameters",
-        width: 320,
-        render: (parameters: ArticleSummary["parameters"]) => (
-          <ArticleParameters parameters={parameters} />
-        ),
-      },
-
       {
         title: "Status",
         dataIndex: "status",
         key: "status",
-        width: 155,
+        width: 115,
         render: (status: ArticleStatus) => {
           const cfg = STATUS_CONFIG[status];
-
-          return (
-            <Tag
-              color={cfg.color}
-              icon={cfg.icon ? <ClockCircleOutlined /> : undefined}
-            >
-              {cfg.label}
-            </Tag>
-          );
+          return <Tag color={cfg.color} icon={cfg.icon ? <ClockCircleOutlined /> : undefined} style={{ fontSize: fs }}>{cfg.label}</Tag>;
         },
       },
-
       {
         title: "Version",
         dataIndex: "version",
         key: "version",
-        width: 105,
-        render: (version: number) => <Text type="secondary">v{version}</Text>,
-        // sorter: (a, b) =>
-        //   a.version - b.version,
+        width: 85,
+        render: (version: number) => <Text style={{ fontSize: fs }}>v{version}</Text>,
       },
-
       {
         title: "AI Score",
         dataIndex: "ai_score",
         key: "ai_score",
-        // width: 165,
-        // sorter: (a, b) =>
-        //   (a.ai_score ?? -1) -
-        //   (b.ai_score ?? -1),
+        width: 130,
         render: (score: number | null) =>
-          score === null ? (
-            <Text type="secondary">—</Text>
-          ) : (
+          score === null ? <Text style={{ fontSize: fs }}>—</Text> : (
             <Space size={8} align="center">
-              <Progress
-                percent={Math.min(Math.max(score, 0), 10) * 10}
-                size="small"
-                showInfo={false}
-                strokeColor={scoreColor(score)}
-                style={{
-                  width: 56,
-                }}
-              />
-
-              <Text
-                strong
-                style={{
-                  color: scoreColor(score),
-                  fontSize: 12,
-                }}
-              >
-                {score}
-              </Text>
+              <Progress percent={Math.min(Math.max(score, 0), 10) * 10} size="small" showInfo={false} strokeColor={scoreColor(score)} style={{ width: 56 }} />
+              <Text strong style={{ color: scoreColor(score), fontSize: fs }}>{score}</Text>
             </Space>
           ),
       },
-
       {
         title: "Created",
         dataIndex: "submitted_at",
         key: "created_at",
-        width: 135,
-        render: (date: string) => (
-          <Text type="secondary">{formatDate(date)}</Text>
-        ),
-        // sorter: (a, b) =>
-        //   new Date(a.created_at).getTime() -
-        //   new Date(b.created_at).getTime(),
+        width: 125,
+        render: (date: string) => <Text style={{ fontSize: fs }}>{formatDate(date)}</Text>,
         defaultSortOrder: "descend",
       },
     ];
-
     setColumns(initialColumns);
   }, []);
 
@@ -414,43 +335,30 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
 
   return (
     <div className="space-y-4">
-      {/* Dashboard */}
+      {/* Dashboard - full width, reduced height */}
       <Row gutter={[12, 12]}>
-        <Col xs={24} sm={12} md={8} lg={4}>
-          <Card size="small">
-            <Text type="secondary">Total Articles</Text>
-
-            <div className="text-2xl font-semibold mt-1">{dashboard.total}</div>
+        <Col xs={24} sm={12} md={6} lg={6}>
+          <Card size="small" styles={{ body: { padding: "10px 14px" } }}>
+            <Text type="secondary" style={{ fontSize: 12 }}>Total Articles</Text>
+            <div className="text-xl font-semibold mt-0.5">{dashboard.total}</div>
           </Card>
         </Col>
-
-        <Col xs={24} sm={12} md={8} lg={5}>
-          <Card size="small">
-            <Text type="secondary">Accepted</Text>
-
-            <div className="text-2xl font-semibold text-emerald-600 mt-1">
-              {dashboard.approved}
-            </div>
+        <Col xs={24} sm={12} md={6} lg={6}>
+          <Card size="small" styles={{ body: { padding: "10px 14px" } }}>
+            <Text type="secondary" style={{ fontSize: 12 }}>Accepted</Text>
+            <div className="text-xl font-semibold text-emerald-600 mt-0.5">{dashboard.approved}</div>
           </Card>
         </Col>
-
-        <Col xs={24} sm={12} md={8} lg={5}>
-          <Card size="small">
-            <Text type="secondary">Pending</Text>
-
-            <div className="text-2xl font-semibold text-amber-600 mt-1">
-              {dashboard.pending}
-            </div>
+        <Col xs={24} sm={12} md={6} lg={6}>
+          <Card size="small" styles={{ body: { padding: "10px 14px" } }}>
+            <Text type="secondary" style={{ fontSize: 12 }}>Pending</Text>
+            <div className="text-xl font-semibold text-amber-600 mt-0.5">{dashboard.pending}</div>
           </Card>
         </Col>
-
-        <Col xs={24} sm={12} md={8} lg={5}>
-          <Card size="small">
-            <Text type="secondary">Rejected</Text>
-
-            <div className="text-2xl font-semibold text-red-600 mt-1">
-              {dashboard.rewriteRequired}
-            </div>
+        <Col xs={24} sm={12} md={6} lg={6}>
+          <Card size="small" styles={{ body: { padding: "10px 14px" } }}>
+            <Text type="secondary" style={{ fontSize: 12 }}>Rejected</Text>
+            <div className="text-xl font-semibold text-red-600 mt-0.5">{dashboard.rewriteRequired}</div>
           </Card>
         </Col>
         {/* 
@@ -467,28 +375,9 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
         </Col> */}
       </Row>
 
-      {/* Local search */}
-
+      {/* Title search - full width */}
       <div>
-        <div className="flex flex-col gap-3 w-[50vw]">
-          <Input
-            allowClear
-            value={titleFilter}
-            onChange={(event) => setTitleFilter(event.target.value)}
-            placeholder="Search title..."
-            prefix={<SearchOutlined />}
-          />
-
-          {!id && (
-            <Input
-              allowClear
-              value={authorFilter}
-              onChange={(event) => setAuthorFilter(event.target.value)}
-              placeholder="Search author..."
-              prefix={<SearchOutlined />}
-            />
-          )}
-        </div>
+        <Input allowClear value={titleFilter} onChange={(event) => setTitleFilter(event.target.value)} placeholder="Search title..." prefix={<SearchOutlined />} className="w-full" />
       </div>
 
       {/* Table */}
@@ -523,9 +412,7 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
             pageSize: 10,
             hideOnSinglePage: true,
           }}
-          scroll={{
-            x: "max-content",
-          }}
+          scroll={{ x: 1085 }}
           onChange={handleTableChange}
           onRow={(record) => ({
             onClick: () => onRowClick?.(record.id),
@@ -550,6 +437,13 @@ export default function ArticlesTable(props: ArticlesTableProps) {
         token: {
           colorPrimary: "#534ab7",
           borderRadius: 8,
+        },
+        components: {
+          Table: {
+            headerBg: "#e2e8f0",
+            headerColor: "#1e293b",
+            headerSplitColor: "#cbd5e1",
+          },
         },
       }}
     >
