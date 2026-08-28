@@ -112,7 +112,7 @@ export default function ArticleTypesManager({
     <div className="w-full px-4 md:px-8 py-5">
       <div className="flex items-center justify-between mb-5">
         <h2 className="text-3xl font-semibold text-slate-900 leading-tight">Article Types</h2>
-        <button onClick={() => navigate("/admin/article-types/new")} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg px-4 h-9 transition-colors"><Plus size={16} />New Type</button>
+        <button onClick={() => navigate("/admin/article-types/new")} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg px-4 py-2.5 transition-colors"><Plus size={16} />New Type</button>
       </div>
 
       <div className="flex items-center gap-2 mb-4 w-full">

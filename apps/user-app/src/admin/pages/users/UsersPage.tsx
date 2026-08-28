@@ -114,16 +114,15 @@ const UsersPage = () => {
   return (
     <div className="w-full px-4 md:px-8 py-5">
       <h1 className="text-3xl font-semibold">Users List</h1>
-      <div className="flex gap-3 my-6">
-        <div className="w-[80%]">
+      <div className="flex gap-3 my-6 items-center">
+        <div className="flex-1 relative">
           <AutoComplete value={search} onChange={setSearch}
             options={search.trim() ? filteredUsers.map((u) => ({ value: u.name, label: u.name, key: u.id })) : []}
             onSelect={(value) => setSearch(value)} style={{ width: "100%" }}>
-            <Input prefix={<SearchOutlined className="text-slate-400" />} placeholder="Search user" className="h-9 rounded-lg !border-slate-300" style={{ borderRadius: 8, height: 36 }} />
+            <Input prefix={<Search size={15} className="text-slate-400" />} placeholder="Search user" className="h-9 rounded-lg" style={{ borderRadius: 8, height: 36, borderColor: "#cbd5e1", background: "#fff" }} />
           </AutoComplete>
         </div>
-        <button onClick={handleToggleNotSubmitted}
-          className={`w-[20%] h-9 flex shrink-0 items-center justify-center gap-1.5 rounded-lg border px-3 text-sm font-medium transition-colors ${showNotSubmitted ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-white text-slate-600 border-slate-300 hover:bg-slate-50"}`}>
+        <button onClick={handleToggleNotSubmitted} className={`whitespace-nowrap h-9 flex shrink-0 items-center justify-center gap-1.5 rounded-lg border px-4 text-sm font-medium transition-colors ${showNotSubmitted ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-white text-slate-600 border-slate-300 hover:bg-slate-50"}`}>
           Show Not Submitted
         </button>
       </div>
