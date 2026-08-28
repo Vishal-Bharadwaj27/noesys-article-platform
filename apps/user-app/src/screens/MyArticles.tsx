@@ -84,7 +84,7 @@ export default function MyArticles() {
 
   return (
     <div className="min-h-screen bg-[#f3f4f6]">
-      <Header />
+      {user?.auth_role === "user" && <Header />}
 
       <div className="w-full px-4 md:px-8 py-8">
         {/* Header */}

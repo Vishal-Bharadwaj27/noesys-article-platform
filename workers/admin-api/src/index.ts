@@ -8,6 +8,7 @@ import articlesRoute from "./routes/articles";
 import articleTypesRoute from "./routes/articleTypes";
 import authRoutes from "./routes/authRoute";
 import parametersRoute from "./routes/parameters";
+import insightsRoute from "./routes/insights";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -54,7 +55,11 @@ app.route("/api/articles", articlesRoute);
 // article types route
 app.route("/api/article-types", articleTypesRoute);
 
+// parameter route
 app.route("/api/article-types", parametersRoute);
+
+// summary
+app.route("/api/insights", insightsRoute);
 
 app.get("/api/health", (c) => {
   return c.json({

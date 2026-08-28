@@ -15,9 +15,11 @@ import { ConfigProvider, Table, Tag, Progress, theme as antdTheme } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { Resizable } from "react-resizable";
 import "react-resizable/css/styles.css";
-
+import { useAuth } from "@/contexts/AuthContext";
+import AdminHeader from "@/admin/components/AdminHeader";
+ 
 const syntaxTheme = oneDark as { [key: string]: CSSProperties };
-
+ 
 const ResizeableTitle = ({ onResize, width, children, ...restProps }: any) => {
   if (!width || typeof width !== "number") return <th {...restProps}>{children}</th>;
   return (
@@ -28,10 +30,10 @@ const ResizeableTitle = ({ onResize, width, children, ...restProps }: any) => {
   );
 };
 function scoreColorHex(score: number) { if (score >= 8) return "#389e0d"; if (score >= 6) return "#d48806"; return "#cf1322"; }
-
+ 
 const MarkdownCode: Components["code"] = ({ className, children, ...props }) => {
   const match = /language-(\w+)/.exec(className || "");
-
+ 
   if (match) {
     return (
       <SyntaxHighlighter
@@ -43,14 +45,14 @@ const MarkdownCode: Components["code"] = ({ className, children, ...props }) => 
       </SyntaxHighlighter>
     );
   }
-
+ 
   return (
     <code className={className} {...props}>
       {children}
     </code>
   );
 };
-
+ 
 const sharedMarkdownComponents: Components = {
   h1: ({ children, ...props }) => (
     <h1 style={{ fontSize: "1.875rem", fontWeight: 700, marginTop: "1.5rem", marginBottom: "1rem" }} {...props}>
@@ -102,9 +104,9 @@ const sharedMarkdownComponents: Components = {
     ),
       code: MarkdownCode,
       img: ({ src, alt }: any) => (
-  <img 
-    src={src} 
-    alt={alt} 
+  <img
+    src={src}
+    alt={alt}
     style={{ maxWidth: "100%", display: "block", borderRadius: 8, margin: "1rem 0" }}
   />
 ),
@@ -117,7 +119,7 @@ const sharedMarkdownComponents: Components = {
                 th: ({ children, ...props }) => <th style={{ border: "1px solid #e2e8f0", padding: "8px 12px", fontWeight: 600, textAlign: "left", background: "#f8fafc" }} {...props}>{children}</th>,
                   td: ({ children, ...props }) => <td style={{ border: "1px solid #e2e8f0", padding: "8px 12px" }} {...props}>{children}</td>,
 };
-
+ 
 const feedbackMarkdownComponents: Components = {
   h2: ({ children }: any) => (
     <h2 className="text-lg font-bold text-slate-900 mt-4 mb-3 border-b border-slate-200 pb-2">
@@ -151,40 +153,40 @@ const feedbackMarkdownComponents: Components = {
     <em className="italic">{children}</em>
   ),
 };
-
+ 
 function scoreColor(score: number) {
   if (score >= 8) {
     return { bar: "bg-emerald-500", badge: "bg-emerald-50 text-emerald-700" };
   }
-
+ 
   if (score >= 6) {
     return { bar: "bg-amber-500", badge: "bg-amber-50 text-amber-700" };
   }
-
+ 
   return { bar: "bg-red-500", badge: "bg-red-50 text-red-600" };
 }
-
+ 
 const STATUS_STYLES: Record<string, string> = {
   accepted: "bg-emerald-50 text-emerald-700",
   rejected: "bg-red-50 text-red-600",
   scoring: "bg-slate-100 text-slate-600",
 };
-
+ 
 function getDisplayStatus(article: { status: string } | null | undefined, score: number | null): "accepted" | "rejected" | "scoring" {
   if (score === null) return "scoring";
   if (score === 10 && article?.status === "approved") return "accepted";
   return "rejected";
 }
-
+ 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
-
+ 
   const handleCopy = () => {
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
-
+ 
   return (
     <button
       onClick={handleCopy}
@@ -199,15 +201,15 @@ function CopyButton({ text }: { text: string }) {
     </button>
   );
 }
-
+ 
 function ContentBlock({ content }: { content: string }) {
   const [view, setView] = useState<"rendered" | "raw">("rendered");
-
+ 
   return (
     <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
       <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
         <h2 className="font-semibold text-slate-900">Content</h2>
-
+ 
         <div className="flex items-center gap-2">
           <div className="flex bg-slate-100 rounded-lg p-0.5">
             <button
@@ -229,11 +231,11 @@ function ContentBlock({ content }: { content: string }) {
               Markdown
             </button>
           </div>
-
+ 
           <CopyButton text={content} />
         </div>
       </div>
-
+ 
       <div className="px-5 py-4">
         {view === "rendered" ? (
           <div className="markdown-body">
@@ -260,7 +262,7 @@ function ContentBlock({ content }: { content: string }) {
     </div>
   );
 }
-
+ 
 function RewriteContentEditor({
   content,
   onChange,
@@ -269,14 +271,14 @@ function RewriteContentEditor({
   onChange: (value: string) => void;
 }) {
   const [view, setView] = useState<"rendered" | "raw">("raw");
-
+ 
   return (
     <div className="border border-slate-200 rounded-lg overflow-hidden">
       <div className="flex items-center justify-between px-3 py-2 bg-slate-50 border-b border-slate-200">
         <span className="text-xs font-medium text-slate-500">
           Article Content
         </span>
-
+ 
         <div className="flex bg-slate-200 rounded-lg p-0.5">
           <button
             onClick={() => setView("rendered")}
@@ -298,7 +300,7 @@ function RewriteContentEditor({
           </button>
         </div>
       </div>
-
+ 
       <div className="p-3">
         {view === "rendered" ? (
           <div className="min-h-[250px] prose prose-sm prose-slate max-w-none px-1 py-1">
@@ -319,12 +321,12 @@ function RewriteContentEditor({
     </div>
   );
 }
-
+ 
 function FeedbackBlock({ feedback }: { feedback: string }) {
   // Strip "Overall Score: X/10" line from feedback
   const strippedFeedback = feedback.replace(/^###\s*Overall\s*Score:.*?\/10.*$/m, '').trim();
   const formattedFeedback = formatFeedbackAsMarkdown(strippedFeedback);
-  
+ 
   return (
     <div className="prose prose-sm prose-slate max-w-none bg-white p-4 rounded-lg border border-slate-200">
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={feedbackMarkdownComponents}>
@@ -333,8 +335,9 @@ function FeedbackBlock({ feedback }: { feedback: string }) {
     </div>
   );
 }
-
+ 
 export default function ArticleDetail() {
+  const { user} = useAuth();
   const { id, version: routeVersion } = useParams<{ id: string; version?: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -342,7 +345,7 @@ export default function ArticleDetail() {
   const rawVersion = routeVersion ?? queryVersion;
   const parsedVersion = rawVersion ? parseInt(rawVersion, 10) : null;
   const versionParam = parsedVersion !== null && !isNaN(parsedVersion) ? parsedVersion : null;
-
+ 
   const { article, history, currentScore, currentFeedback, loading, error, setCurrentScore, setCurrentFeedback, setArticle, setHistory } = useArticle(id ?? "");
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState("");
@@ -350,14 +353,14 @@ export default function ArticleDetail() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [contentCollapsed, setContentCollapsed] = useState(true);
-
+ 
   useEffect(() => {
     if (article) {
       setTitle(article.title);
       setContent(article.content);
     }
   }, [article]);
-
+ 
   const isVersionSnapshot = versionParam !== null && history.some(h => h.version === versionParam) && versionParam !== article?.version;
   // If version param matches a history entry, show snapshot; if it equals current version treat as live
   const snapshot = versionParam !== null ? history.find(h => h.version === versionParam) ?? null : null;
@@ -367,7 +370,7 @@ export default function ArticleDetail() {
   const displayScore = effectiveSnapshot ? effectiveSnapshot.score : currentScore;
   const displayFeedback = effectiveSnapshot ? (effectiveSnapshot.feedback ?? "") : (currentFeedback ?? "");
   const displaySubmittedAt = effectiveSnapshot?.submitted_at ?? null;
-
+ 
   useEffect(() => {
     if (effectiveSnapshot || !article || currentScore !== null) return;
     let attempts = 0; let timeout: number | null = null; let stopped = false;
@@ -386,18 +389,18 @@ export default function ArticleDetail() {
     schedule();
     return () => { stopped = true; if (timeout) clearTimeout(timeout); };
   }, [article?.id, currentScore, effectiveSnapshot]);
-
+ 
   async function handleSubmitRewrite() {
     if (!article) return;
-
+ 
     if (!title.trim() || !content.trim()) {
       setSubmitError("Title and content are required");
       return;
     }
-
+ 
     setSubmitError(null);
     setSubmitting(true);
-
+ 
     try {
       await api(`/articles`, {
         method: "POST",
@@ -408,7 +411,7 @@ export default function ArticleDetail() {
           content: content.trim(),
         }),
       });
-
+ 
       setArticle({ ...article, status: "pending", version: article.version + 1 });
       setCurrentScore(null);
       setCurrentFeedback("");
@@ -421,7 +424,7 @@ export default function ArticleDetail() {
       setSubmitting(false);
     }
   }
-
+ 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -429,13 +432,13 @@ export default function ArticleDetail() {
       </div>
     );
   }
-
+ 
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="text-center">
           <p className="text-slate-500 mb-4">{error}</p>
-
+ 
           <button
             onClick={() => navigate("/")}
             className="text-sm text-indigo-600 hover:underline"
@@ -446,14 +449,15 @@ export default function ArticleDetail() {
       </div>
     );
   }
-
+ 
   const hasScore = displayScore !== null;
   const colors = hasScore ? scoreColor(displayScore!) : null;
-
+ 
   return (
     <div className="min-h-screen bg-slate-50">
-      <Header />
+      {user?.auth_role === "user" ? <Header /> : <AdminHeader />}
 
+ 
       <div className="w-full px-4 md:px-8 py-8">
         <button
           onClick={() => navigate("/")}
@@ -462,7 +466,7 @@ export default function ArticleDetail() {
           <ChevronLeft size={14} />
           Back to Articles
         </button>
-
+ 
         {effectiveSnapshot && (
           <div className="mb-4 flex items-center gap-2">
             <span className="text-xs px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 font-medium">Version {effectiveSnapshot.version} Snapshot</span>
@@ -483,18 +487,18 @@ export default function ArticleDetail() {
               {displayTitle}
             </h1>
           )}
-
+ 
           {effectiveSnapshot ? null : editing ? (
             <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={() => {
                   setEditing(false);
-
+ 
                   if (article) {
                     setTitle(article.title);
                     setContent(article.content);
                   }
-
+ 
                   setSubmitError(null);
                 }}
                 className="flex items-center gap-1.5 text-sm text-slate-600 border border-slate-200 rounded-lg px-3 py-2 hover:bg-slate-100 transition-colors"
@@ -502,7 +506,7 @@ export default function ArticleDetail() {
                 <X size={14} />
                 Cancel
               </button>
-
+ 
               <button
                 onClick={handleSubmitRewrite}
                 disabled={submitting}
@@ -526,14 +530,14 @@ export default function ArticleDetail() {
             </button>
           )}
         </div>
-
+ 
         <div className="space-y-6">
           {/* Current Score - MOVED TO TOP */}
           <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
             <p className="text-md font-semibold uppercase tracking-wide text-slate-600 mb-1">
               Current Score
             </p>
-
+ 
             <div className="flex items-center gap-3">
               {displayScore === null ? (
                 <div className="flex items-center gap-2 text-sm text-slate-500 py-1">
@@ -544,13 +548,13 @@ export default function ArticleDetail() {
                 <>
                   <p className="text-3xl font-semibold text-slate-900">
                     {hasScore ? displayScore!.toFixed(1) : "—"}
-
+ 
                     <span className="text-base text-slate-400 font-normal">
                       {" "}
                       / 10
                     </span>
                   </p>
-
+ 
                   {hasScore && (
                     <div className="flex-1 h-2 rounded-full bg-slate-200 overflow-hidden">
                       <div
@@ -565,19 +569,19 @@ export default function ArticleDetail() {
               )}
             </div>
           </div>
-
+ 
           {/* Feedback - BELOW SCORE */}
           <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
             <div className="flex items-center justify-between mb-3">
               <p className="text-md font-semibold uppercase tracking-wide text-slate-600">
                 Feedback
               </p>
-
+ 
               {displayFeedback && (
                 <CopyButton text={displayFeedback} />
               )}
             </div>
-
+ 
             {displayScore === null ? (
               <div className="flex items-center gap-2 text-sm text-slate-500 py-2 bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
                 <Loader2 size={16} className="animate-spin text-slate-400" />
@@ -591,12 +595,12 @@ export default function ArticleDetail() {
               />
             )}
           </div>
-
+ 
           {/* Content - COLLAPSIBLE */}
           <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 cursor-pointer" onClick={() => setContentCollapsed(!contentCollapsed)}>
               <h2 className="font-semibold text-slate-900">Article</h2>
-
+ 
               <div className="flex items-center gap-2">
                 {article && (
                   <span className="text-xs font-medium text-slate-600 bg-slate-100 rounded-full px-2.5 py-1">
@@ -604,7 +608,7 @@ export default function ArticleDetail() {
                   </span>
                 )}
                 <span className="p-1 text-slate-400">
-
+ 
                   {contentCollapsed ? (
                     <ChevronDown size={18} />
                   ) : (
@@ -613,7 +617,7 @@ export default function ArticleDetail() {
                 </span>
               </div>
             </div>
-
+ 
             {!contentCollapsed && (
               <div className="px-5 py-4">
                 {editing ? (
@@ -624,21 +628,21 @@ export default function ArticleDetail() {
                 ) : (
                   <ContentBlock content={displayContent} />
                 )}
-
+ 
                 {submitError && (
                   <p className="mt-3 text-sm text-red-600">{submitError}</p>
                 )}
               </div>
             )}
           </div>
-
+ 
           {!effectiveSnapshot && <ScoringHistoryTable history={history} articleId={article?.id ?? ""} />}
         </div>
       </div>
     </div>
   );
 }
-
+ 
 function ScoringHistoryTable({ history, articleId }: { history: HistoryItem[]; articleId: string }) {
   const navigate = useNavigate();
   const [cols, setCols] = useState<ColumnsType<HistoryItem>>([]);
@@ -662,3 +666,4 @@ function ScoringHistoryTable({ history, articleId }: { history: HistoryItem[]; a
     </ConfigProvider>
   );
 }
+ 

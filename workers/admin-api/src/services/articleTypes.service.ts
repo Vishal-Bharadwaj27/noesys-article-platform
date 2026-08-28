@@ -1,34 +1,54 @@
 export async function getArticleTypes(db: D1Database) {
   const sql = `
     SELECT
-      at.id,
-      at.name,
-      at.description,
-      at.is_active,
-      at.pass_threshold,
-      at.score_prompt,
-      at.score_max,
-      at.created_by,
-      at.created_at,
-      at.updated_at,
+  at.id,
+  at.name,
+  at.description,
+  at.is_active,
+  at.pass_threshold,
+  at.score_prompt,
+  at.score_min,
+  at.score_max,
+  at.created_by,
+  at.created_at,
+  at.updated_at,
 
-      COALESCE(
-        json_group_array(
-          CASE
-            WHEN p.id IS NOT NULL THEN json_object(
-              'id', p.id,
-              'name', p.name,
-              'scopeType', p.scope_type,
-              'options', p.options
+  COALESCE(
+    json_group_array(
+      CASE
+        WHEN p.id IS NOT NULL THEN json_object(
+          'id', p.id,
+          'name', p.name,
+          'prompt', p.prompt,
+          'scopeType', p.scope_type,
+          'minValue', p.min_value,
+          'maxValue', p.max_value,
+          'options',
+          (
+            SELECT COALESCE(
+              json_group_array(
+                json_object(
+                  'id', po.id,
+                  'label', po.label,
+                  'sortOrder', po.sort_order
+                )
+              ),
+              '[]'
             )
-          END
+            FROM parameter_options po
+            WHERE po.parameter_id = p.id
+              AND po.is_active = 1
+          )
+        )
+      END
         ),
         '[]'
-      ) as parameters,
+      ) AS parameters,
 
-      COUNT(p.id) as parameter_count
+      COUNT(p.id) AS parameter_count
 
     FROM article_types at
+
     LEFT JOIN parameters p
       ON p.article_type_id = at.id
       AND p.is_active = 1
@@ -37,7 +57,7 @@ export async function getArticleTypes(db: D1Database) {
 
     GROUP BY at.id
 
-    ORDER BY at.name ASC
+    ORDER BY at.name ASC;
   `;
 
   const result = await db.prepare(sql).all();
@@ -117,7 +137,7 @@ export async function createArticleType(
   if (input.scoreMax <= input.scoreMin) {
     throw new Error("score_max must be greater than score_min");
   }
-
+  console.log(input.passThreshold);
   if (
     input.passThreshold < input.scoreMin ||
     input.passThreshold > input.scoreMax

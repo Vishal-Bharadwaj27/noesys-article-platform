@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   Card,
   Tag,
@@ -15,6 +15,7 @@ import {
   Segmented,
   Divider,
   Modal,
+  Collapse,
 } from "antd";
 import {
   CopyOutlined,
@@ -160,7 +161,7 @@ function ContentBlock({ content }: { content: string }) {
   return (
     <Card
       size="small"
-      title="Content"
+      //   title="Content"
       extra={
         <Space>
           <Segmented
@@ -412,6 +413,8 @@ export default function ArticleDetailsPage() {
   );
   const [contentCollapsed, setContentCollapsed] = useState(true);
 
+  const navigate = useNavigate();
+
   useEffect(() => {
     async function loadArticle() {
       setLoading(true);
@@ -420,13 +423,13 @@ export default function ArticleDetailsPage() {
         const headers: Record<string, string> = {};
         const token = tokenStorage.get();
 
-        if(token) {
-          headers['Authorization'] = `Bearer ${token}`
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
         }
 
         const res = await fetch(`${BACKEND_URL}/api/articles/${id}`, {
           credentials: "include",
-          headers
+          headers,
         });
 
         if (!res.ok) {
@@ -470,7 +473,7 @@ export default function ArticleDetailsPage() {
 
   if (errored || !article) {
     return (
-      <div style={{ maxWidth: 960, margin: "40px auto", padding: 24 }}>
+      <div style={{ margin: "40px auto", padding: 24 }}>
         <Card>
           <Empty description="Article not found" />
         </Card>
@@ -479,7 +482,7 @@ export default function ArticleDetailsPage() {
   }
 
   return (
-    <div style={{ maxWidth: 960, margin: "0 auto", padding: 24 }}>
+    <div style={{ margin: "0 auto", padding: 24 }}>
       <Space direction="vertical" size={16} style={{ width: "100%" }}>
         {/* Header */}
         <Card>
@@ -553,11 +556,11 @@ export default function ArticleDetailsPage() {
             ) : null
           }
         >
-          <Paragraph style={{ whiteSpace: "pre-wrap", marginBottom: 0 }}>
+          {/* <Paragraph style={{ whiteSpace: "pre-wrap", marginBottom: 0 }}>
             {article.ai_feedback ?? (
               <Text type="secondary">No feedback available</Text>
             )}
-          </Paragraph>
+          </Paragraph> */}
           <div style={{ marginBottom: 0 }}>
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
@@ -706,15 +709,6 @@ export default function ArticleDetailsPage() {
           title="Content"
           extra={
             <Space onClick={(e) => e.stopPropagation()}>
-              <Segmented
-                size="small"
-                value="rendered"
-                options={[
-                  { label: "Rendered", value: "rendered" },
-                  { label: "Markdown", value: "raw" },
-                ]}
-              />
-              <CopyButton text={article.content} />
               <Button
                 size="small"
                 type="text"
@@ -729,11 +723,15 @@ export default function ArticleDetailsPage() {
           onClick={() => setContentCollapsed(!contentCollapsed)}
           style={{ cursor: "pointer" }}
         >
-          {!contentCollapsed && <ContentBlock content={article.content} />}
+          {!contentCollapsed && (
+            <div onClick={(e) => e.stopPropagation()}>
+              <ContentBlock content={article.content} />
+            </div>
+          )}
         </Card>
 
         {/* History */}
-        <Card
+        {/* <Card
           size="small"
           title="Submission history"
           extra={
@@ -768,7 +766,12 @@ export default function ArticleDetailsPage() {
                   <Card
                     size="small"
                     hoverable
-                    onClick={() => setSelectedVersion(item)}
+                    // onClick={() => setSelectedVersion(item)}
+                    // onClick={() => navigate(`/admin/articles/${item.article_id}`)}
+                    onClick={() => {
+                      console.log("history item", item);
+                      navigate(`/admin/articles/${item.article_id}`);
+                    }}
                     style={{ marginBottom: 4, cursor: "pointer" }}
                   >
                     <Space
@@ -802,9 +805,9 @@ export default function ArticleDetailsPage() {
               }))}
             />
           )}
-        </Card>
+        </Card> */}
 
-        <Modal
+        {/* <Modal
           open={selectedVersion !== null}
           onCancel={() => setSelectedVersion(null)}
           footer={null}
@@ -990,7 +993,43 @@ export default function ArticleDetailsPage() {
               )}
             </Space>
           )}
-        </Modal>
+        </Modal> */}
+
+        <Collapse
+          accordion
+          items={allAttempts.map((item) => ({
+            key: item.id,
+            label: (
+              <Space style={{ width: "100%", justifyContent: "space-between" }}>
+                <Space size={8}>
+                  <Text strong>Version {item.version}</Text>
+                  <Tag color={item.ai_score === null ? "default" : undefined}>
+                    {item.ai_score !== null
+                      ? `${item.ai_score} / 10`
+                      : "Not scored"}
+                  </Tag>
+                </Space>
+
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  {formatDate(item.submitted_at)}
+                </Text>
+              </Space>
+            ),
+            children: (
+              <Space direction="vertical" size={12} style={{ width: "100%" }}>
+                {item.ai_feedback && (
+                  <Card size="small" title="Feedback">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {item.ai_feedback}
+                    </ReactMarkdown>
+                  </Card>
+                )}
+
+                <ContentBlock content={item.content} />
+              </Space>
+            ),
+          }))}
+        />
       </Space>
     </div>
   );

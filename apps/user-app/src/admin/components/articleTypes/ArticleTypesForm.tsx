@@ -1,25 +1,28 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ChevronLeft, Pencil, Plus, Trash2 } from "lucide-react";
+import { ChevronLeft, Plus } from "lucide-react";
 
-import Badge from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import { tokenStorage } from "@/http-client";
+import ParameterRow from "./ParameterRow";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
-type ScopeType = "numeric" | "option";
+export type ScopeType = "numeric" | "option";
 
-const OPTION_KEYS = ["ABC", "HIGH_MED_LOW"] as const;
+export type ParameterOptionDraft = {
+  id?: string;
+  label: string;
+};
 
-type ParameterDraft = {
+export type ParameterDraft = {
   id: string;
   name: string;
   prompt: string;
   scopeType: ScopeType;
   minValue: string;
   maxValue: string;
-  options: (typeof OPTION_KEYS)[number];
+  options: ParameterOptionDraft[];
   isNew: boolean;
 };
 
@@ -29,7 +32,7 @@ const EMPTY_PARAM_DRAFT: Omit<ParameterDraft, "id" | "isNew"> = {
   scopeType: "numeric",
   minValue: "0",
   maxValue: "10",
-  options: "ABC",
+  options: [],
 };
 
 type FormState = {
@@ -48,189 +51,9 @@ const EMPTY_FORM: FormState = {
   promptContent: "",
   scoreMin: "0",
   scoreMax: "10",
-  passThreshold: "7",
+  passThreshold: "10",
   parameters: [],
 };
-
-// ---- Parameter row (inline add/edit, same pattern as the old modal) ----
-
-function ParameterRow({
-  draft,
-  onChange,
-  onSave,
-  onCancel,
-  onRemove,
-  editing,
-  onEdit,
-}: {
-  draft: ParameterDraft;
-  onChange: (next: ParameterDraft) => void;
-  onSave: () => void;
-  onCancel: () => void;
-  onRemove: () => void;
-  editing: boolean;
-  onEdit: () => void;
-}) {
-  if (!editing) {
-    return (
-      <tr className="group border-b border-slate-100 last:border-0">
-        <td className="py-2.5 pr-3 text-sm font-medium text-slate-800 align-top">
-          {draft.name || (
-            <span className="text-slate-300 italic">Untitled</span>
-          )}
-        </td>
-
-        <td className="py-2.5 pr-3 text-sm text-slate-500 align-top max-w-[220px] truncate">
-          {draft.prompt || (
-            <span className="text-slate-300 italic">No prompt</span>
-          )}
-        </td>
-
-        <td className="py-2.5 pr-3 align-top">
-          {draft.scopeType === "numeric" ? (
-            <Badge variant="indigo">
-              {draft.minValue}–{draft.maxValue}
-            </Badge>
-          ) : (
-            <Badge variant="indigo">
-              {draft.options === "ABC" ? "A / B / C" : "High / Med / Low"}
-            </Badge>
-          )}
-        </td>
-
-        <td className="py-2.5 align-top">
-          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button
-              type="button"
-              onClick={onEdit}
-              className="p-1.5 rounded-md text-slate-400 hover:bg-slate-100 hover:text-indigo-600"
-              aria-label="Edit parameter"
-            >
-              <Pencil size={13} />
-            </button>
-
-            <button
-              type="button"
-              onClick={onRemove}
-              className="p-1.5 rounded-md text-slate-400 hover:bg-red-50 hover:text-red-600"
-              aria-label="Remove parameter"
-            >
-              <Trash2 size={13} />
-            </button>
-          </div>
-        </td>
-      </tr>
-    );
-  }
-
-  const numericRangeInvalid =
-    draft.scopeType === "numeric" &&
-    draft.minValue !== "" &&
-    draft.maxValue !== "" &&
-    Number(draft.maxValue) <= Number(draft.minValue);
-
-  return (
-    <tr className="border-b border-slate-100 last:border-0 bg-indigo-50/30">
-      <td colSpan={4} className="py-3">
-        <div className="space-y-2.5 px-1">
-          <div className="grid grid-cols-2 gap-2.5">
-            <input
-              type="text"
-              value={draft.name}
-              onChange={(e) => onChange({ ...draft, name: e.target.value })}
-              placeholder="Parameter name (e.g. Grammar)"
-              className="rounded-md border border-slate-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-
-            <select
-              value={draft.scopeType}
-              onChange={(e) =>
-                onChange({ ...draft, scopeType: e.target.value as ScopeType })
-              }
-              className="rounded-md border border-slate-200 px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="numeric">Numeric</option>
-              <option value="option">Option</option>
-            </select>
-          </div>
-
-          <textarea
-            value={draft.prompt}
-            onChange={(e) => onChange({ ...draft, prompt: e.target.value })}
-            placeholder="AI instruction for evaluating this parameter..."
-            rows={2}
-            className="w-full rounded-md border border-slate-200 px-2.5 py-1.5 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-
-          {draft.scopeType === "numeric" ? (
-            <>
-              <div className="grid grid-cols-2 gap-2.5">
-                <input
-                  type="number"
-                  value={draft.minValue}
-                  onChange={(e) =>
-                    onChange({ ...draft, minValue: e.target.value })
-                  }
-                  placeholder="Min"
-                  className="rounded-md border border-slate-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-
-                <input
-                  type="number"
-                  value={draft.maxValue}
-                  onChange={(e) =>
-                    onChange({ ...draft, maxValue: e.target.value })
-                  }
-                  placeholder="Max"
-                  className="rounded-md border border-slate-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              {numericRangeInvalid && (
-                <p className="text-xs text-red-500">
-                  Max must be greater than min.
-                </p>
-              )}
-            </>
-          ) : (
-            <select
-              value={draft.options}
-              onChange={(e) =>
-                onChange({
-                  ...draft,
-                  options: e.target.value as ParameterDraft["options"],
-                })
-              }
-              className="w-full rounded-md border border-slate-200 px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="ABC">A / B / C</option>
-              <option value="HIGH_MED_LOW">High / Med / Low</option>
-            </select>
-          )}
-
-          <div className="flex justify-end gap-2 pt-1">
-            <Button variant="ghost" size="sm" onClick={onCancel} type="button">
-              Cancel
-            </Button>
-
-            <Button
-              size="sm"
-              onClick={onSave}
-              disabled={
-                !draft.name.trim() ||
-                !draft.prompt.trim() ||
-                numericRangeInvalid
-              }
-              type="button"
-            >
-              Save
-            </Button>
-          </div>
-        </div>
-      </td>
-    </tr>
-  );
-}
 
 // ---- API response shapes (snake_case, as returned by the D1-backed API) ----
 
@@ -251,7 +74,7 @@ type ParameterResponse = {
   scope_type: ScopeType;
   min_value: number | null;
   max_value: number | null;
-  options: (typeof OPTION_KEYS)[number] | null;
+  options: ParameterOptionDraft[];
 };
 
 function parameterFromResponse(p: ParameterResponse): ParameterDraft {
@@ -286,8 +109,6 @@ function parameterToBody(p: ParameterDraft) {
   };
 }
 
-// ---- Main form/page component ----
-
 export default function ArticleTypesForm() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -307,6 +128,7 @@ export default function ArticleTypesForm() {
     // Prevent the default scroll behavior that changes the value
     e.currentTarget.blur();
   };
+
   useEffect(() => {
     if (!id) return;
 
@@ -329,7 +151,7 @@ export default function ArticleTypesForm() {
             headers,
           }),
         ]);
-        
+
         if (!typeRes.ok) throw new Error("Failed to load article type");
         if (!paramsRes.ok) throw new Error("Failed to load parameters");
 
@@ -548,7 +370,7 @@ export default function ArticleTypesForm() {
   }
 
   return (
-    <div className="m-5 max-w-2xl ">
+    <div className="m-5 mx-7">
       <button
         type="button"
         onClick={() => navigate("/admin/article-types")}
