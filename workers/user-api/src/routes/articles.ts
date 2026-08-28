@@ -64,7 +64,7 @@ async function evaluateAndUpdate(
   try {
     await evaluateArticle(
       db,
-      env,
+      env.GOOGLE_GENERATIVE_AI_API_KEY,
       articleId,
       articleTypeId,
       title,
@@ -278,6 +278,8 @@ articleRoutes.post("/", async (c) => {
 
     articleId = requestedId;
 
+    const nextVersion = existingArticle.version + 1;
+
     // ❌ REMOVED: Synchronous evaluation (was blocking)
     // ✅ ADDED: Background evaluation via waitUntil
     const currentVersion = existingArticle.version;
@@ -289,7 +291,7 @@ articleRoutes.post("/", async (c) => {
         article_type_id,
         title,
         content,
-        currentVersion
+        nextVersion
       )
     );
 

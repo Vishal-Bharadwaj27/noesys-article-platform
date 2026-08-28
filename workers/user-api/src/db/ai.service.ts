@@ -1,32 +1,43 @@
+// ai.service.ts
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { generateText } from "ai";
-import { ArticleEvaluationSchema } from "../schemas/articleEvaluation.schema";
-import type { AIEvaluationResponse } from "../types/evaluation";
+import { generateObject } from "ai";
+import type { z } from "zod";
+
+interface AIEvaluationResult {
+  score: number;
+  feedback: string;
+  parameters: Record<string, string | number>;
+}
+// ai.service.ts
+import { NoObjectGeneratedError } from "ai";
 
 export async function evaluateArticle(
   apiKey: string,
   prompt: string,
-): Promise<AIEvaluationResponse> {
+  schema: z.ZodTypeAny
+):Promise<AIEvaluationResult> {
   if (!apiKey) {
     throw new Error("Google Generative AI API key is missing.");
   }
-  const google = createGoogleGenerativeAI({
-    apiKey,
-  });
 
-  const response = await generateText({
-    model: google("gemini-1.5-flash"),
-    messages: [
-      {
-        role: "system",
-        content: prompt,
-      },
-    ],
-  });
+  const google = createGoogleGenerativeAI({ apiKey });
 
-  // Parse the response as JSON and validate against schema
-  const parsed = JSON.parse(response.text);
-  const validated = ArticleEvaluationSchema.parse(parsed);
-  
-  return validated as AIEvaluationResponse;
+  try {
+    const { object } = await generateObject({
+      model: google("gemini-3.5-flash-lite"),
+      schema,
+      system:
+        "You are a article evaluator. Follow the scoring instructions exactly and only return values allowed by the schema. Keep in mind that the passing score is 10, and evaluate article's ai_score strictly between 0-10",
+      prompt,
+    });
+    
+    return object as AIEvaluationResult;
+  } catch (error) {
+    if (NoObjectGeneratedError.isInstance(error)) {
+      console.error("RAW MODEL OUTPUT:", error.text);
+      console.error("FINISH REASON:", error.finishReason);
+      console.error("USAGE:", error.usage);
+    }
+    throw error;
+  }
 }

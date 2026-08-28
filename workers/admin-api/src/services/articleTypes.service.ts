@@ -137,7 +137,6 @@ export async function createArticleType(
   if (input.scoreMax <= input.scoreMin) {
     throw new Error("score_max must be greater than score_min");
   }
-  console.log(input.passThreshold);
   if (
     input.passThreshold < input.scoreMin ||
     input.passThreshold > input.scoreMax
