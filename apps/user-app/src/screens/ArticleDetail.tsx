@@ -101,6 +101,13 @@ const sharedMarkdownComponents: Components = {
       </a>
     ),
       code: MarkdownCode,
+      img: ({ src, alt }: any) => (
+  <img 
+    src={src} 
+    alt={alt} 
+    style={{ maxWidth: "100%", display: "block", borderRadius: 8, margin: "1rem 0" }}
+  />
+),
         table: ({ children, ...props }) => (
           <div style={{ overflowX: "auto", marginBottom: "1rem", maxWidth: "100%" }}><table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }} {...props}>{children}</table></div>
         ),
