@@ -24,6 +24,7 @@ export function SummaryView({ start, end }: { start: string; end: string }) {
   return (
     <ConfigProvider theme={{ algorithm: antdTheme.defaultAlgorithm, token: { colorPrimary: "#534ab7", borderRadius: 8 }, components: { Table: { headerBg: "#e2e8f0", headerColor: "#1e293b", headerSplitColor: "#cbd5e1" }, Collapse: { headerBg: "#e2e8f0", contentBg: "#ffffff" } } }}>
       <Collapse
+        expandIconPosition="start"
         defaultActiveKey={data.map((d) => d.articleTypeId)}
         items={data.map((at) => ({
           key: at.articleTypeId,
