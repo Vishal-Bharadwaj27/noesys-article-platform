@@ -29,7 +29,10 @@ const ResizeableTitle = ({ onResize, width, children, ...restProps }: any) => {
     </Resizable>
   );
 };
+function formatScore(s:number){return Number.isInteger(s)?String(s):s.toFixed(1);}
 function scoreColorHex(score: number) { if (score >= 8) return "#389e0d"; if (score >= 6) return "#d48806"; return "#cf1322"; }
+function ParameterResultsBox({results}:{results:{parameter_name:string;value:any}[]}){ if(!results||!results.length) return <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"><p className="text-md font-semibold uppercase tracking-wide text-slate-600 mb-2">Parameter Results</p><p className="text-sm text-slate-400">No parameter results yet</p></div>; return <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"><p className="text-md font-semibold uppercase tracking-wide text-slate-600 mb-3">Parameter Results</p><div className="grid gap-2">{results.map((r:any,i:number)=><div key={i} className="flex justify-between items-center bg-slate-50 rounded-lg px-3 py-2 border border-slate-100"><span className="text-sm font-medium text-slate-700">{r.parameter_name}</span><span className="text-sm font-semibold text-slate-900 bg-white border border-slate-200 rounded-full px-2.5 py-0.5">{String(r.value)}</span></div>)}</div></div>;}
+function goBack(navigate:any){ if(window.history.length>1) navigate(-1); else navigate("/"); }
  
 const MarkdownCode: Components["code"] = ({ className, children, ...props }) => {
   const match = /language-(\w+)/.exec(className || "");
@@ -346,7 +349,7 @@ export default function ArticleDetail() {
   const parsedVersion = rawVersion ? parseInt(rawVersion, 10) : null;
   const versionParam = parsedVersion !== null && !isNaN(parsedVersion) ? parsedVersion : null;
  
-  const { article, history, currentScore, currentFeedback, loading, error, setCurrentScore, setCurrentFeedback, setArticle, setHistory } = useArticle(id ?? "");
+  const { article, history, currentScore, currentFeedback, parameterResults, loading, error, setCurrentScore, setCurrentFeedback, setParameterResults, setArticle, setHistory } = useArticle(id ?? "");
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -379,7 +382,7 @@ export default function ArticleDetail() {
       if (stopped || document.visibilityState === "hidden") return;
       try {
         const result = await api<ArticleDetailResponse>(`/articles/mine/${article.id}`);
-        setArticle(result.article); setHistory(result.history ?? []); setCurrentScore(result.current_score); setCurrentFeedback(result.current_feedback ?? "");
+        setArticle(result.article); setHistory(result.history ?? []); setCurrentScore(result.current_score); setCurrentFeedback(result.current_feedback ?? ""); setParameterResults(result.parameter_results ?? []);
         if (result.current_score !== null) { if (timer) clearInterval(timer); return; }
       } catch (e) { console.error(e); }
     };
@@ -438,11 +441,11 @@ export default function ArticleDetail() {
  
       <div className="w-full px-4 md:px-8 py-8">
         <button
-          onClick={() => navigate("/")}
+          onClick={() => goBack(navigate)}
           className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-6"
         >
           <ChevronLeft size={14} />
-          Back to Articles
+          Back
         </button>
  
         {effectiveSnapshot && (
@@ -512,7 +515,7 @@ export default function ArticleDetail() {
  
         <div className="space-y-6">
           {/* Current Score - MOVED TO TOP */}
-          <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <p className="text-md font-semibold uppercase tracking-wide text-slate-600 mb-1">
               Current Score
             </p>
@@ -526,7 +529,7 @@ export default function ArticleDetail() {
               ) : (
                 <>
                   <p className="text-3xl font-semibold text-slate-900">
-                    {hasScore ? displayScore!.toFixed(1) : "—"}
+                    {hasScore ? formatScore(displayScore!) : "—"}
  
                     <span className="text-base text-slate-400 font-normal">
                       {" "}
@@ -550,7 +553,7 @@ export default function ArticleDetail() {
           </div>
  
           {/* Feedback - BELOW SCORE */}
-          <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex items-center justify-between mb-3">
               <p className="text-md font-semibold uppercase tracking-wide text-slate-600">
                 Feedback
@@ -574,6 +577,7 @@ export default function ArticleDetail() {
               />
             )}
           </div>
+          <ParameterResultsBox results={parameterResults} />
  
           {/* Content - COLLAPSIBLE */}
           <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
@@ -628,7 +632,7 @@ function ScoringHistoryTable({ history, articleId }: { history: HistoryItem[]; a
   useEffect(() => {
     const columns: ColumnsType<HistoryItem> = [
       { title: "Version", dataIndex: "version", key: "version", width: 90, sorter: (a, b) => a.version - b.version, render: (v: number, r: HistoryItem) => <span onClick={() => navigate(`/articles/${articleId}?version=${r.version}`)} style={{ color: "#0284c7", fontWeight: 600, fontSize: 14, cursor: "pointer", textUnderlineOffset: 3 }}>Aritcle Version {v}</span> },
-      { title: "AI Score", dataIndex: "score", key: "score", width: 130, render: (s: number | null) => s === null ? <span style={{ color: "#94a3b8", fontSize: 13 }}>—</span> : <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><Progress percent={Math.min(Math.max(s, 0), 10) * 10} size="small" showInfo={false} strokeColor={scoreColorHex(s)} style={{ width: 56 }} /><span style={{ color: scoreColorHex(s), fontWeight: 600, fontSize: 13 }}>{s.toFixed(1)}</span></span> },
+      { title: "AI Score", dataIndex: "score", key: "score", width: 130, render: (s: number | null) => s === null ? <span style={{ color: "#94a3b8", fontSize: 13 }}>—</span> : <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><Progress percent={Math.min(Math.max(s, 0), 10) * 10} size="small" showInfo={false} strokeColor={scoreColorHex(s)} style={{ width: 56 }} /><span style={{ color: scoreColorHex(s), fontWeight: 600, fontSize: 13 }}>{formatScore(s)}</span></span> },
       { title: "Status", dataIndex: "status", key: "status", width: 130, render: (_: any, r: HistoryItem) => { const ds = r.score === null ? "scoring" : r.score === 10 ? "accepted" : "rejected"; const label = ds === "scoring" ? "Scoring..." : ds === "accepted" ? "Accepted" : "Rejected"; return <Tag color={ds === "accepted" ? "green" : ds === "rejected" ? "red" : "default"} style={{ fontSize: 13 }}>{label}</Tag>; } },
       { title: "Submitted", dataIndex: "submitted_at", key: "submitted_at", width: 160, sorter: (a, b) => new Date(a.submitted_at).getTime() - new Date(b.submitted_at).getTime(), render: (d: string) => <span style={{ color: "#334155", fontSize: 13 }}>{dayjs(d).format("MMM D, YYYY h:mm A")}</span> },
     ];

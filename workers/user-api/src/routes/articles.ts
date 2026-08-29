@@ -171,6 +171,9 @@ articleRoutes.get("/mine/:id", async (c) => {
     : article.ai_feedback ||
       (history.length > 0 ? history[history.length - 1].ai_feedback || "" : "");
 
+  // parameter results for current version
+  const paramRows: any[] = (await db.prepare(`SELECT p.name as parameter_name, p.scope_type, r.numeric_value, r.option_id, po.label as option_label FROM article_parameter_results r JOIN parameters p ON p.id=r.parameter_id LEFT JOIN parameter_options po ON po.id=r.option_id WHERE r.article_id=? AND r.version=? ORDER BY p.sort_order`).bind(articleId, article.version).all()).results as any[];
+  const parameter_results = paramRows.map((r:any)=> ({ parameter_name: r.parameter_name, scope_type: r.scope_type, value: r.scope_type==='option' ? r.option_label : r.numeric_value }));
   return c.json({
     message: "Article fetched successfully",
     data: {
@@ -187,6 +190,7 @@ articleRoutes.get("/mine/:id", async (c) => {
       },
       current_feedback: currentFeedback,
       current_score: article.ai_score,
+      parameter_results,
       history: history.map((item) => {
         // For historical items, we infer status from score
         // Note: This uses a default threshold since historical pass_threshold isn't stored

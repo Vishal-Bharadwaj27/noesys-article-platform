@@ -45,11 +45,14 @@ const ResizeableTitle = ({
   );
 };
 
+function formatScore(s:number){return Number.isInteger(s)?String(s):s.toFixed(1);}
 function scoreColorHex(s: number) {
   if (s >= 8) return "#389e0d";
   if (s >= 6) return "#d48806";
   return "#cf1322";
 }
+function ParameterResultsBox({results}:{results:{parameter_name:string;value:any}[]}){ if(!results||!results.length) return <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"><p className="text-md font-semibold uppercase tracking-wide text-slate-600 mb-2">Parameter Results</p><p className="text-sm text-slate-400">No parameter results yet</p></div>; return <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"><p className="text-md font-semibold uppercase tracking-wide text-slate-600 mb-3">Parameter Results</p><div className="grid gap-2">{results.map((r:any,i:number)=><div key={i} className="flex justify-between items-center bg-slate-50 rounded-lg px-3 py-2 border border-slate-100"><span className="text-sm font-medium text-slate-700">{r.parameter_name}</span><span className="text-sm font-semibold text-slate-900 bg-white border border-slate-200 rounded-full px-2.5 py-0.5">{String(r.value)}</span></div>)}</div></div>;}
+function goBack(navigate:any){ if(window.history.length>1) navigate(-1); else navigate("/admin/articles"); }
 
 const MarkdownCode: Components["code"] = ({
   className,
@@ -434,6 +437,7 @@ export default function AdminArticleDetail() {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [currentScore, setCurrentScore] = useState<number | null>(null);
   const [currentFeedback, setCurrentFeedback] = useState("");
+  const [parameterResults, setParameterResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -481,6 +485,7 @@ export default function AdminArticleDetail() {
         setArticle(art);
         setCurrentScore(d.ai_score ?? null);
         setCurrentFeedback(d.ai_feedback || "");
+        setParameterResults(d.parameter_results ?? []);
 
         const hist = (d.history || []).map((h: any) => ({
           article_id: h.article_id || h.id,
@@ -517,6 +522,7 @@ export default function AdminArticleDetail() {
         setHistory(result.history ?? []);
         setCurrentScore(result.current_score);
         setCurrentFeedback(result.current_feedback ?? "");
+        setParameterResults((result as any).parameter_results ?? []);
         setError(null);
       } catch {}
     })();
@@ -580,11 +586,11 @@ export default function AdminArticleDetail() {
     <div className="min-h-screen bg-slate-50">
       <div className="w-full px-4 md:px-8 py-8">
         <button
-          onClick={() => navigate("/admin/articles")}
+          onClick={() => goBack(navigate)}
           className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-6"
         >
           <ChevronLeft size={14} />
-          Back to Articles
+          Back
         </button>
 
         {effectiveSnapshot && (
@@ -610,7 +616,7 @@ export default function AdminArticleDetail() {
         </div>
 
         <div className="space-y-6">
-          <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <p className="text-md font-semibold uppercase tracking-wide text-slate-600 mb-1">
               Current Score
             </p>
@@ -627,7 +633,7 @@ export default function AdminArticleDetail() {
               ) : (
                 <>
                   <p className="text-3xl font-semibold text-slate-900">
-                    {hasScore ? displayScore!.toFixed(1) : "—"}
+                    {hasScore ? formatScore(displayScore!) : "—"}
                     <span className="text-base text-slate-400 font-normal">
                       {" "}
                       / 10
@@ -649,7 +655,7 @@ export default function AdminArticleDetail() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex items-center justify-between mb-3">
               <p className="text-md font-semibold uppercase tracking-wide text-slate-600">
                 Feedback
@@ -674,6 +680,7 @@ export default function AdminArticleDetail() {
               />
             )}
           </div>
+          <ParameterResultsBox results={parameterResults} />
 
           <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
             <div
@@ -794,7 +801,7 @@ function ScoringHistoryTable({
                   fontSize: 13,
                 }}
               >
-                {s.toFixed(1)}
+                {formatScore(s)}
               </span>
             </span>
           ),
