@@ -197,10 +197,7 @@ export default function ArticleTypesForm() {
         </div>
       </div>
 
-      <Modal open={modalOpen} onCancel={closeModal} title={modalDraft?.isNew ? "Add Parameter" : "Edit Parameter"} footer={[
-        <Button key="cancel" variant="secondary" onClick={closeModal} type="button">Cancel</Button>,
-        <Button key="save" onClick={saveModal} disabled={!modalDraft?.name.trim() || !modalDraft?.prompt.trim() || !!modalNumericInvalid} type="button">Save</Button>
-      ]} destroyOnClose>
+      <Modal open={modalOpen} onCancel={closeModal} title={modalDraft?.isNew ? "Add Parameter" : "Edit Parameter"} footer={<div className="flex gap-2 justify-end"><Button key="cancel" variant="secondary" onClick={closeModal} type="button" className="min-w-[90px]">Cancel</Button><Button key="save" onClick={saveModal} disabled={!modalDraft?.name.trim() || !modalDraft?.prompt.trim() || !!modalNumericInvalid} type="button" className="min-w-[90px]">Save</Button></div>} destroyOnClose>
         {modalDraft && (
           <div className="space-y-3">
             <div>
