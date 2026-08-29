@@ -39,9 +39,10 @@ articlesRoute.get("/:id", async (c) => {
     );
   }
 
+  const paramResults = await getParameterResults(c.env.DB, id);
   return c.json({
     message: "Article fetched successfully",
-    data: article,
+    data: { ...article, parameter_results: paramResults },
   });
 });
 

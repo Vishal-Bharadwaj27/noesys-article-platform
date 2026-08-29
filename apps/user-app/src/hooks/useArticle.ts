@@ -22,11 +22,13 @@ export interface HistoryItem {
   submitted_at: string;
 }
 
+export type ParameterResult = { parameter_name: string; scope_type: string; value: string | number | null };
 export interface ArticleDetailResponse {
   article: ArticleDetail;
   current_feedback: string;
   current_score: number | null;
   history: HistoryItem[];
+  parameter_results?: ParameterResult[];
 }
 
 export function useArticle(id: string) {
@@ -34,6 +36,7 @@ export function useArticle(id: string) {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [currentScore, setCurrentScore] = useState<number | null>(null);
   const [currentFeedback, setCurrentFeedback] = useState<string>("");
+  const [parameterResults, setParameterResults] = useState<ParameterResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,6 +52,7 @@ export function useArticle(id: string) {
       setHistory(result.history ?? []);
       setCurrentScore(result.current_score);
       setCurrentFeedback(result.current_feedback ?? "");
+      setParameterResults(result.parameter_results ?? []);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to load article";
@@ -67,11 +71,13 @@ export function useArticle(id: string) {
     history,
     currentScore,
     currentFeedback,
+    parameterResults,
     loading,
     error,
     refetch: fetchArticle,
     setCurrentScore,
     setCurrentFeedback,
+    setParameterResults,
     setHistory,
     setArticle,
   };
