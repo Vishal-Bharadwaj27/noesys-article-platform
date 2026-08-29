@@ -205,16 +205,22 @@ const AllArticles = () => {
     return sorted;
   }, [filteredByAuthor, sortBy]);
 
+  const isUserView = Boolean(id);
   return (
     <div className="w-full px-4 md:px-8 py-5">
+      {isUserView && (
+        <button onClick={() => navigate("/admin/users")} className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-4">
+          <ChevronLeft size={14} /> Back to Users
+        </button>
+      )}
       <div className="mb-5">
         <h1 className="text-3xl font-semibold text-slate-900">
           {id ? `${userName || "User"}'s Articles` : "All Articles"}
         </h1>
       </div>
 
-      {/* Filters - 5 equal controls, same height/rounded/white, typable */}
-      <div className="grid grid-cols-5 gap-3 mb-5">
+      {/* Filters - hide author dropdown in user view */}
+      <div className={`grid gap-3 mb-5 ${isUserView ? "grid-cols-4" : "grid-cols-5"}`}>
         <Popover>
           <PopoverTrigger asChild>
             <Button
@@ -288,8 +294,8 @@ const AllArticles = () => {
           options={STATUS_OPTIONS} filterOption={(input, opt) => (opt?.label as string).toLowerCase().includes(input.toLowerCase())} />
         <Select value={sortBy} onChange={setSortBy} showSearch optionFilterProp="label" placeholder="Sort" className="w-full h-9 [&_.ant-select-selector]:!bg-white [&_.ant-select-selector]:!rounded-lg [&_.ant-select-selector]:!border-slate-300 [&_.ant-select-selector]:!h-9 text-sm" dropdownStyle={{ background: "#fff" }} listHeight={192}
           options={[{ value: "created_desc", label: "Created (Newest First)" }, { value: "created_asc", label: "Created (Oldest First)" }, { value: "score_desc", label: "AI Score (High → Low)" }, { value: "score_asc", label: "AI Score (Low → High)" }, { value: "version_desc", label: "Version (High → Low)" }, { value: "version_asc", label: "Version (Low → High)" }]} filterOption={(input, opt) => (opt?.label as string).toLowerCase().includes(input.toLowerCase())} />
-        <Select value={selectedAuthor} onChange={setSelectedAuthor} showSearch optionFilterProp="label" placeholder="All Authors" className="w-full h-9 [&_.ant-select-selector]:!bg-white [&_.ant-select-selector]:!rounded-lg [&_.ant-select-selector]:!border-slate-300 [&_.ant-select-selector]:!h-9 text-sm" dropdownStyle={{ background: "#fff" }} listHeight={192}
-          options={[{ value: "all", label: "All Authors" }, ...authors.map((name) => ({ value: name, label: name }))]} filterOption={(input, opt) => (opt?.label as string).toLowerCase().includes(input.toLowerCase())} notFoundContent="No authors found" />
+        {!isUserView && <Select value={selectedAuthor} onChange={setSelectedAuthor} showSearch optionFilterProp="label" placeholder="All Authors" className="w-full h-9 [&_.ant-select-selector]:!bg-white [&_.ant-select-selector]:!rounded-lg [&_.ant-select-selector]:!border-slate-300 [&_.ant-select-selector]:!h-9 text-sm" dropdownStyle={{ background: "#fff" }} listHeight={192}
+          options={[{ value: "all", label: "All Authors" }, ...authors.map((name) => ({ value: name, label: name }))]} filterOption={(input, opt) => (opt?.label as string).toLowerCase().includes(input.toLowerCase())} notFoundContent="No authors found" />}
       </div>
 
       {error ? (
@@ -300,12 +306,6 @@ const AllArticles = () => {
         <div className="rounded-xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">
           Loading articles
         </div>
-      ) : articles.length === 0 ? (
-        <Empty
-          description={`No articles found for ${selectedMonth.format(
-            "MMMM YYYY",
-          )}`}
-        />
       ) : (
         <ArticlesTable
           articles={displayedArticles}
