@@ -18,13 +18,13 @@ export function SummaryView({ start, end }: { start: string; end: string }) {
     fetch(`${BACKEND_URL}/api/insights/summary?start=${start}&end=${end}`).then((res) => res.json()).then(setData).finally(() => setLoading(false));
   }, [start, end]);
 
-  if (loading) return <Spin className="mt-10 flex justify-center" />;
+  if (loading) return <div className="flex justify-center items-center py-16"><Spin /></div>;
   if (!data.length) return <Empty description="No data for this range" />;
 
   return (
     <ConfigProvider theme={{ algorithm: antdTheme.defaultAlgorithm, token: { colorPrimary: "#534ab7", borderRadius: 8 }, components: { Table: { headerBg: "#e2e8f0", headerColor: "#1e293b", headerSplitColor: "#cbd5e1" }, Collapse: { headerBg: "#e2e8f0", contentBg: "#ffffff" } } }}>
       <Collapse
-        expandIconPosition="start"
+        expandIconPosition="end"
         defaultActiveKey={data.map((d) => d.articleTypeId)}
         items={data.map((at) => ({
           key: at.articleTypeId,

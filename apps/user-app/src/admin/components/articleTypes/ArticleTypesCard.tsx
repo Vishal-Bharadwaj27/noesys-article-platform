@@ -76,7 +76,8 @@ function ArticleTypesCard({
     <div className="group">
       <button
         onClick={() => onToggle(isExpanded ? null : type.id)}
-        className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-slate-50/80 transition-colors"
+        className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:brightness-95 transition-colors"
+        style={{ background: "#e2e8f0" }}
       >
         <div
           className={`w-9 h-9 shrink-0 rounded-lg flex items-center justify-center font-semibold text-sm ${avatarColor(type.name)}`}
