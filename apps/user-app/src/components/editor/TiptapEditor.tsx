@@ -12,7 +12,7 @@ import { TableRow } from "@tiptap/extension-table-row";
 import { TableHeader } from "@tiptap/extension-table-header";
 import { TableCell } from "@tiptap/extension-table-cell";
 import Strike from "@tiptap/extension-strike";
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useState, useEffect } from "react";
 import { convertImageToBase64 } from "@/utils/imageToBase64";
 import { Tooltip } from "antd";
 import { Undo2, Redo2, Bold, Italic, Underline as UnderlineIcon, Strikethrough, Highlighter, Link2, List, ListOrdered, Quote, Code2, Table2, ImageIcon, AlignLeft, AlignCenter, AlignRight, AlignJustify, Heading1, Heading2, Heading3, Pilcrow } from "lucide-react";
@@ -24,17 +24,39 @@ function ToolBtn({ tip, active, onClick, children }: any) {
 
 export default function TiptapEditor({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const fileRef = useRef<HTMLInputElement>(null);
+  const [isMarkdown, setIsMarkdown] = useState(false);
+  const mdToHtml = (md: string) => {
+    let html = md.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" />');
+    html = html.replace(/^### (.+)$/gm, "<h3>$1</h3>").replace(/^## (.+)$/gm, "<h2>$1</h2>").replace(/^# (.+)$/gm, "<h1>$1</h1>");
+    html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/\*(.+?)\*/g, "<em>$1</em>");
+    const blocks = html.split(/\n{2,}/).map(b=>b.trim()).filter(Boolean).map(b=> b.startsWith("<h")||b.startsWith("<img")||b.startsWith("<ul") ? b : `<p>${b.replace(/\n/g,"<br/>")}</p>`).join("");
+    return blocks || "<p></p>";
+  };
+  const htmlToMd = (html: string) => {
+    let md = html;
+    md = md.replace(/<img[^>]+src="([^"]+)"[^>]*alt="([^"]*)"[^>]*\/?>/g, "![$2]($1)").replace(/<img[^>]+src="([^"]+)"[^>]*\/?>/g, "![]($1)");
+    md = md.replace(/<h1[^>]*>(.*?)<\/h1>/g, "# $1\n\n").replace(/<h2[^>]*>(.*?)<\/h2>/g, "## $1\n\n").replace(/<h3[^>]*>(.*?)<\/h3>/g, "### $1\n\n");
+    md = md.replace(/<strong[^>]*>(.*?)<\/strong>/g, "**$1**").replace(/<em[^>]*>(.*?)<\/em>/g, "*$1*");
+    md = md.replace(/<p[^>]*>(.*?)<\/p>/gs, (_,c)=> c.replace(/<br[^>]*\/?>/g,"\n")+"\n\n");
+    md = md.replace(/<[^>]+>/g,"");
+    return md.trim();
+  };
   const editor = useEditor({
     extensions: [ StarterKit.configure({ heading: { levels: [1, 2, 3] } }), Underline, Strike, TextAlign.configure({ types: ["heading", "paragraph"] }), Link.configure({ openOnClick: false }), Image.configure({ inline: false, allowBase64: true }), Placeholder.configure({ placeholder: "Write your article content here..." }), CharacterCount, Table.configure({ resizable: true }), TableRow, TableHeader, TableCell ],
     content: value || "<p></p>",
-    onUpdate: ({ editor }) => onChange(editor.getHTML()),
+    onUpdate: ({ editor }) => { const html = editor.getHTML(); if(isMarkdown){ onChange(htmlToMd(html)); } else onChange(html); },
     editorProps: { handlePaste: (_view, e) => { const items = Array.from(e.clipboardData?.items || []) as DataTransferItem[]; const img = items.find((i) => i.type.startsWith("image/")); if (img) { e.preventDefault(); const file = img.getAsFile(); if (file) handleImage(file); return true; } return false; }, handleDrop: (_view, e) => { const file = e.dataTransfer?.files[0]; if (file?.type.startsWith("image/")) { e.preventDefault(); handleImage(file); return true; } return false; } },
   });
   const handleImage = useCallback(async (file: File) => { try { const b64 = await convertImageToBase64(file); editor?.chain().focus().setImage({ src: b64 }).run(); } catch (err: any) { alert(err.message); } }, [editor]);
+  useEffect(()=>{ if(!editor) return; const cur = isMarkdown ? htmlToMd(editor.getHTML()) : editor.getHTML(); if(cur!==value){ if(isMarkdown) editor.commands.setContent(mdToHtml(value||"<p></p>")); else editor.commands.setContent(value||"<p></p>"); } },[value]);
   if (!editor) return null;
   const len = editor.getHTML().length; const warn = len > 450000;
   return (
     <div className="border border-slate-300 bg-white rounded-lg shadow-sm overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent">
+      <div className="flex items-center justify-between px-2 py-1 bg-indigo-50 border-b border-slate-300">
+        <span className="text-xs font-medium text-slate-600">{isMarkdown ? "Markdown mode" : "Rich text mode"}</span>
+        <button type="button" onClick={()=>{ const html=editor.getHTML(); if(!isMarkdown){ const md=htmlToMd(html); editor.commands.setContent(mdToHtml(md)); } else { editor.commands.setContent(value||"<p></p>"); } setIsMarkdown(v=>!v); }} className="text-xs px-2 py-1 rounded bg-white border border-slate-300 hover:bg-slate-50">{isMarkdown ? "Switch to Rich Text" : "Switch to Markdown"}</button>
+      </div>
       <div className="flex flex-wrap items-center gap-0.5 px-2 py-1.5 bg-slate-50 border-b border-slate-300">
         <ToolBtn tip="Undo" onClick={() => editor.chain().focus().undo().run()}><Undo2 size={16} /></ToolBtn>
         <ToolBtn tip="Redo" onClick={() => editor.chain().focus().redo().run()}><Redo2 size={16} /></ToolBtn>
