@@ -128,6 +128,21 @@ export function cleanPastedHtml(rawHtml: string): string {
     img.removeAttribute("height");
   });
 
+  // Before stripping, collect Word list info (mso-list paragraphs)
+  const wordListInfo = new Map<Element, { level: number; isOrdered: boolean }>();
+  doc.querySelectorAll("p, h1, h2, h3, h4, h5, h6").forEach((el) => {
+    const style = el.getAttribute("style") || "";
+    const cls = el.getAttribute("class") || "";
+    if (/mso-list/i.test(style) || /MsoListParagraph/i.test(cls)) {
+      const levelMatch = /level(\d+)/i.exec(style);
+      const level = levelMatch ? parseInt(levelMatch[1], 10) : 1;
+      // Detect bullet vs numbered: mso-list often contains lfo style but text tells us
+      const raw = (el.textContent || "").trim();
+      const isOrdered = /^\d+[\.\)]/.test(raw) || /^\s*\d/.test(raw);
+      wordListInfo.set(el, { level, isOrdered });
+    }
+  });
+
   // Strip presentational attributes Tiptap ignores anyway, plus mso classes.
   doc.querySelectorAll("*").forEach((el) => {
     if (el.tagName.toLowerCase() === "img") return;
@@ -145,6 +160,80 @@ export function cleanPastedHtml(rawHtml: string): string {
       el.replaceWith(...Array.from(el.childNodes));
     }
   });
+
+  // Convert Word "1. Heading" paragraphs (fake numbering with mso-tab-count)
+  // into real <ol><li> / <ul><li> so Tiptap renders them as proper lists
+  // and body text below aligns naturally instead of starting at extreme left
+  // while the heading appears indented.
+  // Also handles Google Docs numbering which comes as <p> with leading "1. "
+  if (wordListInfo.size > 0) {
+    // Process in DOM order, grouping consecutive list paragraphs into lists
+    let currentList: HTMLElement | null = null;
+    let currentOrdered: boolean | null = null;
+    const bodyChildren = Array.from(doc.body.children) as HTMLElement[];
+    for (const child of bodyChildren) {
+      if (!wordListInfo.has(child)) {
+        currentList = null;
+        currentOrdered = null;
+        continue;
+      }
+      const info = wordListInfo.get(child)!;
+      // Use ordered/unordered based on detected text pattern
+      const isOrdered = info.isOrdered;
+      if (!currentList || currentOrdered !== isOrdered) {
+        const list = doc.createElement(isOrdered ? "ol" : "ul");
+        child.before(list);
+        currentList = list;
+        currentOrdered = isOrdered;
+      }
+      const li = doc.createElement("li");
+      // Clean leading "1. " / "1) " / "• " and any leftover tab \u00a0
+      let text = child.innerHTML
+        .replace(/^\s*(?:\d+[\.\)]|•|·)\s*(?:&nbsp;|\u00a0|\s)*/i, "")
+        .replace(/<span[^>]*mso-tab-count[^>]*>[\s\S]*?<\/span>/gi, " ")
+        .trim();
+      // If heading text is present, keep it as heading inside li for visual weight,
+      // but strip heading tag to avoid nested block issues - just bold it
+      if (/^<h[1-6]/i.test(child.outerHTML)) {
+        text = `<strong>${text}</strong>`;
+      }
+      li.innerHTML = text || child.textContent || "";
+      currentList.appendChild(li);
+      child.remove();
+    }
+  }
+
+  // Fallback: even without mso-list markers, Google Docs sometimes pastes
+  // numbered headings as plain "1.  Heading Title" paragraphs. Detect a run
+  // of such paragraphs at the top and convert them too (heading + body pattern)
+  {
+    const paras = Array.from(doc.body.querySelectorAll("p")) as HTMLElement[];
+    // Only convert if we see 2+ consecutive "N. text" paragraphs that look like outline
+    let run: HTMLElement[] = [];
+    for (const p of paras) {
+      const t = (p.textContent || "").trim();
+      if (/^\d+[\.\)]\s+\S/.test(t) && t.length < 200 && !p.querySelector("img,table")) {
+        run.push(p);
+      } else if (run.length >= 2) {
+        break;
+      } else {
+        run = [];
+      }
+    }
+    if (run.length >= 2 && wordListInfo.size === 0) {
+      let list: HTMLElement | null = null;
+      for (const p of run) {
+        if (!list) {
+          list = doc.createElement("ol");
+          p.before(list);
+        }
+        const li = doc.createElement("li");
+        li.innerHTML = p.innerHTML.replace(/^\s*\d+[\.\)]\s*/, "").trim() || p.textContent || "";
+        list.appendChild(li);
+        p.remove();
+      }
+    }
+  }
 
   // Word emits empty "spacer" paragraphs by the dozen.
   doc.querySelectorAll("p").forEach((p) => {

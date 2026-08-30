@@ -546,11 +546,6 @@ export default function ArticleCreation() {
       return;
     }
 
-    if (values.content.length > 500000) {
-      setError("Content exceeds 500KB limit");
-      return;
-    }
-
     setSubmitting(true);
 
     try {

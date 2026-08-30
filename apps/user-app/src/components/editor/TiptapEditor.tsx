@@ -3,7 +3,6 @@ import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
-import CharacterCount from "@tiptap/extension-character-count";
 import Underline from "@tiptap/extension-underline";
 import TextAlign from "@tiptap/extension-text-align";
 import { Table } from "@tiptap/extension-table";
@@ -11,11 +10,9 @@ import { TableRow } from "@tiptap/extension-table-row";
 import { TableHeader } from "@tiptap/extension-table-header";
 import { TableCell } from "@tiptap/extension-table-cell";
 import Strike from "@tiptap/extension-strike";
-import { useRef, useCallback, useState, useEffect } from "react";
+import { useRef, useCallback, useEffect } from "react";
 import { convertImageToBase64 } from "@/utils/imageToBase64";
 import { Tooltip } from "antd";
-import { marked } from "marked";
-import TurndownService from "turndown";
 import {
   Undo2,
   Redo2,
@@ -44,24 +41,6 @@ import "./paste-content.css";
 import { SmartPaste } from "./extensions/SmartPaste";
 import { resolveContentToHtml } from "./lib/contentNormalize";
 
-// Real converters instead of hand-rolled regex — the regex version dropped
-// lists, blockquotes, and code blocks entirely, which is what was
-// collapsing spacing on every markdown round-trip.
-const turndown = new TurndownService({
-  headingStyle: "atx",
-  codeBlockStyle: "fenced",
-});
-
-function mdToHtml(md: string): string {
-  if (!md || !md.trim()) return "<p></p>";
-  const html = marked.parse(md, { async: false }) as string;
-  return html || "<p></p>";
-}
-
-function htmlToMd(html: string): string {
-  return turndown.turndown(html || "").trim();
-}
-
 function ToolBtn({ tip, active, onClick, children }: any) {
   return (
     <Tooltip title={tip}>
@@ -84,10 +63,10 @@ export default function TiptapEditor({
   onChange: (v: string) => void;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
-  const [isMarkdown, setIsMarkdown] = useState(false);
 
   // Normalize whatever comes in on first mount: HTML passes through,
-  // legacy markdown gets converted once up front.
+  // legacy markdown gets converted once up front. Keep resolveContentToHtml
+  // for markdown + image rendering.
   const initialHtml = resolveContentToHtml(value);
 
   const editor = useEditor({
@@ -101,7 +80,6 @@ export default function TiptapEditor({
       Placeholder.configure({
         placeholder: "Write your article content here...",
       }),
-      CharacterCount,
       // Handles Word / Google Docs / Markdown pastes (see extensions/SmartPaste.ts)
       SmartPaste,
       Table.configure({ resizable: true }),
@@ -111,8 +89,7 @@ export default function TiptapEditor({
     ],
     content: initialHtml,
     onUpdate: ({ editor }) => {
-      const html = editor.getHTML();
-      onChange(isMarkdown ? htmlToMd(html) : html);
+      onChange(editor.getHTML());
     },
   });
 
@@ -130,42 +107,14 @@ export default function TiptapEditor({
 
   useEffect(() => {
     if (!editor) return;
-    const currentAsProp = isMarkdown
-      ? htmlToMd(editor.getHTML())
-      : editor.getHTML();
-    if (currentAsProp === value) return;
+    if (editor.getHTML() === value) return;
     const nextHtml = resolveContentToHtml(value || "");
     editor.commands.setContent(nextHtml);
   }, [value]);
 
   if (!editor) return null;
-  const len = editor.getHTML().length;
-  const warn = len > 450000;
   return (
     <div className="border border-slate-300 bg-white rounded-lg shadow-sm overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent">
-      <div className="flex items-center justify-between px-2 py-1 bg-indigo-50 border-b border-slate-300">
-        <span className="text-xs font-medium text-slate-600">
-          {isMarkdown ? "Markdown mode" : "Rich text mode"}
-        </span>
-        <button
-          type="button"
-          onClick={() => {
-            const html = editor.getHTML();
-            if (!isMarkdown) {
-              const md = htmlToMd(html);
-              editor.commands.setContent(mdToHtml(md));
-            } else {
-              editor.commands.setContent(
-                resolveContentToHtml(value),
-              );
-            }
-            setIsMarkdown((v) => !v);
-          }}
-          className="text-xs px-2 py-1 rounded bg-white border border-slate-300 hover:bg-slate-50"
-        >
-          {isMarkdown ? "Switch to Rich Text" : "Switch to Markdown"}
-        </button>
-      </div>
       <div className="flex flex-wrap items-center gap-0.5 px-2 py-1.5 bg-slate-50 border-b border-slate-300">
         <ToolBtn tip="Undo" onClick={() => editor.chain().focus().undo().run()}>
           <Undo2 size={16} />
@@ -337,11 +286,6 @@ export default function TiptapEditor({
         editor={editor}
         className="min-h-[300px] max-h-[45vh] overflow-auto"
       />
-      <div
-        className={`text-xs px-3 py-1 border-t text-right ${warn ? "text-amber-600" : "text-slate-400"}`}
-      >
-        {len.toLocaleString()} / 500,000 chars {warn && "— approaching limit"}
-      </div>
     </div>
   );
 }
