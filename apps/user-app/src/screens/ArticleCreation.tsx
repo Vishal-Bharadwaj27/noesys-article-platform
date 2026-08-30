@@ -548,29 +548,25 @@ export default function ArticleCreation() {
 
     setSubmitting(true);
 
+    api<CreateResponse>("/articles", {
+      method: "POST",
+      body: JSON.stringify({
+        article_type_id: values.article_type_id,
+        title: values.title.trim(),
+        content: toMarkdown(values.content.trim()),
+      }),
+    }).catch((err) => {
+      console.error("Background article submission failed:", err);
+    });
+
     try {
-      await api<CreateResponse>("/articles", {
-        method: "POST",
-        body: JSON.stringify({
-          article_type_id: values.article_type_id,
-          title: values.title.trim(),
-          content: toMarkdown(values.content.trim()),
-        }),
-      });
+      sessionStorage.setItem(
+        "toast",
+        "Article submitted! Scoring in progress...",
+      );
+    } catch {}
 
-      try {
-        sessionStorage.setItem(
-          "toast",
-          "Article submitted! Scoring in progress...",
-        );
-      } catch {}
-
-      navigate("/");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to submit article");
-    } finally {
-      setSubmitting(false);
-    }
+    navigate("/");
   }
 
   return (
