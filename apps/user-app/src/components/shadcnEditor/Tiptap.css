@@ -57,12 +57,68 @@
   outline: 2px solid black;
 }
 
-/* Read-only article viewer: same content styling, no min-height forced,
-   tables scroll horizontally on small screens instead of overflowing. */
+/* Read-only article viewer: polished preview card */
+.article-viewer {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
+  overflow: hidden;
+}
+
 .article-viewer .ProseMirror {
-  min-height: 0;
-  padding: 0;
+  min-height: 200px;
+  padding: 20px 24px;
   cursor: default;
+  line-height: 1.7;
+  color: #334155;
+}
+
+.article-viewer .ProseMirror h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 1.2rem 0 0.6rem;
+  line-height: 1.3;
+  color: #0f172a;
+}
+
+.article-viewer .ProseMirror h2 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin: 1rem 0 0.5rem;
+  line-height: 1.35;
+  color: #0f172a;
+}
+
+.article-viewer .ProseMirror h3 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin: 0.9rem 0 0.4rem;
+  color: #0f172a;
+}
+
+.article-viewer .ProseMirror p {
+  margin: 0 0 0.85rem;
+}
+
+.article-viewer .ProseMirror ul,
+.article-viewer .ProseMirror ol {
+  margin: 0.5rem 0 0.85rem 1.5rem;
+}
+
+.article-viewer .ProseMirror li {
+  margin-bottom: 0.35rem;
+}
+
+.article-viewer .ProseMirror li p {
+  margin: 0;
+}
+
+.article-viewer .ProseMirror blockquote {
+  border-left: 3px solid #6366f1;
+  padding-left: 1rem;
+  color: #64748b;
+  font-style: italic;
+  margin: 1rem 0;
 }
 
 .article-viewer .ProseMirror table {

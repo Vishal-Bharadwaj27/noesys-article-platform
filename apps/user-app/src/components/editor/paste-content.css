@@ -98,3 +98,11 @@
 .article-viewer .ProseMirror [style*="text-align:justify"] {
   text-align: justify;
 }
+
+/* Word numbered headings: after mso-list cleanup Word leaves "1. Heading" in a <p>
+   with a tab. Give those paragraphs heading-like spacing so body text below
+   doesn't look misaligned. Real <ol><li> already handled by Tiptap. */
+.tiptap p,
+.article-viewer .ProseMirror p {
+  line-height: 1.65;
+}
