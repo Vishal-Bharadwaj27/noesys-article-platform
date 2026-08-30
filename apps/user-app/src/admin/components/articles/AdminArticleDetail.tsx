@@ -14,6 +14,7 @@ import { ConfigProvider, Table, Tag, Progress, theme as antdTheme } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { Resizable } from "react-resizable";
 import "react-resizable/css/styles.css";
+import ArticleViewer from "@/components/shadcnEditor/ArticleViewer";
 
 const syntaxTheme = oneDark as { [key: string]: CSSProperties };
 
@@ -440,6 +441,7 @@ export default function AdminArticleDetail() {
   const [parameterResults, setParameterResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  console.log(article);
 
   const [contentCollapsed, setContentCollapsed] = useState(true);
 
@@ -710,7 +712,8 @@ export default function AdminArticleDetail() {
 
             {!contentCollapsed && (
               <div className="px-5 py-4">
-                <ContentBlock content={displayContent} />
+                {/* <ContentBlock content={displayContent} /> */}
+                <ArticleViewer content={displayContent} />
               </div>
             )}
           </div>

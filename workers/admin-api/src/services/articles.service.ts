@@ -7,6 +7,7 @@ export type ArticleListItem = {
   month_year: string;
   submitted_at: string;
   user_id: string;
+  article_type_name: string;
   user_name: string;
   email: string;
   job_role: string;

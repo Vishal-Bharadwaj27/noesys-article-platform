@@ -1,6 +1,6 @@
 import { useEditor, EditorContent } from "@tiptap/react";
 import { marked } from "marked";
-import "./tiptap.css";
+import "./Tiptap.css";
 import { tiptapExtensions } from "./TiptapExtensions";
 
 type Props = {
