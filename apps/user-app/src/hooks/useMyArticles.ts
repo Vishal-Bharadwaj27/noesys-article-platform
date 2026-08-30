@@ -33,6 +33,7 @@ interface ArticleRow {
 }
 
 const POLLING_INTERVAL = 2500;
+const MAX_POLL_DURATION = 300000;
 
 export function useMyArticles(options: UseMyArticlesOptions = {}) {
   const { month, viewAll = false, page, limit = 10 } = options;
@@ -42,6 +43,7 @@ export function useMyArticles(options: UseMyArticlesOptions = {}) {
   const [pagination, setPagination] = useState<PaginationInfo>({ page: 1, limit, total: 0, totalPages: 0 });
   const [isPolling, setIsPolling] = useState(false);
   const intervalRef = useRef<number | null>(null);
+  const pollStartRef = useRef<number | null>(null);
 
   const fetchArticles = useCallback(async (showLoading = true) => {
     if (showLoading) { setLoading(true); setError(null); }
@@ -80,12 +82,22 @@ export function useMyArticles(options: UseMyArticlesOptions = {}) {
 
   useEffect(() => {
     const clear = () => { if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; } setIsPolling(false); };
-    if (!hasPending) { clear(); return; }
+    if (!hasPending) { pollStartRef.current = null; clear(); return; }
     if (document.visibilityState === "hidden") { clear(); return; }
 
+    if (pollStartRef.current === null) pollStartRef.current = Date.now();
+    const checkTimeout = () => {
+      if (pollStartRef.current !== null && Date.now() - pollStartRef.current > MAX_POLL_DURATION) {
+        clear(); pollStartRef.current = null;
+        try { sessionStorage.setItem("toastError", "Scoring timed out"); } catch {}
+        return true;
+      }
+      return false;
+    };
     setIsPolling(true);
     intervalRef.current = window.setInterval(() => {
       if (document.visibilityState === "hidden") return;
+      if (checkTimeout()) return;
       refreshSilently();
     }, POLLING_INTERVAL);
 
