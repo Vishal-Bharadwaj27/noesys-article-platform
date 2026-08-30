@@ -11,13 +11,24 @@ interface OptionBreakdown {
   sortOrder: number;
 }
 
+interface NumericDistributionBucket {
+  value: number;
+  count: number;
+}
+
 interface ParameterSummary {
   parameterId: string;
   parameterName: string;
   scopeType: "numeric" | "option";
   sortOrder: number;
   options?: OptionBreakdown[];
-  numeric?: { avg: number; min: number; max: number; count: number };
+  numeric?: {
+    avg: number;
+    min: number;
+    max: number;
+    count: number;
+    distribution: NumericDistributionBucket[];
+  };
 }
 
 interface ArticleTypeSummary {
@@ -51,10 +62,12 @@ export async function getSummary(
       .bind(at.id, range.start, range.end)
       .first<{ cnt: number }>();
 
+    // NOTE: min_value / max_value are now selected so numeric parameters
+    // know the full range to backfill with zero-count buckets.
     const params = await db
       .prepare(
         `
-      SELECT id, name, scope_type, sort_order
+      SELECT id, name, scope_type, sort_order, min_value, max_value
       FROM parameters
       WHERE article_type_id = ? AND is_active = 1
       ORDER BY sort_order, name
@@ -67,19 +80,42 @@ export async function getSummary(
 
     for (const p of params.results as any[]) {
       if (p.scope_type === "option") {
+        // Problem 1 fix: start from parameter_options (all active options for
+        // this parameter) and LEFT JOIN a pre-filtered subquery of actual
+        // results. The subquery applies the version join, parameter_id
+        // filter, and month_year range *before* the join, so it only ever
+        // contributes rows for results that truly match. Because the outer
+        // query starts from parameter_options, every active option is
+        // returned even when the subquery has no matching row for it, in
+        // which case COUNT(filtered.article_id) naturally evaluates to 0.
+        //
+        // This is deliberately NOT written as:
+        //   LEFT JOIN article_parameter_results apr ON apr.option_id = po.id
+        //   LEFT JOIN articles a ON a.id = apr.article_id AND a.month_year BETWEEN ? AND ?
+        // because putting the month_year filter in the articles ON clause
+        // (rather than pre-filtering) would let an apr row "count" even when
+        // its article falls outside the requested range -- the apr row
+        // still has a non-null article_id, so COUNT(apr.article_id) would
+        // include it despite a being NULL for that row.
         const rows = await db
           .prepare(
             `
-          SELECT po.label AS label, po.sort_order AS sortOrder, COUNT(*) AS cnt
-          FROM article_parameter_results apr
-          JOIN articles a ON a.id = apr.article_id AND a.version = apr.version
-          JOIN parameter_options po ON po.id = apr.option_id
-          WHERE apr.parameter_id = ? AND a.month_year BETWEEN ? AND ?
+          SELECT po.label AS label, po.sort_order AS sortOrder,
+                 COUNT(filtered.article_id) AS cnt
+          FROM parameter_options po
+          LEFT JOIN (
+            SELECT apr.option_id, apr.article_id
+            FROM article_parameter_results apr
+            JOIN articles a
+              ON a.id = apr.article_id AND a.version = apr.version
+            WHERE apr.parameter_id = ? AND a.month_year BETWEEN ? AND ?
+          ) filtered ON filtered.option_id = po.id
+          WHERE po.parameter_id = ? AND po.is_active = 1
           GROUP BY po.id
           ORDER BY po.sort_order
         `,
           )
-          .bind(p.id, range.start, range.end)
+          .bind(p.id, range.start, range.end, p.id)
           .all();
 
         parameterSummaries.push({
@@ -107,6 +143,49 @@ export async function getSummary(
           .bind(p.id, range.start, range.end)
           .first<any>();
 
+        // Problem 2 fix: build a recursive CTE that enumerates every integer
+        // from parameters.min_value to parameters.max_value, then LEFT JOIN
+        // a pre-filtered subquery of results (same "filter first, then
+        // left join" shape as above, and for the same reason: filtering
+        // inside the ON clause of the join to `articles` would let
+        // out-of-range rows leak into the count). Buckets with no matching
+        // result naturally get COUNT(...) = 0.
+        //
+        // Guarded because min_value/max_value may be null for legacy
+        // numeric parameters that predate bounded ranges -- in that case we
+        // fall back to an empty distribution rather than a query error.
+        let distribution: NumericDistributionBucket[] = [];
+        if (p.min_value != null && p.max_value != null) {
+          const distRows = await db
+            .prepare(
+              `
+            WITH RECURSIVE bucket(value) AS (
+              SELECT CAST(? AS INTEGER)
+              UNION ALL
+              SELECT value + 1 FROM bucket WHERE value < ?
+            )
+            SELECT b.value AS value, COUNT(filtered.article_id) AS cnt
+            FROM bucket b
+            LEFT JOIN (
+              SELECT apr.numeric_value, apr.article_id
+              FROM article_parameter_results apr
+              JOIN articles a
+                ON a.id = apr.article_id AND a.version = apr.version
+              WHERE apr.parameter_id = ? AND a.month_year BETWEEN ? AND ?
+            ) filtered ON filtered.numeric_value = b.value
+            GROUP BY b.value
+            ORDER BY b.value
+          `,
+            )
+            .bind(p.min_value, p.max_value, p.id, range.start, range.end)
+            .all();
+
+          distribution = (distRows.results as any[]).map((r) => ({
+            value: r.value,
+            count: r.cnt,
+          }));
+        }
+
         parameterSummaries.push({
           parameterId: p.id,
           parameterName: p.name,
@@ -117,6 +196,7 @@ export async function getSummary(
             min: row?.min ?? 0,
             max: row?.max ?? 0,
             count: row?.cnt ?? 0,
+            distribution,
           },
         });
       }

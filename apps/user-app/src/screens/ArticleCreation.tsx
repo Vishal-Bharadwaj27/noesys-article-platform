@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/select";
 import { ChevronLeft, Send, Loader2, Copy, Check } from "lucide-react";
 import { api } from "../http-client";
-import TiptapEditor from "@/components/editor/TiptapEditor";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
@@ -20,6 +19,8 @@ import type { CSSProperties } from "react";
 import TurndownService from "turndown";
 import { useAuth } from "@/contexts/AuthContext";
 import AdminHeader from "@/admin/components/AdminHeader";
+import TiptapEditor from "@/components/editor/TiptapEditor";
+import ArticleViewer from "@/components/shadcnEditor/ArticleViewer";
 
 const syntaxTheme = oneDark as { [key: string]: CSSProperties };
 
@@ -550,22 +551,31 @@ export default function ArticleCreation() {
       return;
     }
 
-    if (submitting) return;
     setSubmitting(true);
-    const titleSnapshot = values.title.trim();
-    const payload = {
-      article_type_id: values.article_type_id,
-      title: titleSnapshot,
-      content: toMarkdown(values.content.trim()),
-    };
-    try { sessionStorage.setItem("pendingArticleTitle", titleSnapshot); } catch {}
-    try { sessionStorage.setItem("toast", "Article submitted! Scoring in progress..."); } catch {}
-    navigate("/");
-    api<CreateResponse>("/articles", { method: "POST", body: JSON.stringify(payload) })
-      .catch((err) => {
-        try { sessionStorage.setItem("toastError", err instanceof Error ? err.message : "Failed to submit article"); } catch {}
-      })
-      .finally(() => setSubmitting(false));
+
+    try {
+      await api<CreateResponse>("/articles", {
+        method: "POST",
+        body: JSON.stringify({
+          article_type_id: values.article_type_id,
+          title: values.title.trim(),
+          content: toMarkdown(values.content.trim()),
+        }),
+      });
+
+      try {
+        sessionStorage.setItem(
+          "toast",
+          "Article submitted! Scoring in progress...",
+        );
+      } catch {}
+
+      navigate("/");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to submit article");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -673,84 +683,7 @@ export default function ArticleCreation() {
                   />
                 )}
 
-                {editorView === "preview" &&
-                  (() => {
-                    const isEmpty =
-                      !values.content ||
-                      !values.content.trim() ||
-                      values.content.trim() === "<p></p>";
-
-                    if (isEmpty) {
-                      return (
-                        <div className="border border-slate-200 rounded-lg overflow-hidden bg-white">
-                          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
-                            <span className="text-xs font-medium text-slate-500">
-                              Preview
-                            </span>
-                          </div>
-                          <div className="p-6 min-h-[300px] overflow-auto text-slate-400 text-sm">
-                            No content available.
-                          </div>
-                        </div>
-                      );
-                    }
-
-                    // Determine if the content is typed or pasted markdown.
-                    // Markdown syntax uses lines starting with #, -, *, >, or contains markdown formatting symbols.
-                    const temp = document.createElement("div");
-                    temp.innerHTML = values.content;
-                    const plainText = temp.innerText || temp.textContent || "";
-
-                    // Check for markdown patterns: headings (#), lists (- or * at starts), bold/italic (** or *), blockquotes (>), tables (|), links/images ([...](...))
-                    const hasMarkdownPatterns =
-                      /(?:^|\n)\s*(?:#+\s+|- \s+|\* \s+|\d+\.\s+|> )/m.test(
-                        plainText,
-                      ) ||
-                      /\*\*[^*]+\*\*/.test(plainText) ||
-                      /\*[^*]+\*/.test(plainText) ||
-                      /\[[^\]]+\]\([^)]+\)/.test(plainText) ||
-                      /\|[^|]+\|/.test(plainText);
-
-                    // Has rich HTML tags (headings, lists, code, tables) other than basic paragraph tags (<p>, <br>)
-                    const hasRichHTMLTags = !!temp.querySelector(
-                      "h1,h2,h3,ul,ol,blockquote,pre,table,strong,em,u,img",
-                    );
-
-                    // It's a markdown file if the text contains markdown syntax patterns,
-                    // or if it doesn't contain any rich formatting tags (i.e. user just typed basic text).
-                    const isMarkdown = hasMarkdownPatterns || !hasRichHTMLTags;
-
-                    return (
-                      <div className="border border-slate-200 rounded-lg overflow-hidden bg-white">
-                        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
-                          <span className="text-xs font-medium text-slate-500">
-                            Preview
-                          </span>
-                          <CopyButton text={toMarkdown(values.content)} />
-                        </div>
-                        <div className="p-6 min-h-[300px] overflow-auto">
-                          {!isMarkdown ? (
-                            // Formatted docx / rich text / images toolbar input -> render HTML directly
-                            <div
-                              className="tiptap-preview"
-                              dangerouslySetInnerHTML={{
-                                __html: values.content,
-                              }}
-                            />
-                          ) : (
-                            // Markdown formatted file/pasted text -> process to markdown and render via ReactMarkdown
-                            <ReactMarkdown
-                              remarkPlugins={[remarkGfm]}
-                              rehypePlugins={[rehypeRaw]}
-                              components={sharedMarkdownComponents}
-                            >
-                              {toMarkdown(values.content)}
-                            </ReactMarkdown>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })()}
+                {editorView === "preview" && <ArticleViewer content={values.content} />}
               </div>
             </div>
 
