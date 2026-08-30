@@ -550,31 +550,22 @@ export default function ArticleCreation() {
       return;
     }
 
+    if (submitting) return;
     setSubmitting(true);
-
-    try {
-      await api<CreateResponse>("/articles", {
-        method: "POST",
-        body: JSON.stringify({
-          article_type_id: values.article_type_id,
-          title: values.title.trim(),
-          content: toMarkdown(values.content.trim()),
-        }),
-      });
-
-      try {
-        sessionStorage.setItem(
-          "toast",
-          "Article submitted! Scoring in progress...",
-        );
-      } catch {}
-
-      navigate("/");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to submit article");
-    } finally {
-      setSubmitting(false);
-    }
+    const titleSnapshot = values.title.trim();
+    const payload = {
+      article_type_id: values.article_type_id,
+      title: titleSnapshot,
+      content: toMarkdown(values.content.trim()),
+    };
+    try { sessionStorage.setItem("pendingArticleTitle", titleSnapshot); } catch {}
+    try { sessionStorage.setItem("toast", "Article submitted! Scoring in progress..."); } catch {}
+    navigate("/");
+    api<CreateResponse>("/articles", { method: "POST", body: JSON.stringify(payload) })
+      .catch((err) => {
+        try { sessionStorage.setItem("toastError", err instanceof Error ? err.message : "Failed to submit article"); } catch {}
+      })
+      .finally(() => setSubmitting(false));
   }
 
   return (

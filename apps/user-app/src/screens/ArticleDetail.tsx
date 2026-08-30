@@ -374,19 +374,27 @@ export default function ArticleDetail() {
   const displayFeedback = effectiveSnapshot ? (effectiveSnapshot.feedback ?? "") : (currentFeedback ?? "");
   const displaySubmittedAt = effectiveSnapshot?.submitted_at ?? null;
  
-  // Poll every 2.5s while scoring; stops on unmount/complete (backend continues via waitUntil)
+  // Poll every 2.5s while scoring; stops on unmount/complete/timeout (5 min)
+  const POLLING_INTERVAL = 2500;
+  const MAX_POLL_DURATION = 300000;
   useEffect(() => {
     if (effectiveSnapshot || !article || currentScore !== null) return;
     let stopped = false; let timer: number | null = null;
+    const pollStart = Date.now();
+    const isTimedOut = () => Date.now() - pollStart > MAX_POLL_DURATION;
     const tick = async () => {
       if (stopped || document.visibilityState === "hidden") return;
+      if (isTimedOut()) { if (timer) clearInterval(timer); try { sessionStorage.setItem("toastError", "Scoring timed out"); } catch {} return; }
       try {
         const result = await api<ArticleDetailResponse>(`/articles/mine/${article.id}`);
         setArticle(result.article); setHistory(result.history ?? []); setCurrentScore(result.current_score); setCurrentFeedback(result.current_feedback ?? ""); setParameterResults(result.parameter_results ?? []);
         if (result.current_score !== null) { if (timer) clearInterval(timer); return; }
       } catch (e) { console.error(e); }
     };
-    timer = window.setInterval(tick, 2500);
+    timer = window.setInterval(() => {
+      if (isTimedOut()) { if (timer) clearInterval(timer); try { sessionStorage.setItem("toastError", "Scoring timed out"); } catch {} return; }
+      tick();
+    }, POLLING_INTERVAL);
     const onVis = () => { if (document.visibilityState === "visible") tick(); };
     document.addEventListener("visibilitychange", onVis);
     return () => { stopped = true; if (timer) clearInterval(timer); document.removeEventListener("visibilitychange", onVis); };
