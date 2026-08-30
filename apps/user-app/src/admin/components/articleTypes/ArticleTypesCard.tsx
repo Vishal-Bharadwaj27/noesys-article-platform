@@ -72,6 +72,7 @@ function ArticleTypesCard({
   onEdit,
   onDelete,
 }: ArticleTypesCardProps) {
+  console.log(type)
   return (
     <div className="group">
       <button

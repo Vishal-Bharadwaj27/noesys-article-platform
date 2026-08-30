@@ -18,7 +18,7 @@ export async function getArticleTypes(db: D1Database): Promise<ArticleType[]> {
           created_by,
           created_at,
           updated_at
-        FROM article_types
+        FROM article_types WHERE is_active=1
         ORDER BY name ASC
       `,
     )
