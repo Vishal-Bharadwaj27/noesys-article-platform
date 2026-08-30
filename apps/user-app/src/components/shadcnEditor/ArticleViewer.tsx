@@ -1,43 +1,40 @@
 import { useEditor, EditorContent } from "@tiptap/react";
-import { marked } from "marked";
+import { useEffect } from "react";
 import "./Tiptap.css";
 import { tiptapExtensions } from "./TiptapExtensions";
+import { resolveContentToHtml } from "@/components/editor/lib/contentNormalize";
 
 type Props = {
   content: string;
 };
 
 /**
- * Some older articles were saved as raw markdown (from a previous
- * markdown-mode toggle) instead of Tiptap HTML. Tiptap only understands
- * HTML — fed raw markdown, it renders "## Heading" and "![](base64...)"
- * as literal text instead of parsing them. This detects that case and
- * converts to HTML before loading.
- */
-function isLikelyHtml(value: string): boolean {
-  if (!value) return true;
-  const trimmed = value.trim();
-  // HTML content from Tiptap always starts with a tag, e.g. <p>, <h1>, <img
-  return /^<[a-z][\s\S]*>/i.test(trimmed);
-}
-
-function resolveHtml(content: string): string {
-  if (!content) return "<p></p>";
-  if (isLikelyHtml(content)) return content;
-  return marked.parse(content, { async: false }) as string;
-}
-
-/**
- * Strictly for viewing articles. No toolbar, no editing, no upload logic.
- * Uses the same extensions + CSS as TiptapEditor so rendered output is
- * pixel-identical between edit mode and view mode.
+ * Read-only renderer used by the Preview tab (ArticleCreation / ArticleDetail)
+ * and by the admin article detail screen.
+ *
+ * Content may arrive as:
+ *  - Tiptap HTML (normal case, includes <img src="data:image/...">)
+ *  - raw markdown, including base64 images written as ![alt](data:image/png;base64,…)
+ *
+ * resolveContentToHtml() picks the right path, so the preview always shows
+ * formatted output plus the inline images instead of literal syntax.
  */
 export default function ArticleViewer({ content }: Props) {
   const editor = useEditor({
     extensions: tiptapExtensions,
-    content: resolveHtml(content),
+    content: resolveContentToHtml(content),
     editable: false,
   });
+
+  // Preview is re-opened with new content while mounted (toggling Editor /
+  // Preview keeps this component alive in some screens), so re-sync.
+  useEffect(() => {
+    if (!editor) return;
+    const next = resolveContentToHtml(content);
+    if (next !== editor.getHTML()) {
+      editor.commands.setContent(next, { emitUpdate: false });
+    }
+  }, [content, editor]);
 
   if (!editor) return null;
 
