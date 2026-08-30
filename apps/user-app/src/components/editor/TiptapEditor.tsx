@@ -40,6 +40,9 @@ import {
   Pilcrow,
 } from "lucide-react";
 import "./tiptap.css";
+import "./paste-content.css";
+import { SmartPaste } from "./extensions/SmartPaste";
+import { resolveContentToHtml } from "./lib/contentNormalize";
 
 // Real converters instead of hand-rolled regex — the regex version dropped
 // lists, blockquotes, and code blocks entirely, which is what was
@@ -57,15 +60,6 @@ function mdToHtml(md: string): string {
 
 function htmlToMd(html: string): string {
   return turndown.turndown(html || "").trim();
-}
-
-// Content coming from the DB may be legacy markdown saved before this
-// editor stored everything as HTML. Detect it so we don't feed raw
-// "## heading" / "![](data:...)" text straight into setContent, which
-// Tiptap would render as literal text rather than parsing it.
-function isLikelyHtml(value: string): boolean {
-  if (!value) return true;
-  return /^\s*<[a-z][\s\S]*>/i.test(value.trim());
 }
 
 function ToolBtn({ tip, active, onClick, children }: any) {
@@ -94,9 +88,7 @@ export default function TiptapEditor({
 
   // Normalize whatever comes in on first mount: HTML passes through,
   // legacy markdown gets converted once up front.
-  const initialHtml = isLikelyHtml(value)
-    ? value || "<p></p>"
-    : mdToHtml(value);
+  const initialHtml = resolveContentToHtml(value);
 
   const editor = useEditor({
     extensions: [
@@ -110,6 +102,8 @@ export default function TiptapEditor({
         placeholder: "Write your article content here...",
       }),
       CharacterCount,
+      // Handles Word / Google Docs / Markdown pastes (see extensions/SmartPaste.ts)
+      SmartPaste,
       Table.configure({ resizable: true }),
       TableRow,
       TableHeader,
@@ -119,30 +113,6 @@ export default function TiptapEditor({
     onUpdate: ({ editor }) => {
       const html = editor.getHTML();
       onChange(isMarkdown ? htmlToMd(html) : html);
-    },
-    editorProps: {
-      handlePaste: (_view, e) => {
-        const items = Array.from(
-          e.clipboardData?.items || [],
-        ) as DataTransferItem[];
-        const img = items.find((i) => i.type.startsWith("image/"));
-        if (img) {
-          e.preventDefault();
-          const file = img.getAsFile();
-          if (file) handleImage(file);
-          return true;
-        }
-        return false;
-      },
-      handleDrop: (_view, e) => {
-        const file = e.dataTransfer?.files[0];
-        if (file?.type.startsWith("image/")) {
-          e.preventDefault();
-          handleImage(file);
-          return true;
-        }
-        return false;
-      },
     },
   });
 
@@ -164,11 +134,7 @@ export default function TiptapEditor({
       ? htmlToMd(editor.getHTML())
       : editor.getHTML();
     if (currentAsProp === value) return;
-    const nextHtml = isMarkdown
-      ? mdToHtml(value || "")
-      : isLikelyHtml(value)
-        ? value || "<p></p>"
-        : mdToHtml(value);
+    const nextHtml = resolveContentToHtml(value || "");
     editor.commands.setContent(nextHtml);
   }, [value]);
 
@@ -190,7 +156,7 @@ export default function TiptapEditor({
               editor.commands.setContent(mdToHtml(md));
             } else {
               editor.commands.setContent(
-                isLikelyHtml(value) ? value || "<p></p>" : mdToHtml(value),
+                resolveContentToHtml(value),
               );
             }
             setIsMarkdown((v) => !v);
