@@ -1,7 +1,7 @@
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import Link from "@tiptap/extension-link";
-import Image from "@tiptap/extension-image";
+import { ResizableImage } from "@/components/editor/extensions/ResizableImage";
 import TextAlign from "@tiptap/extension-text-align";
 import CharacterCount from "@tiptap/extension-character-count";
 import { Table } from "@tiptap/extension-table";
@@ -20,11 +20,9 @@ export const tiptapExtensions = [
   Link.configure({
     openOnClick: false,
   }),
-  Image.configure({
-    allowBase64: true,
-  }),
+  ResizableImage,
   TextAlign.configure({
-    types: ["heading", "paragraph"],
+    types: ["heading", "paragraph", "image"],
   }),
   CharacterCount,
   Table.configure({

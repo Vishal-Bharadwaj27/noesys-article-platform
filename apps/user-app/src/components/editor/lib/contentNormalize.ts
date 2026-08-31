@@ -70,6 +70,99 @@ export function isUsableImageSrc(src: string | null): boolean {
 }
 
 /**
+ * Detect and convert Google Docs / web-page "fake headings" to semantic
+ * heading tags. Google Docs and many websites don't emit <h1>-<h3>; they
+ * present headings as <b> / <strong> with inline font-size and font-weight.
+ * Walk the parsed DOM, and for any element whose text is bold and
+ * visually large (font-size >= 18px OR font-weight >= 700) replace it
+ * with a real <h1>-<h4> so Tiptap can serialize and re-render it correctly.
+ */
+function detectAndConvertBoldHeadings(html: string): string {
+  if (!html) return html;
+  const doc = new DOMParser().parseFromString(html, "text/html");
+
+  // Collect candidate style rules from <style> blocks before they're stripped:
+  // Word defines headings via mso-style-name / mso-outline-level there.
+  // We keep a map of class -> heading level derived from style text.
+  let styleText = "";
+  doc.querySelectorAll("style").forEach((s) => (styleText += s.textContent || ""));
+
+  const getHeadingFromClass = (cls: string): string | null => {
+    if (/MsoHeading\s*1/i.test(cls) || /MsoTitle/i.test(cls)) return "h1";
+    if (/MsoHeading\s*2/i.test(cls)) return "h2";
+    if (/MsoHeading\s*3/i.test(cls)) return "h3";
+    return null;
+  };
+
+  // 1) Convert Word paragraphs that are actually headings (MsoHeading, outline-level, large bold)
+  doc.querySelectorAll("p").forEach((p) => {
+    if (p.closest("h1,h2,h3,h4,h5,h6,li,table")) return;
+    const text = (p.textContent || "").trim();
+    if (!text || text.length > 400) return;
+    const style = p.getAttribute("style") || "";
+    const cls = p.getAttribute("class") || "";
+
+    // Check Word heading signals
+    const outlineMatch = /mso-outline-level:\s*(\d)/i.exec(style);
+    const styleNameMatch = /mso-style-name:\s*"?Heading\s*(\d)"?/i.exec(style);
+    const classHeading = getHeadingFromClass(cls);
+    // Also check styleText for this element's class defining a heading
+    let level: string | null = null;
+    if (outlineMatch) level = `h${outlineMatch[1]}`;
+    else if (styleNameMatch) level = `h${styleNameMatch[1]}`;
+    else if (classHeading) level = classHeading;
+    // Fallback: large + bold heuristic for Google Docs / unstyled Word export
+    if (!level) {
+      const fsMatch = /font-size\s*:\s*(\d+)\s*(?:pt|px)/i.exec(style);
+      const fwMatch = /font-weight\s*:\s*(bold|\d{2,3})/i.exec(style);
+      let fontSize = fsMatch ? parseInt(fsMatch[1], 10) : 0;
+      // pt to px approx
+      if (fsMatch && /pt/i.test(fsMatch[0])) fontSize = Math.round(fontSize * 1.33);
+      const isBold = fwMatch !== null || !!p.querySelector("b,strong") || /font-weight:\s*bold/i.test(style);
+      const hasLarge = fontSize >= 16;
+      // Only promote short paragraphs that are bold+larger than body
+      if (isBold && hasLarge) {
+        level = fontSize >= 22 ? "h1" : fontSize >= 18 ? "h2" : "h3";
+      } else if (classHeading) {
+        level = classHeading;
+      }
+    }
+    if (level) {
+      const h = doc.createElement(level);
+      // Preserve inner formatting (bold/italic) but strip Word junk spans
+      h.innerHTML = p.innerHTML;
+      // Clean mso tab stops inside heading
+      h.innerHTML = h.innerHTML.replace(/<span[^>]*mso-tab-count[^>]*>[\s\S]*?<\/span>/gi, " ").trim();
+      p.replaceWith(h);
+    }
+  });
+
+  // 2) Convert standalone bold spans/divs that act as headings (Google Docs)
+  doc.querySelectorAll("b, strong").forEach((el) => {
+    if (el.closest("h1,h2,h3,h4,h5,h6,li,p")) return;
+    const text = (el.textContent || "").trim();
+    if (!text || text.length > 300) return;
+    const parent = el.parentElement;
+    // Only if the bold element is the dominant content of its parent
+    if (parent && (parent.textContent || "").trim() !== text) return;
+    const style = (el.getAttribute("style") || "") + (parent?.getAttribute("style") || "");
+    const fsMatch = /font-size\s*:\s*(\d+)\s*px/i.exec(style);
+    const fontSize = fsMatch ? parseInt(fsMatch[1], 10) : 0;
+    if (fontSize >= 18 || el.tagName === "B" || el.tagName === "STRONG") {
+      // Use parent context if it looks like a heading block
+      const target = parent && parent !== doc.body ? parent : el;
+      if (target.closest("h1,h2,h3")) return;
+      const lvl = fontSize >= 24 ? "h1" : fontSize >= 20 ? "h2" : "h3";
+      const h = doc.createElement(lvl);
+      h.innerHTML = target.innerHTML;
+      target.replaceWith(h);
+    }
+  });
+
+  return doc.body.innerHTML;
+}
+
+/**
  * Strip Office/Docs junk (conditional comments, <style>, mso-* classes,
  * <o:p>, VML shapes) but preserve structure (headings, lists, tables,
  * bold/italic) and every usable <img>.
@@ -89,6 +182,10 @@ export function cleanPastedHtml(rawHtml: string): string {
     .replace(/<xml[\s\S]*?<\/xml>/gi, "")
     .replace(/<\/?o:[a-z]+[^>]*>/gi, "")
     .replace(/<\/?w:[a-z]+[^>]*>/gi, "");
+
+  // First pass: detect and convert Google Docs bold headings to semantic
+  // headings BEFORE the rest of the cleanup strips inline styles.
+  html = detectAndConvertBoldHeadings(html);
 
   const doc = new DOMParser().parseFromString(html, "text/html");
 
@@ -129,7 +226,10 @@ export function cleanPastedHtml(rawHtml: string): string {
   });
 
   // Before stripping, collect Word list info (mso-list paragraphs)
-  const wordListInfo = new Map<Element, { level: number; isOrdered: boolean }>();
+  const wordListInfo = new Map<
+    Element,
+    { level: number; isOrdered: boolean }
+  >();
   doc.querySelectorAll("p, h1, h2, h3, h4, h5, h6").forEach((el) => {
     const style = el.getAttribute("style") || "";
     const cls = el.getAttribute("class") || "";
@@ -153,7 +253,8 @@ export function cleanPastedHtml(rawHtml: string): string {
     if (style) {
       // Keep only text-align, which Tiptap's TextAlign extension understands.
       const align = /text-align:\s*(left|center|right|justify)/i.exec(style);
-      if (align) el.setAttribute("style", `text-align:${align[1].toLowerCase()}`);
+      if (align)
+        el.setAttribute("style", `text-align:${align[1].toLowerCase()}`);
       else el.removeAttribute("style");
     }
     if (el.tagName.toLowerCase() === "span" && !el.attributes.length) {
@@ -192,10 +293,11 @@ export function cleanPastedHtml(rawHtml: string): string {
         .replace(/^\s*(?:\d+[\.\)]|•|·)\s*(?:&nbsp;|\u00a0|\s)*/i, "")
         .replace(/<span[^>]*mso-tab-count[^>]*>[\s\S]*?<\/span>/gi, " ")
         .trim();
-      // If heading text is present, keep it as heading inside li for visual weight,
-      // but strip heading tag to avoid nested block issues - just bold it
-      if (/^<h[1-6]/i.test(child.outerHTML)) {
-        text = `<strong>${text}</strong>`;
+      // If this child is already a heading, don't wrap it in a list item
+      if (/^<h[1-6]/i.test(child.outerHTML.trim())) {
+        currentList = null;
+        currentOrdered = null;
+        continue;
       }
       li.innerHTML = text || child.textContent || "";
       currentList.appendChild(li);
@@ -212,7 +314,11 @@ export function cleanPastedHtml(rawHtml: string): string {
     let run: HTMLElement[] = [];
     for (const p of paras) {
       const t = (p.textContent || "").trim();
-      if (/^\d+[\.\)]\s+\S/.test(t) && t.length < 200 && !p.querySelector("img,table")) {
+      if (
+        /^\d+[\.\)]\s+\S/.test(t) &&
+        t.length < 200 &&
+        !p.querySelector("img,table")
+      ) {
         run.push(p);
       } else if (run.length >= 2) {
         break;
@@ -228,7 +334,10 @@ export function cleanPastedHtml(rawHtml: string): string {
           p.before(list);
         }
         const li = doc.createElement("li");
-        li.innerHTML = p.innerHTML.replace(/^\s*\d+[\.\)]\s*/, "").trim() || p.textContent || "";
+        li.innerHTML =
+          p.innerHTML.replace(/^\s*\d+[\.\)]\s*/, "").trim() ||
+          p.textContent ||
+          "";
         list.appendChild(li);
         p.remove();
       }
@@ -262,7 +371,8 @@ async function urlToDataUrl(url: string): Promise<string | null> {
     const res = await fetch(url, { mode: "cors", credentials: "omit" });
     if (!res.ok) return null;
     const blob = await res.blob();
-    if (!blob.type.startsWith("image/") || blob.size > MAX_INLINE_BYTES) return null;
+    if (!blob.type.startsWith("image/") || blob.size > MAX_INLINE_BYTES)
+      return null;
     return await new Promise((resolve) => {
       const fr = new FileReader();
       fr.onload = () => resolve(fr.result as string);
