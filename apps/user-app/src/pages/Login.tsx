@@ -9,7 +9,12 @@ const OTP_LENGTH = 6;
 const RESEND_COOLDOWN_SECONDS = 30;
 
 export default function Login() {
-  const { requestOTP, verifyOTP, isAuthenticated, loading: authLoading } = useAuth();
+  const {
+    requestOTP,
+    verifyOTP,
+    isAuthenticated,
+    loading: authLoading,
+  } = useAuth();
 
   if (!authLoading && isAuthenticated()) {
     return <Navigate to="/" replace />;
@@ -29,7 +34,10 @@ export default function Login() {
     setCooldown(RESEND_COOLDOWN_SECONDS);
     const interval = setInterval(() => {
       setCooldown((prev) => {
-        if (prev <= 1) { clearInterval(interval); return 0; }
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
         return prev - 1;
       });
     }, 1000);
@@ -37,7 +45,10 @@ export default function Login() {
 
   const handleRequestOtp = async () => {
     setError(null);
-    if (!email.trim()) { setError("Enter your email"); return; }
+    if (!email.trim()) {
+      setError("Enter your email");
+      return;
+    }
     setLoading(true);
     try {
       const result = await requestOTP(email.trim().toLowerCase());
@@ -61,14 +72,20 @@ export default function Login() {
     if (digit && index < OTP_LENGTH - 1) inputRefs.current[index + 1]?.focus();
   };
 
-  const handleOtpKeyDown = (index: number, e: KeyboardEvent<HTMLInputElement>) => {
+  const handleOtpKeyDown = (
+    index: number,
+    e: KeyboardEvent<HTMLInputElement>,
+  ) => {
     if (e.key === "Backspace" && !otp[index] && index > 0)
       inputRefs.current[index - 1]?.focus();
   };
 
   const handleOtpPaste = (e: ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault();
-    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, OTP_LENGTH);
+    const pasted = e.clipboardData
+      .getData("text")
+      .replace(/\D/g, "")
+      .slice(0, OTP_LENGTH);
     if (!pasted) return;
     const next = Array(OTP_LENGTH).fill("");
     pasted.split("").forEach((d, i) => (next[i] = d));
@@ -79,7 +96,10 @@ export default function Login() {
   const handleVerifyOtp = async () => {
     setError(null);
     const code = otp.join("");
-    if (code.length !== OTP_LENGTH) { setError("Enter the full 6-digit code"); return; }
+    if (code.length !== OTP_LENGTH) {
+      setError("Enter the full 6-digit code");
+      return;
+    }
     setLoading(true);
     try {
       await verifyOTP(email.trim().toLowerCase(), code);
@@ -95,7 +115,11 @@ export default function Login() {
       <div className="w-full max-w-sm">
         {/* Brand */}
         <div className="flex items-center justify-center gap-2 mb-8">
-          <img src={logoImage} alt="Noesys Article Platform" className="h-12 w-20 rounded-lg" />
+          <img
+            src={logoImage}
+            alt="Noesys Article Platform"
+            className="h-12 w-20 rounded-lg"
+          />
           <span className="font-semibold text-lg text-slate-900">
             Noesys Article Platform
           </span>
@@ -113,7 +137,10 @@ export default function Login() {
                 Email
               </label>
               <div className="relative">
-                <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <Mail
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                />
                 <input
                   type="email"
                   value={email}
@@ -139,14 +166,19 @@ export default function Login() {
           ) : (
             <>
               <button
-                onClick={() => { setStage("email"); setError(null); }}
+                onClick={() => {
+                  setStage("email");
+                  setError(null);
+                }}
                 className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-4"
               >
                 <ChevronLeft size={14} />
                 Back
               </button>
 
-              <h1 className="text-xl font-semibold text-slate-900">Enter verification code</h1>
+              <h1 className="text-xl font-semibold text-slate-900">
+                Enter verification code
+              </h1>
               <p className="text-sm text-slate-500 mt-1 mb-6">
                 We sent a 6-digit code to{" "}
                 <span className="font-medium text-slate-700">{email}</span>
@@ -158,7 +190,10 @@ export default function Login() {
                 </p>
               )}
 
-              <div className="flex justify-between gap-2" onPaste={handleOtpPaste}>
+              <div
+                className="flex justify-between gap-2"
+                onPaste={handleOtpPaste}
+              >
                 {otp.map((digit, i) => (
                   <input
                     key={i}
@@ -187,7 +222,9 @@ export default function Login() {
 
               <div className="text-center mt-4">
                 {cooldown > 0 ? (
-                  <span className="text-xs text-slate-400">Resend code in {cooldown}s</span>
+                  <span className="text-xs text-slate-400">
+                    Resend code in {cooldown}s
+                  </span>
                 ) : (
                   <button
                     onClick={handleRequestOtp}
