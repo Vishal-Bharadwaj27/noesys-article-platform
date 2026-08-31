@@ -1,9 +1,19 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { ChevronLeft, Loader2, Copy, Check, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  ChevronLeft,
+  Loader2,
+  Copy,
+  Check,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import dayjs from "dayjs";
 import { api } from "../../../http-client";
-import type { HistoryItem, ArticleDetailResponse } from "../../../hooks/useArticle";
+import type {
+  HistoryItem,
+  ArticleDetailResponse,
+} from "../../../hooks/useArticle";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -18,12 +28,7 @@ import ArticleViewer from "@/components/shadcnEditor/ArticleViewer";
 
 const syntaxTheme = oneDark as { [key: string]: CSSProperties };
 
-const ResizeableTitle = ({
-  onResize,
-  width,
-  children,
-  ...restProps
-}: any) => {
+const ResizeableTitle = ({ onResize, width, children, ...restProps }: any) => {
   if (!width || typeof width !== "number") {
     return <th {...restProps}>{children}</th>;
   }
@@ -46,14 +51,82 @@ const ResizeableTitle = ({
   );
 };
 
-function formatScore(s:number){return Number.isInteger(s)?String(s):s.toFixed(1);}
+function formatScore(s: number) {
+  return Number.isInteger(s) ? String(s) : s.toFixed(1);
+}
 function scoreColorHex(s: number) {
   if (s >= 8) return "#389e0d";
   if (s >= 6) return "#d48806";
   return "#cf1322";
 }
-function ParameterResultsBox({results}:{results:{parameter_name:string;value:any}[]}){ const [open,setOpen]=useState(false); if(!results||!results.length) return <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden"><button onClick={()=>setOpen(v=>!v)} className="w-full flex items-center justify-between px-4 py-3"><p className="text-md font-semibold uppercase tracking-wide text-slate-600">Parameter Results</p>{open?<ChevronUp size={18} className="text-slate-400"/>:<ChevronDown size={18} className="text-slate-400"/>}</button>{open&&<div className="px-4 pb-4"><p className="text-sm text-slate-400">No parameter results yet</p></div>}</div>; return <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden"><button onClick={()=>setOpen(v=>!v)} className="w-full flex items-center justify-between px-4 py-3"><p className="text-md font-semibold uppercase tracking-wide text-slate-600">Parameter Results</p>{open?<ChevronUp size={18} className="text-slate-400"/>:<ChevronDown size={18} className="text-slate-400"/>}</button>{open&&<div className="px-4 pb-4 grid gap-2">{results.map((r:any,i:number)=><div key={i} className="flex justify-between items-center bg-slate-50 rounded-lg px-3 py-2 border border-slate-100"><span className="text-sm font-medium text-slate-700">{r.parameter_name}</span><span className="text-sm font-semibold text-slate-900 bg-white border border-slate-200 rounded-full px-2.5 py-0.5">{r.value==null?"—":String(r.value)}</span></div>)}</div>}</div>;}
-function goBack(navigate:any){ if(window.history.length>1) navigate(-1); else navigate("/admin/articles"); }
+function ParameterResultsBox({
+  results,
+}: {
+  results: { parameter_name: string; value: any }[];
+}) {
+  const [open, setOpen] = useState(false);
+  if (!results || !results.length)
+    return (
+      <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className="w-full flex items-center justify-between px-4 py-3"
+        >
+          <p className="text-md font-semibold uppercase tracking-wide text-slate-600">
+            Parameter Results
+          </p>
+          {open ? (
+            <ChevronUp size={18} className="text-slate-400" />
+          ) : (
+            <ChevronDown size={18} className="text-slate-400" />
+          )}
+        </button>
+        {open && (
+          <div className="px-4 pb-4">
+            <p className="text-sm text-slate-400">No parameter results yet</p>
+          </div>
+        )}
+      </div>
+    );
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-4 py-3"
+      >
+        <p className="text-md font-semibold uppercase tracking-wide text-slate-600">
+          Parameter Results
+        </p>
+        {open ? (
+          <ChevronUp size={18} className="text-slate-400" />
+        ) : (
+          <ChevronDown size={18} className="text-slate-400" />
+        )}
+      </button>
+      {open && (
+        <div className="px-4 pb-4 grid gap-2">
+          {results.map((r: any, i: number) => (
+            <div
+              key={i}
+              className="flex justify-between items-center bg-slate-50 rounded-lg px-3 py-2 border border-slate-100"
+            >
+              <span className="text-sm font-medium text-slate-700">
+                {r.parameter_name}
+              </span>
+              <span className="text-sm font-semibold text-slate-900 bg-white border border-slate-200 rounded-full px-2.5 py-0.5">
+                {r.value == null ? "—" : String(r.value)}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+function goBack(navigate: any) {
+  if (window.history.length > 1) navigate(-1);
+  else navigate("/admin/articles");
+}
 
 const MarkdownCode: Components["code"] = ({
   className,
@@ -64,11 +137,7 @@ const MarkdownCode: Components["code"] = ({
 
   if (m) {
     return (
-      <SyntaxHighlighter
-        style={syntaxTheme}
-        language={m[1]}
-        PreTag="div"
-      >
+      <SyntaxHighlighter style={syntaxTheme} language={m[1]} PreTag="div">
         {String(children).replace(/\n$/, "")}
       </SyntaxHighlighter>
     );
@@ -286,14 +355,10 @@ const feedbackMarkdownComponents: Components = {
     </h3>
   ),
   ul: ({ children }: any) => (
-    <ul className="list-disc list-inside ml-2 mb-3 space-y-1">
-      {children}
-    </ul>
+    <ul className="list-disc list-inside ml-2 mb-3 space-y-1">{children}</ul>
   ),
   li: ({ children }: any) => (
-    <li className="text-sm text-slate-700 leading-relaxed">
-      {children}
-    </li>
+    <li className="text-sm text-slate-700 leading-relaxed">{children}</li>
   ),
   p: ({ children }: any) => (
     <p className="text-sm text-slate-600 mb-2">{children}</p>
@@ -515,9 +580,7 @@ export default function AdminArticleDetail() {
 
     (async () => {
       try {
-        const result = await api<ArticleDetailResponse>(
-          `/articles/mine/${id}`
-        );
+        const result = await api<ArticleDetailResponse>(`/articles/mine/${id}`);
 
         setArticle(result.article);
         setHistory(result.history ?? []);
@@ -536,7 +599,7 @@ export default function AdminArticleDetail() {
 
   const snapshot =
     versionParam !== null
-      ? history.find((h) => h.version === versionParam) ?? null
+      ? (history.find((h) => h.version === versionParam) ?? null)
       : null;
 
   const effectiveSnapshot = isVersionSnapshot ? snapshot : null;
@@ -546,8 +609,8 @@ export default function AdminArticleDetail() {
     ? effectiveSnapshot.score
     : currentScore;
   const displayFeedback = effectiveSnapshot
-    ? effectiveSnapshot.feedback ?? ""
-    : currentFeedback ?? "";
+    ? (effectiveSnapshot.feedback ?? "")
+    : (currentFeedback ?? "");
   const displaySubmittedAt = effectiveSnapshot?.submitted_at ?? null;
 
   const hasScore = displayScore !== null;
@@ -556,10 +619,7 @@ export default function AdminArticleDetail() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <Loader2
-          size={28}
-          className="animate-spin text-slate-400"
-        />
+        <Loader2 size={28} className="animate-spin text-slate-400" />
       </div>
     );
   }
@@ -568,9 +628,7 @@ export default function AdminArticleDetail() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="text-center">
-          <p className="text-slate-500 mb-4">
-            {error || "Article not found"}
-          </p>
+          <p className="text-slate-500 mb-4">{error || "Article not found"}</p>
 
           <button
             onClick={() => navigate("/admin/articles")}
@@ -602,9 +660,7 @@ export default function AdminArticleDetail() {
 
             {displaySubmittedAt && (
               <span className="text-xs text-slate-400">
-                {dayjs(displaySubmittedAt).format(
-                  "MMM D, YYYY h:mm A"
-                )}
+                {dayjs(displaySubmittedAt).format("MMM D, YYYY h:mm A")}
               </span>
             )}
           </div>
@@ -625,10 +681,7 @@ export default function AdminArticleDetail() {
             <div className="flex items-center gap-3">
               {displayScore === null ? (
                 <div className="flex items-center gap-2 text-sm text-slate-500 py-1">
-                  <Loader2
-                    size={16}
-                    className="animate-spin text-slate-400"
-                  />
+                  <Loader2 size={16} className="animate-spin text-slate-400" />
                   <span>Scoring...</span>
                 </div>
               ) : (
@@ -662,17 +715,12 @@ export default function AdminArticleDetail() {
                 Feedback
               </p>
 
-              {displayFeedback && (
-                <CopyButton text={displayFeedback} />
-              )}
+              {displayFeedback && <CopyButton text={displayFeedback} />}
             </div>
 
             {displayScore === null ? (
               <div className="flex items-center gap-2 text-sm text-slate-500 py-2 bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-                <Loader2
-                  size={16}
-                  className="animate-spin text-slate-400"
-                />
+                <Loader2 size={16} className="animate-spin text-slate-400" />
                 <span>Scoring...</span>
               </div>
             ) : (
@@ -681,16 +729,14 @@ export default function AdminArticleDetail() {
               />
             )}
           </div>
-          <ParameterResultsBox results={parameterResults} />
+          {/* <ParameterResultsBox results={parameterResults} /> */}
 
           <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
             <div
               className="flex items-center justify-between px-5 py-4 border-b border-slate-100 cursor-pointer"
               onClick={() => setContentCollapsed(!contentCollapsed)}
             >
-              <h2 className="font-semibold text-slate-900">
-                Article
-              </h2>
+              <h2 className="font-semibold text-slate-900">Article</h2>
 
               <div className="flex items-center gap-2">
                 {article && (
@@ -750,9 +796,7 @@ function ScoringHistoryTable({
         render: (v: number, r: HistoryItem) => (
           <span
             onClick={() =>
-              navigate(
-                `/admin/articles/${articleId}?version=${r.version}`
-              )
+              navigate(`/admin/articles/${articleId}?version=${r.version}`)
             }
             style={{
               color: "#0284c7",

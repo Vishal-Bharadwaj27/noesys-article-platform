@@ -56,78 +56,17 @@ const ResizeableTitle = ({ onResize, width, children, ...restProps }: any) => {
     </Resizable>
   );
 };
+
 function formatScore(s: number) {
   return Number.isInteger(s) ? String(s) : s.toFixed(1);
 }
+
 function scoreColorHex(score: number) {
   if (score >= 8) return "#389e0d";
   if (score >= 6) return "#d48806";
   return "#cf1322";
 }
-function ParameterResultsBox({
-  results,
-}: {
-  results: { parameter_name: string; value: any }[];
-}) {
-  const [open, setOpen] = useState(false);
-  if (!results || !results.length)
-    return (
-      <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <button
-          onClick={() => setOpen((v) => !v)}
-          className="w-full flex items-center justify-between px-4 py-3"
-        >
-          <p className="text-md font-semibold uppercase tracking-wide text-slate-600">
-            Parameter Results
-          </p>
-          {open ? (
-            <ChevronUp size={18} className="text-slate-400" />
-          ) : (
-            <ChevronDown size={18} className="text-slate-400" />
-          )}
-        </button>
-        {open && (
-          <div className="px-4 pb-4">
-            <p className="text-sm text-slate-400">No parameter results yet</p>
-          </div>
-        )}
-      </div>
-    );
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-4 py-3"
-      >
-        <p className="text-md font-semibold uppercase tracking-wide text-slate-600">
-          Parameter Results
-        </p>
-        {open ? (
-          <ChevronUp size={18} className="text-slate-400" />
-        ) : (
-          <ChevronDown size={18} className="text-slate-400" />
-        )}
-      </button>
-      {open && (
-        <div className="px-4 pb-4 grid gap-2">
-          {results.map((r: any, i: number) => (
-            <div
-              key={i}
-              className="flex justify-between items-center bg-slate-50 rounded-lg px-3 py-2 border border-slate-100"
-            >
-              <span className="text-sm font-medium text-slate-700">
-                {r.parameter_name}
-              </span>
-              <span className="text-sm font-semibold text-slate-900 bg-white border border-slate-200 rounded-full px-2.5 py-0.5">
-                {r.value == null ? "—" : String(r.value)}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
+
 function goBack(navigate: any) {
   if (window.history.length > 1) navigate(-1);
   else navigate("/");
@@ -374,21 +313,6 @@ function scoreColor(score: number) {
   return { bar: "bg-red-500", badge: "bg-red-50 text-red-600" };
 }
 
-const STATUS_STYLES: Record<string, string> = {
-  accepted: "bg-emerald-50 text-emerald-700",
-  rejected: "bg-red-50 text-red-600",
-  scoring: "bg-slate-100 text-slate-600",
-};
-
-function getDisplayStatus(
-  article: { status: string } | null | undefined,
-  score: number | null,
-): "accepted" | "rejected" | "scoring" {
-  if (score === null) return "scoring";
-  if (score === 10 && article?.status === "approved") return "accepted";
-  return "rejected";
-}
-
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
 
@@ -410,136 +334,6 @@ function CopyButton({ text }: { text: string }) {
         <Copy size={16} />
       )}
     </button>
-  );
-}
-
-function ContentBlock({ content }: { content: string }) {
-  const [view, setView] = useState<"rendered" | "raw">("rendered");
-
-  return (
-    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-      <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
-        <h2 className="font-semibold text-slate-900">Content</h2>
-
-        <div className="flex items-center gap-2">
-          <div className="flex bg-slate-100 rounded-lg p-0.5">
-            <button
-              onClick={() => setView("rendered")}
-              className={`px-3 py-1 text-xs font-medium rounded-md ${
-                view === "rendered"
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-500 hover:text-slate-700"
-              }`}
-            >
-              Rendered
-            </button>
-            <button
-              onClick={() => setView("raw")}
-              className={`px-3 py-1 text-xs font-medium rounded-md ${
-                view === "raw"
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-500 hover:text-slate-700"
-              }`}
-            >
-              Markdown
-            </button>
-          </div>
-
-          <CopyButton text={content} />
-        </div>
-      </div>
-
-      <div className="px-5 py-4">
-        {view === "rendered" ? (
-          <div className="markdown-body">
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              components={sharedMarkdownComponents}
-            >
-              {content}
-            </ReactMarkdown>
-          </div>
-        ) : (
-          <pre
-            style={{
-              background: "#fafafa",
-              border: "1px solid #f0f0f0",
-              borderRadius: 6,
-              padding: 12,
-              fontSize: 13,
-              whiteSpace: "pre-wrap",
-              wordBreak: "break-word",
-            }}
-          >
-            {content}
-          </pre>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function RewriteContentEditor({
-  content,
-  onChange,
-}: {
-  content: string;
-  onChange: (value: string) => void;
-}) {
-  const [view, setView] = useState<"rendered" | "raw">("raw");
-
-  return (
-    <div className="border border-slate-200 rounded-lg overflow-hidden">
-      <div className="flex items-center justify-between px-3 py-2 bg-slate-50 border-b border-slate-200">
-        <span className="text-xs font-medium text-slate-500">
-          Article Content
-        </span>
-
-        <div className="flex bg-slate-200 rounded-lg p-0.5">
-          <button
-            onClick={() => setView("rendered")}
-            className={`px-3 py-1 text-xs font-medium rounded-md ${
-              view === "rendered"
-                ? "bg-white text-slate-900 shadow-sm"
-                : "text-slate-500 hover:text-slate-700"
-            }`}
-          >
-            Rendered
-          </button>
-          <button
-            onClick={() => setView("raw")}
-            className={`px-3 py-1 text-xs font-medium rounded-md ${
-              view === "raw"
-                ? "bg-white text-slate-900 shadow-sm"
-                : "text-slate-500 hover:text-slate-700"
-            }`}
-          >
-            Markdown
-          </button>
-        </div>
-      </div>
-
-      <div className="p-3">
-        {view === "rendered" ? (
-          <div className="min-h-[250px] prose prose-sm prose-slate max-w-none px-1 py-1">
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              components={sharedMarkdownComponents}
-            >
-              {content || "No content available."}
-            </ReactMarkdown>
-          </div>
-        ) : (
-          <textarea
-            rows={10}
-            value={content}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder="Article content"
-            className="w-full min-h-[250px] rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y"
-          />
-        )}
-      </div>
-    </div>
   );
 }
 
@@ -583,12 +377,10 @@ export default function ArticleDetail() {
     history,
     currentScore,
     currentFeedback,
-    parameterResults,
     loading,
     error,
     setCurrentScore,
     setCurrentFeedback,
-    setParameterResults,
     setArticle,
     setHistory,
   } = useArticle(id ?? "");
@@ -652,7 +444,6 @@ export default function ArticleDetail() {
         setHistory(result.history ?? []);
         setCurrentScore(result.current_score);
         setCurrentFeedback(result.current_feedback ?? "");
-        setParameterResults(result.parameter_results ?? []);
         if (result.current_score !== null) {
           if (timer) clearInterval(timer);
           return;
@@ -683,6 +474,7 @@ export default function ArticleDetail() {
   }, [article?.id, currentScore, effectiveSnapshot]);
 
   const isPending = currentScore === null && article?.status === "pending";
+
   async function handleSubmitRewrite() {
     if (!article) return;
     if (!title.trim() || !content.trim()) {
@@ -839,7 +631,7 @@ export default function ArticleDetail() {
         </div>
 
         <div className="space-y-6">
-          {/* Current Score - MOVED TO TOP */}
+          {/* Current Score */}
           <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <p className="text-md font-semibold uppercase tracking-wide text-slate-600 mb-1">
               Current Score
@@ -877,7 +669,7 @@ export default function ArticleDetail() {
             </div>
           </div>
 
-          {/* Feedback - BELOW SCORE */}
+          {/* Feedback */}
           <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex items-center justify-between mb-3">
               <p className="text-md font-semibold uppercase tracking-wide text-slate-600">
@@ -898,7 +690,6 @@ export default function ArticleDetail() {
               />
             )}
           </div>
-          <ParameterResultsBox results={parameterResults} />
 
           {/* Content - COLLAPSIBLE */}
           <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
@@ -927,10 +718,6 @@ export default function ArticleDetail() {
             {!contentCollapsed && (
               <div className="px-5 py-4">
                 {editing ? (
-                  // <RewriteContentEditor
-                  //   content={content}
-                  //   onChange={setContent}
-                  // />
                   <div>
                     <div className="flex bg-slate-100 rounded-lg p-0.5 w-fit">
                       <button
@@ -963,13 +750,11 @@ export default function ArticleDetail() {
                       )}
                     </div>
 
-                    {/* <TiptapEditor value={content} onChange={setContent} /> */}
                     {editorView === "preview" && (
                       <ArticleViewer content={content} />
                     )}
                   </div>
                 ) : (
-                  // <ContentBlock content={displayContent} />
                   <ArticleViewer content={content} />
                 )}
 
