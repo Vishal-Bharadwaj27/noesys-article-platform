@@ -44,6 +44,7 @@ export const SmartPaste = Extension.create<SmartPasteOptions>({
     const options = this.options;
 
     const insertHtml = (html: string) => {
+      const pos = editor.state.selection.$anchor.pos;
       editor
         .chain()
         .focus()
@@ -51,6 +52,10 @@ export const SmartPaste = Extension.create<SmartPasteOptions>({
           parseOptions: { preserveWhitespace: false },
         })
         .run();
+      // Restore selection after paste so toolbar reflects pasted content state
+      if (pos !== editor.state.selection.$anchor.pos) {
+        editor.commands.setTextSelection(pos);
+      }
     };
 
     return [

@@ -70,6 +70,60 @@ export function isUsableImageSrc(src: string | null): boolean {
 }
 
 /**
+ * Detect and convert Google Docs / web-page "fake headings" to semantic
+ * heading tags. Google Docs and many websites don't emit <h1>-<h3>; they
+ * present headings as <b> / <strong> with inline font-size and font-weight.
+ * Walk the parsed DOM, and for any element whose text is bold and
+ * visually large (font-size >= 18px OR font-weight >= 700) replace it
+ * with a real <h1>-<h4> so Tiptap can serialize and re-render it correctly.
+ */
+function detectAndConvertBoldHeadings(html: string): string {
+  if (!html) return html;
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, "text/html");
+
+  const candidates = doc.querySelectorAll("b, strong, p, span, div");
+
+  candidates.forEach((el) => {
+    const tag = el.tagName.toLowerCase();
+    // Skip if already inside a heading or list item
+    if (el.closest("h1, h2, h3, h4, h5, h6, li")) return;
+    // Only consider leaf-ish nodes with text, or paragraphs that are
+    // mostly bold (typical Google Docs heading pattern).
+    const text = (el.textContent || "").trim();
+    if (!text) return;
+    if (text.length > 300) return; // skip long body paragraphs
+
+    const style = el.getAttribute("style") || "";
+    const fsMatch = /font-size\s*:\s*(\d+)\s*px/i.exec(style);
+    const fwMatch = /font-weight\s*:\s*(\d{2,3})/i.exec(style);
+    const fontSize = fsMatch ? parseInt(fsMatch[1], 10) : 0;
+    const fontWeight = fwMatch ? parseInt(fwMatch[1], 10) : 400;
+
+    // Also accept plain <b> or <strong> as long as the parent isn't itself
+    // a heading-like container.
+    const isBoldTag = tag === "b" || tag === "strong";
+    const hasLargeStyle = fontSize >= 18 || fontWeight >= 700;
+
+    if (!(isBoldTag && hasLargeStyle) && !hasLargeStyle) return;
+
+    // Pick level by visual size. Word/Google docs default body is ~11-12px.
+    const headingLevel =
+      fontSize >= 28 || fontWeight >= 800
+        ? "h1"
+        : fontSize >= 22 || fontWeight >= 700
+          ? "h2"
+          : "h3";
+
+    const heading = doc.createElement(headingLevel);
+    heading.innerHTML = el.innerHTML;
+    el.replaceWith(heading);
+  });
+
+  return doc.body.innerHTML;
+}
+
+/**
  * Strip Office/Docs junk (conditional comments, <style>, mso-* classes,
  * <o:p>, VML shapes) but preserve structure (headings, lists, tables,
  * bold/italic) and every usable <img>.
@@ -89,6 +143,10 @@ export function cleanPastedHtml(rawHtml: string): string {
     .replace(/<xml[\s\S]*?<\/xml>/gi, "")
     .replace(/<\/?o:[a-z]+[^>]*>/gi, "")
     .replace(/<\/?w:[a-z]+[^>]*>/gi, "");
+
+  // First pass: detect and convert Google Docs bold headings to semantic
+  // headings BEFORE the rest of the cleanup strips inline styles.
+  html = detectAndConvertBoldHeadings(html);
 
   const doc = new DOMParser().parseFromString(html, "text/html");
 
@@ -129,7 +187,10 @@ export function cleanPastedHtml(rawHtml: string): string {
   });
 
   // Before stripping, collect Word list info (mso-list paragraphs)
-  const wordListInfo = new Map<Element, { level: number; isOrdered: boolean }>();
+  const wordListInfo = new Map<
+    Element,
+    { level: number; isOrdered: boolean }
+  >();
   doc.querySelectorAll("p, h1, h2, h3, h4, h5, h6").forEach((el) => {
     const style = el.getAttribute("style") || "";
     const cls = el.getAttribute("class") || "";
@@ -153,7 +214,8 @@ export function cleanPastedHtml(rawHtml: string): string {
     if (style) {
       // Keep only text-align, which Tiptap's TextAlign extension understands.
       const align = /text-align:\s*(left|center|right|justify)/i.exec(style);
-      if (align) el.setAttribute("style", `text-align:${align[1].toLowerCase()}`);
+      if (align)
+        el.setAttribute("style", `text-align:${align[1].toLowerCase()}`);
       else el.removeAttribute("style");
     }
     if (el.tagName.toLowerCase() === "span" && !el.attributes.length) {
@@ -192,10 +254,12 @@ export function cleanPastedHtml(rawHtml: string): string {
         .replace(/^\s*(?:\d+[\.\)]|•|·)\s*(?:&nbsp;|\u00a0|\s)*/i, "")
         .replace(/<span[^>]*mso-tab-count[^>]*>[\s\S]*?<\/span>/gi, " ")
         .trim();
-      // If heading text is present, keep it as heading inside li for visual weight,
-      // but strip heading tag to avoid nested block issues - just bold it
+      // Preserve heading tags instead of stripping them
+      // If heading is at start of list item, extract it before the list
       if (/^<h[1-6]/i.test(child.outerHTML)) {
-        text = `<strong>${text}</strong>`;
+        // Keep the heading as-is for semantic structure
+        // Let Tiptap handle it naturally
+        return child.outerHTML;
       }
       li.innerHTML = text || child.textContent || "";
       currentList.appendChild(li);
@@ -212,7 +276,11 @@ export function cleanPastedHtml(rawHtml: string): string {
     let run: HTMLElement[] = [];
     for (const p of paras) {
       const t = (p.textContent || "").trim();
-      if (/^\d+[\.\)]\s+\S/.test(t) && t.length < 200 && !p.querySelector("img,table")) {
+      if (
+        /^\d+[\.\)]\s+\S/.test(t) &&
+        t.length < 200 &&
+        !p.querySelector("img,table")
+      ) {
         run.push(p);
       } else if (run.length >= 2) {
         break;
@@ -228,7 +296,10 @@ export function cleanPastedHtml(rawHtml: string): string {
           p.before(list);
         }
         const li = doc.createElement("li");
-        li.innerHTML = p.innerHTML.replace(/^\s*\d+[\.\)]\s*/, "").trim() || p.textContent || "";
+        li.innerHTML =
+          p.innerHTML.replace(/^\s*\d+[\.\)]\s*/, "").trim() ||
+          p.textContent ||
+          "";
         list.appendChild(li);
         p.remove();
       }
@@ -262,7 +333,8 @@ async function urlToDataUrl(url: string): Promise<string | null> {
     const res = await fetch(url, { mode: "cors", credentials: "omit" });
     if (!res.ok) return null;
     const blob = await res.blob();
-    if (!blob.type.startsWith("image/") || blob.size > MAX_INLINE_BYTES) return null;
+    if (!blob.type.startsWith("image/") || blob.size > MAX_INLINE_BYTES)
+      return null;
     return await new Promise((resolve) => {
       const fr = new FileReader();
       fr.onload = () => resolve(fr.result as string);
