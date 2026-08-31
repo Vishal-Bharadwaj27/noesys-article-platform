@@ -10,36 +10,6 @@ export default function ResizableImageNodeView({
   const { src, alt, title, width } = node.attrs;
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const align = (() => {
-    const s: string = node.attrs.style || "";
-    if (
-      s.includes("float: left") ||
-      (s.includes("margin-right: auto") && s.includes("margin-left: 0"))
-    )
-      return "left";
-    if (s.includes("float: right")) return "right";
-    if (
-      s.includes("margin: 0 auto") ||
-      (s.includes("margin-left: auto") && s.includes("margin-right: auto"))
-    )
-      return "center";
-    return "left";
-  })();
-
-  const setAlign = (a: string) => {
-    let style = "";
-    if (a === "left")
-      style =
-        "display:block; margin-left:0; margin-right:auto; float:none; max-width:100%";
-    if (a === "center")
-      style =
-        "display:block; margin-left:auto; margin-right:auto; float:none; max-width:100%";
-    if (a === "right")
-      style =
-        "display:block; margin-left:auto; margin-right:0; float:none; max-width:100%";
-    updateAttributes({ style });
-  };
-
   const onMouseDown = (e: React.MouseEvent, dir: string) => {
     e.preventDefault();
     const startX = e.clientX;
@@ -70,10 +40,19 @@ export default function ResizableImageNodeView({
 
   const imgStyle: any = {};
   if (width) imgStyle.width = width;
-  // alignment style applied to wrapper, image fills wrapper
   let wrapperStyle: any = { display: "block", maxWidth: "100%" };
+  const ta = node.attrs.textAlign;
+  if (ta === "center") {
+    wrapperStyle.marginLeft = "auto";
+    wrapperStyle.marginRight = "auto";
+  } else if (ta === "right") {
+    wrapperStyle.marginLeft = "auto";
+    wrapperStyle.marginRight = "0";
+  } else if (ta === "left") {
+    wrapperStyle.marginLeft = "0";
+    wrapperStyle.marginRight = "auto";
+  }
   if (node.attrs.style) {
-    // parse simple style string for wrapper
     node.attrs.style.split(";").forEach((p: string) => {
       const [k, v] = p.split(":").map((s: string) => s.trim());
       if (k && v)
@@ -152,39 +131,6 @@ export default function ResizableImageNodeView({
                 cursor: "nwse-resize",
               }}
             />
-            <div
-              style={{
-                position: "absolute",
-                top: -32,
-                left: "50%",
-                transform: "translateX(-50%)",
-                display: "flex",
-                gap: 4,
-                background: "white",
-                border: "1px solid #e2e8f0",
-                borderRadius: 6,
-                padding: 2,
-                boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
-              }}
-            >
-              {["left", "center", "right"].map((a) => (
-                <button
-                  key={a}
-                  onClick={() => setAlign(a)}
-                  style={{
-                    padding: "4px 8px",
-                    fontSize: 11,
-                    borderRadius: 4,
-                    background: align === a ? "#0f172a" : "transparent",
-                    color: align === a ? "white" : "#334155",
-                    border: "none",
-                    cursor: "pointer",
-                  }}
-                >
-                  {a}
-                </button>
-              ))}
-            </div>
           </>
         )}
       </div>
