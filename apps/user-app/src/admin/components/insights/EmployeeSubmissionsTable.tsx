@@ -101,6 +101,7 @@ export function EmployeeSubmissionsTable({
           overflow: "hidden",
         }}
       >
+        <style>{`.employee-summary-row td{ background:#e2e8f0 !important; }`}</style>
         <Table
           rowKey="userId"
           columns={columns}
@@ -109,7 +110,7 @@ export function EmployeeSubmissionsTable({
           scroll={{ x: "max-content" }}
           summary={() => (
             <Table.Summary fixed>
-              <Table.Summary.Row style={{ background: "#e2e8f0" }}>
+              <Table.Summary.Row className="employee-summary-row">
                 <Table.Summary.Cell index={0} colSpan={2}>
                   <span className="text-slate-700">Total: </span>
                   <span className="font-bold text-slate-700">
@@ -118,22 +119,18 @@ export function EmployeeSubmissionsTable({
                 </Table.Summary.Cell>
                 {data.months.map((m, i) => (
                   <Table.Summary.Cell key={m} index={i + 2} align="center">
-                    <div style={{ background: "#e2e8f0", padding: "8px" }}>
-                      <span className="font-bold text-slate-700">
-                        {data.monthlyTotals[m]}
-                      </span>
-                    </div>
+                    <span className="font-bold text-slate-700">
+                      {data.monthlyTotals[m]}
+                    </span>
                   </Table.Summary.Cell>
                 ))}
                 <Table.Summary.Cell
                   index={data.months.length + 2}
                   align="center"
                 >
-                  <div style={{ background: "#e2e8f0", padding: "8px" }}>
-                    <span className="font-bold text-slate-700">
-                      {data.grandTotal}
-                    </span>
-                  </div>
+                  <span className="font-bold text-slate-700">
+                    {data.grandTotal}
+                  </span>
                 </Table.Summary.Cell>
               </Table.Summary.Row>
             </Table.Summary>

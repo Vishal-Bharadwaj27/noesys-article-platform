@@ -62,7 +62,7 @@ function formatScore(s: number) {
 }
 
 function scoreColorHex(score: number) {
-  if (score >= 8) return "#389e0d";
+  if (score >= 10) return "#389e0d";
   if (score >= 6) return "#d48806";
   return "#cf1322";
 }
