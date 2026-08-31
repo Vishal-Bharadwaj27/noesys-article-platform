@@ -4,52 +4,40 @@ function stripOverallScore(feedback: string): string {
     .filter((l) => !/^\s*Overall\s*Score\s*:/i.test(l.trim()))
     .join("\n");
 }
-
 export function formatFeedbackAsMarkdown(feedback: string): string {
   if (!feedback) return "";
   feedback = stripOverallScore(feedback);
 
-  if (
-    feedback.includes("##") ||
-    feedback.includes("###") ||
-    feedback.includes("- ")
-  ) {
+  // Already markdown-formatted? leave as-is.
+  if (/^#{2,3}\s/m.test(feedback) || /^\s*-\s/m.test(feedback)) {
     return feedback;
   }
 
+  const isHeaderLine = (line: string) =>
+    /^[A-Za-z][A-Za-z\s/&-]{0,50}:$/.test(line.trim());
+
+  const isListItemLine = (line: string) => /^\d+\.\s+/.test(line.trim());
+
   const lines = feedback.split("\n").map((line) => line.trim());
   const formattedLines: string[] = [];
-  const mainHeaders = [
-    "Strengths",
-    "Weaknesses",
-    "Improvements Needed",
-    "Justification of the Score",
-  ];
 
   lines.forEach((line) => {
-    if (mainHeaders.some((header) => line === header)) {
-      formattedLines.push(`## ${line}`);
+    if (line.length === 0) return; // drop existing blank lines, we reinsert our own
+
+    if (isHeaderLine(line)) {
+      if (formattedLines.length > 0) formattedLines.push("");
+      formattedLines.push(`## ${line.replace(/:\s*$/, "")}`);
+      formattedLines.push("");
       return;
     }
 
-    if (/^\d+\./.test(line)) {
-      const prevLine = formattedLines[formattedLines.length - 1];
-      const isPreviousAHeader = mainHeaders.some((header) =>
-        prevLine?.includes(`## ${header}`),
-      );
-      if (
-        isPreviousAHeader &&
-        !formattedLines[formattedLines.length - 1]?.includes("- ")
-      ) {
-        formattedLines.push("");
-      }
+    if (isListItemLine(line)) {
       formattedLines.push(line.replace(/^\d+\.\s*/, "- "));
       return;
     }
 
-    if (line.length > 0) {
-      formattedLines.push(line);
-    }
+    // plain paragraph line
+    formattedLines.push(line);
   });
 
   return formattedLines.join("\n");

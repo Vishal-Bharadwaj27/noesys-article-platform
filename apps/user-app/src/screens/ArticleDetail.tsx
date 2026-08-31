@@ -56,6 +56,70 @@ function scoreColorHex(score: number) {
   if (score >= 6) return "#d48806";
   return "#cf1322";
 }
+function ParameterResultsBox({
+  results,
+}: {
+  results: { parameter_name: string; value: any }[];
+}) {
+  const [open, setOpen] = useState(false);
+  if (!results || !results.length)
+    return (
+      <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className="w-full flex items-center justify-between px-4 py-3"
+        >
+          <p className="text-md font-semibold uppercase tracking-wide text-slate-600">
+            Parameter Results
+          </p>
+          {open ? (
+            <ChevronUp size={18} className="text-slate-400" />
+          ) : (
+            <ChevronDown size={18} className="text-slate-400" />
+          )}
+        </button>
+        {open && (
+          <div className="px-4 pb-4">
+            <p className="text-sm text-slate-400">No parameter results yet</p>
+          </div>
+        )}
+      </div>
+    );
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-4 py-3"
+      >
+        <p className="text-md font-semibold uppercase tracking-wide text-slate-600">
+          Parameter Results
+        </p>
+        {open ? (
+          <ChevronUp size={18} className="text-slate-400" />
+        ) : (
+          <ChevronDown size={18} className="text-slate-400" />
+        )}
+      </button>
+      {open && (
+        <div className="px-4 pb-4 grid gap-2">
+          {results.map((r: any, i: number) => (
+            <div
+              key={i}
+              className="flex justify-between items-center bg-slate-50 rounded-lg px-3 py-2 border border-slate-100"
+            >
+              <span className="text-sm font-medium text-slate-700">
+                {r.parameter_name}
+              </span>
+              <span className="text-sm font-semibold text-slate-900 bg-white border border-slate-200 rounded-full px-2.5 py-0.5">
+                {r.value == null ? "—" : String(r.value)}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function goBack(navigate: any) {
   if (window.history.length > 1) navigate(-1);
@@ -188,9 +252,11 @@ export default function ArticleDetail() {
     currentFeedback,
     loading,
     error,
+    parameterResults,
     setCurrentScore,
     setCurrentFeedback,
     setArticle,
+    setParameterResults,
     setHistory,
   } = useArticle(id ?? "");
   const [editing, setEditing] = useState(false);
@@ -253,6 +319,7 @@ export default function ArticleDetail() {
         setHistory(result.history ?? []);
         setCurrentScore(result.current_score);
         setCurrentFeedback(result.current_feedback ?? "");
+        setParameterResults(result.parameter_results ?? []);
         if (result.current_score !== null) {
           if (timer) clearInterval(timer);
           return;
@@ -499,6 +566,7 @@ export default function ArticleDetail() {
               />
             )}
           </div>
+          <ParameterResultsBox results={parameterResults} />
 
           {/* Content - COLLAPSIBLE */}
           <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">

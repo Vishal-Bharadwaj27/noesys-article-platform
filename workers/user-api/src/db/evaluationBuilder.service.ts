@@ -43,8 +43,8 @@ export function buildEvaluationSchema(
       .number()
       .min(articleType.score_min)
       .max(articleType.score_max)
-      .describe(articleType.score_prompt),
-    feedback: z.string().min(1),
+      .describe(`Overall numeric score for the article's quality.`),
+    feedback: z.string().min(1).describe(articleType.score_prompt),
     parameters: z.object(paramShape),
   });
 }
@@ -77,10 +77,10 @@ ${content}
 
 ---
 
-Overall scoring instruction:
+Return "score" as a number between ${articleType.score_min} and ${articleType.score_max}, reflecting the article's overall quality.
+
+Return "feedback" following these instructions exactly:
 ${articleType.score_prompt}
-Return "score" as a number between ${articleType.score_min} and ${articleType.score_max}.
-Return "feedback" as a short overall comment on the article.
 
 Also evaluate each of the following parameters and return them under "parameters", keyed by the exact key given (p0, p1, ...):
 
