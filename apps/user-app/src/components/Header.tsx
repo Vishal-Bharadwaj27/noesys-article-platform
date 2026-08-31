@@ -12,14 +12,18 @@ export default function Header() {
           <span className="font-semibold text-slate-900">Article Platform</span>
         </div>
         <div className="flex items-center gap-3">
-          {user && <span className="text-sm text-slate-500 hidden sm:block">{user.email}</span>}
+          {user && (
+            <span className="text-sm text-slate-500 hidden sm:block">
+              {user.email}
+            </span>
+          )}
           <button
             onClick={logout}
             className="flex items-center gap-1.5 text-sm text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors"
           >
             <LogOut size={15} />
-                Logout
-            </button>
+            Logout
+          </button>
         </div>
       </div>
     </header>
