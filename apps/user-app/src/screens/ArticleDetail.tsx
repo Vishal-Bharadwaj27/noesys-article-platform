@@ -681,31 +681,27 @@ export default function ArticleDetail() {
     }
     setSubmitError(null);
     setSubmitting(true);
+
+    api(`/articles`, {
+      method: "POST",
+      body: JSON.stringify({
+        id: article.id,
+        article_type_id: article.article_type_id,
+        title: title.trim(),
+        content: content.trim(),
+      }),
+    }).catch((err) => {
+      console.error("Background rewrite submission failed:", err);
+    });
+
     try {
-      await api(`/articles`, {
-        method: "POST",
-        body: JSON.stringify({
-          id: article.id,
-          article_type_id: article.article_type_id,
-          title: title.trim(),
-          content: content.trim(),
-        }),
-      });
-      setArticle({
-        ...article,
-        status: "pending",
-        version: article.version + 1,
-      } as any);
-      setCurrentScore(null);
-      setCurrentFeedback("");
-      setEditing(false);
-    } catch (err) {
-      setSubmitError(
-        err instanceof Error ? err.message : "Failed to submit rewrite",
+      sessionStorage.setItem(
+        "toast",
+        "Article rewrite submitted! Scoring in progress...",
       );
-    } finally {
-      setSubmitting(false);
-    }
+    } catch {}
+
+    navigate("/");
   }
 
   if (loading) {
