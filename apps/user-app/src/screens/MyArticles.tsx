@@ -170,6 +170,7 @@ export default function MyArticles() {
       const id = setTimeout(() => setToast(null), 3000);
       return () => clearTimeout(id);
     }
+    return;
   }, [toast]);
 
   return (
