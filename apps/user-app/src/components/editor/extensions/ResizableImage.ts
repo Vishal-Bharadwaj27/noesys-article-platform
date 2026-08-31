@@ -63,6 +63,9 @@ export const ResizableImage = Image.extend({
     if (HTMLAttributes.height)
       styleParts.push(`height:${HTMLAttributes.height}`);
     if (HTMLAttributes.style) styleParts.push(HTMLAttributes.style);
+    // Wrap image in aligned paragraph for preview portability
+    // The actual alignment is stored as a wrapper style, but for static HTML
+    // (preview/article viewer) we emit margin auto on the img itself.
     if (HTMLAttributes.textAlign === "center")
       styleParts.push("display:block; margin-left:auto; margin-right:auto");
     else if (HTMLAttributes.textAlign === "right")
@@ -70,6 +73,8 @@ export const ResizableImage = Image.extend({
     else if (HTMLAttributes.textAlign === "left")
       styleParts.push("display:block; margin-left:0; margin-right:auto");
     const style = styleParts.join("; ");
-    return ["img", { ...HTMLAttributes, style: style || undefined }];
+    const { textAlign: _ta, ...rest } = HTMLAttributes;
+    return ["img", { ...rest, style: style || undefined }];
   },
 }).configure({ inline: false, allowBase64: true });
+ 

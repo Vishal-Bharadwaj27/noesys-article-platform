@@ -79,45 +79,84 @@ export function isUsableImageSrc(src: string | null): boolean {
  */
 function detectAndConvertBoldHeadings(html: string): string {
   if (!html) return html;
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, "text/html");
+  const doc = new DOMParser().parseFromString(html, "text/html");
 
-  const candidates = doc.querySelectorAll("b, strong, p, span, div");
+  // Collect candidate style rules from <style> blocks before they're stripped:
+  // Word defines headings via mso-style-name / mso-outline-level there.
+  // We keep a map of class -> heading level derived from style text.
+  let styleText = "";
+  doc.querySelectorAll("style").forEach((s) => (styleText += s.textContent || ""));
 
-  candidates.forEach((el) => {
-    const tag = el.tagName.toLowerCase();
-    // Skip if already inside a heading or list item
-    if (el.closest("h1, h2, h3, h4, h5, h6, li")) return;
-    // Only consider leaf-ish nodes with text, or paragraphs that are
-    // mostly bold (typical Google Docs heading pattern).
+  const getHeadingFromClass = (cls: string): string | null => {
+    if (/MsoHeading\s*1/i.test(cls) || /MsoTitle/i.test(cls)) return "h1";
+    if (/MsoHeading\s*2/i.test(cls)) return "h2";
+    if (/MsoHeading\s*3/i.test(cls)) return "h3";
+    return null;
+  };
+
+  // 1) Convert Word paragraphs that are actually headings (MsoHeading, outline-level, large bold)
+  doc.querySelectorAll("p").forEach((p) => {
+    if (p.closest("h1,h2,h3,h4,h5,h6,li,table")) return;
+    const text = (p.textContent || "").trim();
+    if (!text || text.length > 400) return;
+    const style = p.getAttribute("style") || "";
+    const cls = p.getAttribute("class") || "";
+
+    // Check Word heading signals
+    const outlineMatch = /mso-outline-level:\s*(\d)/i.exec(style);
+    const styleNameMatch = /mso-style-name:\s*"?Heading\s*(\d)"?/i.exec(style);
+    const classHeading = getHeadingFromClass(cls);
+    // Also check styleText for this element's class defining a heading
+    let level: string | null = null;
+    if (outlineMatch) level = `h${outlineMatch[1]}`;
+    else if (styleNameMatch) level = `h${styleNameMatch[1]}`;
+    else if (classHeading) level = classHeading;
+    // Fallback: large + bold heuristic for Google Docs / unstyled Word export
+    if (!level) {
+      const fsMatch = /font-size\s*:\s*(\d+)\s*(?:pt|px)/i.exec(style);
+      const fwMatch = /font-weight\s*:\s*(bold|\d{2,3})/i.exec(style);
+      let fontSize = fsMatch ? parseInt(fsMatch[1], 10) : 0;
+      // pt to px approx
+      if (fsMatch && /pt/i.test(fsMatch[0])) fontSize = Math.round(fontSize * 1.33);
+      const isBold = fwMatch !== null || !!p.querySelector("b,strong") || /font-weight:\s*bold/i.test(style);
+      const hasLarge = fontSize >= 16;
+      // Only promote short paragraphs that are bold+larger than body
+      if (isBold && hasLarge) {
+        level = fontSize >= 22 ? "h1" : fontSize >= 18 ? "h2" : "h3";
+      } else if (classHeading) {
+        level = classHeading;
+      }
+    }
+    if (level) {
+      const h = doc.createElement(level);
+      // Preserve inner formatting (bold/italic) but strip Word junk spans
+      h.innerHTML = p.innerHTML;
+      // Clean mso tab stops inside heading
+      h.innerHTML = h.innerHTML.replace(/<span[^>]*mso-tab-count[^>]*>[\s\S]*?<\/span>/gi, " ").trim();
+      p.replaceWith(h);
+    }
+  });
+
+  // 2) Convert standalone bold spans/divs that act as headings (Google Docs)
+  doc.querySelectorAll("b, strong").forEach((el) => {
+    if (el.closest("h1,h2,h3,h4,h5,h6,li,p")) return;
     const text = (el.textContent || "").trim();
-    if (!text) return;
-    if (text.length > 300) return; // skip long body paragraphs
-
-    const style = el.getAttribute("style") || "";
+    if (!text || text.length > 300) return;
+    const parent = el.parentElement;
+    // Only if the bold element is the dominant content of its parent
+    if (parent && (parent.textContent || "").trim() !== text) return;
+    const style = (el.getAttribute("style") || "") + (parent?.getAttribute("style") || "");
     const fsMatch = /font-size\s*:\s*(\d+)\s*px/i.exec(style);
-    const fwMatch = /font-weight\s*:\s*(\d{2,3})/i.exec(style);
     const fontSize = fsMatch ? parseInt(fsMatch[1], 10) : 0;
-    const fontWeight = fwMatch ? parseInt(fwMatch[1], 10) : 400;
-
-    // Also accept plain <b> or <strong> as long as the parent isn't itself
-    // a heading-like container.
-    const isBoldTag = tag === "b" || tag === "strong";
-    const hasLargeStyle = fontSize >= 18 || fontWeight >= 700;
-
-    if (!(isBoldTag && hasLargeStyle) && !hasLargeStyle) return;
-
-    // Pick level by visual size. Word/Google docs default body is ~11-12px.
-    const headingLevel =
-      fontSize >= 28 || fontWeight >= 800
-        ? "h1"
-        : fontSize >= 22 || fontWeight >= 700
-          ? "h2"
-          : "h3";
-
-    const heading = doc.createElement(headingLevel);
-    heading.innerHTML = el.innerHTML;
-    el.replaceWith(heading);
+    if (fontSize >= 18 || el.tagName === "B" || el.tagName === "STRONG") {
+      // Use parent context if it looks like a heading block
+      const target = parent && parent !== doc.body ? parent : el;
+      if (target.closest("h1,h2,h3")) return;
+      const lvl = fontSize >= 24 ? "h1" : fontSize >= 20 ? "h2" : "h3";
+      const h = doc.createElement(lvl);
+      h.innerHTML = target.innerHTML;
+      target.replaceWith(h);
+    }
   });
 
   return doc.body.innerHTML;
@@ -254,12 +293,11 @@ export function cleanPastedHtml(rawHtml: string): string {
         .replace(/^\s*(?:\d+[\.\)]|•|·)\s*(?:&nbsp;|\u00a0|\s)*/i, "")
         .replace(/<span[^>]*mso-tab-count[^>]*>[\s\S]*?<\/span>/gi, " ")
         .trim();
-      // Preserve heading tags instead of stripping them
-      // If heading is at start of list item, extract it before the list
-      if (/^<h[1-6]/i.test(child.outerHTML)) {
-        // Keep the heading as-is for semantic structure
-        // Let Tiptap handle it naturally
-        return child.outerHTML;
+      // If this child is already a heading, don't wrap it in a list item
+      if (/^<h[1-6]/i.test(child.outerHTML.trim())) {
+        currentList = null;
+        currentOrdered = null;
+        continue;
       }
       li.innerHTML = text || child.textContent || "";
       currentList.appendChild(li);
