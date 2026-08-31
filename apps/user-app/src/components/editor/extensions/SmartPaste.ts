@@ -67,6 +67,11 @@ export const SmartPaste = Extension.create<SmartPasteOptions>({
             if (!cd) return false;
 
             const html = cd.getData("text/html");
+            console.log("[SmartPaste] raw HTML has MsoHeading:", /MsoHeading/i.test(html));
+            console.log("[SmartPaste] raw HTML has outline-level:", /mso-outline-level/i.test(html));
+            console.log("[SmartPaste] raw HTML has Title/Heading class:", /class\s*=\s*['"](Title|Heading|Subtitle)/i.test(html));
+            console.log("[SmartPaste] raw HTML has mso-style-name:", /mso-style-name/i.test(html));
+            console.log("[SmartPaste] first 800 chars:", html.slice(0, 800));
             const text = cd.getData("text/plain");
             const imageFiles = Array.from(cd.files || []).filter((f) =>
               f.type.startsWith("image/"),
@@ -76,6 +81,7 @@ export const SmartPaste = Extension.create<SmartPasteOptions>({
             if (html && html.trim()) {
               event.preventDefault();
               const cleaned = cleanPastedHtml(html);
+              console.log("[SmartPaste] converted headings count:", (cleaned.match(/<h[1-6]/gi) || []).length);
               insertHtml(cleaned || "<p></p>");
 
               // Word dropped its images as file:/// links -> re-attach the
