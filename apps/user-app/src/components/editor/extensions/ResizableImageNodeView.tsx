@@ -40,18 +40,11 @@ export default function ResizableImageNodeView({
 
   const imgStyle: any = {};
   if (width) imgStyle.width = width;
-  let wrapperStyle: any = { display: "block", maxWidth: "100%" };
-  const ta = node.attrs.textAlign;
-  if (ta === "center") {
-    wrapperStyle.marginLeft = "auto";
-    wrapperStyle.marginRight = "auto";
-  } else if (ta === "right") {
-    wrapperStyle.marginLeft = "auto";
-    wrapperStyle.marginRight = "0";
-  } else if (ta === "left") {
-    wrapperStyle.marginLeft = "0";
-    wrapperStyle.marginRight = "auto";
-  }
+  // Use text-align on full-width wrapper to align inner inline-block container.
+  // This is more reliable than margin:auto on the wrapper itself.
+  let wrapperStyle: any = { display: "block", width: "100%", maxWidth: "100%" };
+  const ta = node.attrs.textAlign || "left";
+  wrapperStyle.textAlign = ta === "center" ? "center" : ta === "right" ? "right" : "left";
   if (node.attrs.style) {
     node.attrs.style.split(";").forEach((p: string) => {
       const [k, v] = p.split(":").map((s: string) => s.trim());
@@ -60,6 +53,14 @@ export default function ResizableImageNodeView({
           k.replace(/-([a-z])/g, (_: string, c: string) => c.toUpperCase())
         ] = v;
     });
+    // Don't let legacy margin styles override textAlign
+    if (ta) {
+      wrapperStyle.marginLeft = undefined;
+      wrapperStyle.marginRight = undefined;
+      wrapperStyle.display = "block";
+      wrapperStyle.width = "100%";
+      wrapperStyle.textAlign = ta === "center" ? "center" : ta === "right" ? "right" : "left";
+    }
   }
 
   return (

@@ -228,22 +228,31 @@ export default function TiptapEditor({
         <span className="w-px h-5 bg-slate-300 mx-1" />
         <ToolBtn
           tip="Align left"
-          active={editor.isActive({ textAlign: "left" })}
-          onClick={() => editor.chain().focus().setTextAlign("left").run()}
+          active={editor.isActive({ textAlign: "left" }) || editor.isActive("image", { textAlign: "left" })}
+          onClick={() => {
+            if (editor.isActive("image")) editor.chain().focus().updateAttributes("image", { textAlign: "left" }).run();
+            else editor.chain().focus().setTextAlign("left").run();
+          }}
         >
           <AlignLeft size={16} />
         </ToolBtn>
         <ToolBtn
           tip="Align center"
-          active={editor.isActive({ textAlign: "center" })}
-          onClick={() => editor.chain().focus().setTextAlign("center").run()}
+          active={editor.isActive({ textAlign: "center" }) || editor.isActive("image", { textAlign: "center" })}
+          onClick={() => {
+            if (editor.isActive("image")) editor.chain().focus().updateAttributes("image", { textAlign: "center" }).run();
+            else editor.chain().focus().setTextAlign("center").run();
+          }}
         >
           <AlignCenter size={16} />
         </ToolBtn>
         <ToolBtn
           tip="Align right"
-          active={editor.isActive({ textAlign: "right" })}
-          onClick={() => editor.chain().focus().setTextAlign("right").run()}
+          active={editor.isActive({ textAlign: "right" }) || editor.isActive("image", { textAlign: "right" })}
+          onClick={() => {
+            if (editor.isActive("image")) editor.chain().focus().updateAttributes("image", { textAlign: "right" }).run();
+            else editor.chain().focus().setTextAlign("right").run();
+          }}
         >
           <AlignRight size={16} />
         </ToolBtn>
