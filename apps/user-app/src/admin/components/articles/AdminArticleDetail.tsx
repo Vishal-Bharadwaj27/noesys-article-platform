@@ -55,7 +55,7 @@ function formatScore(s: number) {
   return Number.isInteger(s) ? String(s) : s.toFixed(1);
 }
 function scoreColorHex(s: number) {
-  if (s >= 8) return "#389e0d";
+  if (s >= 10) return "#389e0d";
   if (s >= 6) return "#d48806";
   return "#cf1322";
 }
