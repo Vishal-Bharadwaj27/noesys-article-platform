@@ -70,6 +70,7 @@ export default function TiptapEditor({
   const initialHtml = resolveContentToHtml(value);
 
   const editor = useEditor({
+    shouldRerenderOnTransaction: true,
     extensions: [
       StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
       Underline,
