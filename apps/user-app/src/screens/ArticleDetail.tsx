@@ -1,17 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import Header from "../components/Header";
-import {
-  ChevronLeft,
-  Edit3,
-  X,
-  Check,
-  Clock,
-  Loader2,
-  Copy,
-  ChevronDown,
-  ChevronUp,
-} from "lucide-react";
+import {ChevronLeft,Edit3,X,Check,Loader2,Copy,ChevronDown,ChevronUp} from "lucide-react";
 import dayjs from "dayjs";
 import {
   useArticle,
@@ -94,187 +84,6 @@ const MarkdownCode: Components["code"] = ({
   );
 };
 
-const sharedMarkdownComponents: Components = {
-  h1: ({ children, ...props }) => (
-    <h1
-      style={{
-        fontSize: "1.875rem",
-        fontWeight: 700,
-        marginTop: "1.5rem",
-        marginBottom: "1rem",
-      }}
-      {...props}
-    >
-      {children}
-    </h1>
-  ),
-  h2: ({ children, ...props }) => (
-    <h2
-      style={{
-        fontSize: "1.5rem",
-        fontWeight: 600,
-        marginTop: "1.5rem",
-        marginBottom: "0.75rem",
-      }}
-      {...props}
-    >
-      {children}
-    </h2>
-  ),
-  h3: ({ children, ...props }) => (
-    <h3
-      style={{
-        fontSize: "1.25rem",
-        fontWeight: 600,
-        marginTop: "1rem",
-        marginBottom: "0.5rem",
-      }}
-      {...props}
-    >
-      {children}
-    </h3>
-  ),
-  p: ({ children, ...props }) => (
-    <p style={{ marginBottom: "1rem", lineHeight: 1.6 }} {...props}>
-      {children}
-    </p>
-  ),
-  ul: ({ children, ...props }) => (
-    <ul
-      style={{
-        marginLeft: "1.5rem",
-        marginBottom: "1rem",
-        listStyleType: "disc",
-      }}
-      {...props}
-    >
-      {children}
-    </ul>
-  ),
-  ol: ({ children, ...props }) => (
-    <ol
-      style={{
-        marginLeft: "1.5rem",
-        marginBottom: "1rem",
-        listStyleType: "decimal",
-      }}
-      {...props}
-    >
-      {children}
-    </ol>
-  ),
-  li: ({ children, ...props }) => (
-    <li style={{ marginBottom: "0.5rem" }} {...props}>
-      {children}
-    </li>
-  ),
-  strong: ({ children, ...props }) => (
-    <strong style={{ fontWeight: 600 }} {...props}>
-      {children}
-    </strong>
-  ),
-  em: ({ children, ...props }) => (
-    <em style={{ fontStyle: "italic" }} {...props}>
-      {children}
-    </em>
-  ),
-  blockquote: ({ children, ...props }) => (
-    <blockquote
-      style={{
-        borderLeft: "4px solid #d9d9d9",
-        paddingLeft: "1rem",
-        marginLeft: 0,
-        marginBottom: "1rem",
-        color: "#666",
-        fontStyle: "italic",
-      }}
-      {...props}
-    >
-      {children}
-    </blockquote>
-  ),
-  pre: ({ children, ...props }) => (
-    <pre
-      style={{
-        background: "#1e1e1e",
-        border: "1px solid #444",
-        borderRadius: 6,
-        padding: 12,
-        fontSize: 13,
-        overflow: "auto",
-        marginBottom: "1rem",
-      }}
-      {...props}
-    >
-      {children}
-    </pre>
-  ),
-  a: ({ href, children, ...props }) => (
-    <a
-      href={href}
-      style={{ color: "#1890ff", textDecoration: "underline" }}
-      target="_blank"
-      rel="noopener noreferrer"
-      {...props}
-    >
-      {children}
-    </a>
-  ),
-  code: MarkdownCode,
-  img: ({ src, alt }: any) => (
-    <img
-      src={src}
-      alt={alt}
-      style={{
-        maxWidth: "100%",
-        display: "block",
-        borderRadius: 8,
-        margin: "1rem 0",
-      }}
-    />
-  ),
-  table: ({ children, ...props }) => (
-    <div style={{ overflowX: "auto", marginBottom: "1rem", maxWidth: "100%" }}>
-      <table
-        style={{
-          width: "100%",
-          borderCollapse: "collapse",
-          fontSize: "0.875rem",
-        }}
-        {...props}
-      >
-        {children}
-      </table>
-    </div>
-  ),
-  thead: ({ children, ...props }) => (
-    <thead style={{ background: "#f8fafc" }} {...props}>
-      {children}
-    </thead>
-  ),
-  tbody: ({ children, ...props }) => <tbody {...props}>{children}</tbody>,
-  tr: ({ children, ...props }) => <tr {...props}>{children}</tr>,
-  th: ({ children, ...props }) => (
-    <th
-      style={{
-        border: "1px solid #e2e8f0",
-        padding: "8px 12px",
-        fontWeight: 600,
-        textAlign: "left",
-        background: "#f8fafc",
-      }}
-      {...props}
-    >
-      {children}
-    </th>
-  ),
-  td: ({ children, ...props }) => (
-    <td style={{ border: "1px solid #e2e8f0", padding: "8px 12px" }} {...props}>
-      {children}
-    </td>
-  ),
-};
-
 const feedbackMarkdownComponents: Components = {
   h2: ({ children }: any) => (
     <h2 className="text-lg font-bold text-slate-900 mt-4 mb-3 border-b border-slate-200 pb-2">
@@ -302,7 +111,7 @@ const feedbackMarkdownComponents: Components = {
 };
 
 function scoreColor(score: number) {
-  if (score >= 8) {
+  if (score >= 10) {
     return { bar: "bg-emerald-500", badge: "bg-emerald-50 text-emerald-700" };
   }
 

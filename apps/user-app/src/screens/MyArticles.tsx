@@ -127,12 +127,17 @@ export default function MyArticles() {
       .catch(() => {});
   }, []);
 
-  const { articles, loading, error, pagination, isPolling } = useMyArticles({
-    month: viewAll ? undefined : month,
-    viewAll,
-    page: viewAll ? currentPage : undefined,
-    limit: 10,
-  });
+  const { articles, loading, error, pagination, isPolling, refetch } =
+    useMyArticles({
+      month: viewAll ? undefined : month,
+      viewAll,
+      page: viewAll ? currentPage : undefined,
+      limit: 10,
+    });
+
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
 
   const totalPages = pagination.totalPages || 1;
 
