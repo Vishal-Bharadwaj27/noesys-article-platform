@@ -121,7 +121,7 @@ export default function Login() {
             className="h-12 w-20 rounded-lg"
           />
           <span className="font-semibold text-lg text-slate-900">
-            Noesys Article Platform
+            Article Platform
           </span>
         </div>
 
