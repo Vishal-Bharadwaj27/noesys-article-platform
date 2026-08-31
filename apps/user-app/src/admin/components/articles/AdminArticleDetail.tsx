@@ -59,6 +59,7 @@ function scoreColorHex(s: number) {
   if (s >= 6) return "#d48806";
   return "#cf1322";
 }
+
 function ParameterResultsBox({
   results,
 }: {
@@ -729,7 +730,7 @@ export default function AdminArticleDetail() {
               />
             )}
           </div>
-          {/* <ParameterResultsBox results={parameterResults} /> */}
+          <ParameterResultsBox results={parameterResults} />
 
           <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
             <div

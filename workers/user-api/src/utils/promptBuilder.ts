@@ -9,7 +9,7 @@ export function buildEvaluationPrompt(
   title: string,
   content: string
 ): string {
-  let prompt = `You are an expert article evaluator. Your task is to evaluate the given article based on specific criteria.
+  let prompt = `(Give result in .md format). You are an expert article evaluator. Your task is to evaluate the given article based on specific criteria.
 
 `;
   

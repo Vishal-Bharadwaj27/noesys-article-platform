@@ -12,7 +12,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { SearchOutlined } from "@ant-design/icons";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
@@ -116,84 +115,130 @@ const UsersPage = () => {
       <h1 className="text-3xl font-semibold">Users List</h1>
       <div className="flex gap-3 my-6 items-center">
         <div className="flex-1 relative">
-          <AutoComplete value={search} onChange={setSearch}
-            options={search.trim() ? filteredUsers.map((u) => ({ value: u.name, label: u.name, key: u.id })) : []}
-            onSelect={(value) => setSearch(value)} style={{ width: "100%" }}>
-            <Input prefix={<Search size={15} className="text-slate-400" />} placeholder="Search user" className="h-9 rounded-lg" style={{ borderRadius: 8, height: 36, borderColor: "#cbd5e1", background: "#fff" }} />
+          <AutoComplete
+            value={search}
+            onChange={setSearch}
+            options={
+              search.trim()
+                ? filteredUsers.map((u) => ({
+                    value: u.name,
+                    label: u.name,
+                    key: u.id,
+                  }))
+                : []
+            }
+            onSelect={(value) => setSearch(value)}
+            style={{ width: "100%" }}
+          >
+            {/* <Input
+              prefix={<Search size={15} className="text-slate-400" />}
+              placeholder="Search user"
+              className="h-9 rounded-lg"
+              style={{
+                borderRadius: 8,
+                height: 36,
+                borderColor: "#cbd5e1",
+                background: "#fff",
+              }}
+            /> */}
+
+            <div className="flex items-center gap-2 mb-4 w-full">
+              <div className="relative flex-1">
+                <Search
+                  size={15}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                />
+
+                <input
+                  type="text"
+                  placeholder="Search title..."
+                  className="w-full rounded-lg border border-slate-300 pl-9 pr-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent h-9"
+                />
+              </div>
+            </div>
           </AutoComplete>
         </div>
-        <button onClick={handleToggleNotSubmitted} className={`whitespace-nowrap h-9 flex shrink-0 items-center justify-center gap-1.5 rounded-lg border px-4 text-sm font-medium transition-colors ${showNotSubmitted ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-white text-slate-600 border-slate-300 hover:bg-slate-50"}`}>
+        <button
+          onClick={handleToggleNotSubmitted}
+          className={`whitespace-nowrap h-9 flex shrink-0 items-center justify-center gap-1.5 rounded-lg border px-4 text-sm font-medium transition-colors ${showNotSubmitted ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-white text-slate-600 border-slate-300 hover:bg-slate-50"}`}
+        >
           Show Not Submitted
         </button>
       </div>
       <div className="flex gap-3 mb-6">
-        {showNotSubmitted && <span className="text-sm font-medium text-slate-700 whitespace-nowrap self-center">Filter by month</span>}
+        {showNotSubmitted && (
+          <span className="text-sm font-medium text-slate-700 whitespace-nowrap self-center">
+            Filter by month
+          </span>
+        )}
 
         {showNotSubmitted && (
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" className="justify-between font-normal w-[180px] h-9 bg-white border border-slate-300 rounded-lg text-sm shadow-none">
+              <Button
+                variant="outline"
+                className="justify-between font-normal w-[180px] h-9 bg-white border border-slate-300 rounded-lg text-sm shadow-none"
+              >
                 {selectedMonth.format("MMMM YYYY")}
                 <Calendar className="h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
 
-                <PopoverContent className="w-64 p-3">
-                  <div className="flex items-center justify-between mb-3">
+            <PopoverContent className="w-64 p-3">
+              <div className="flex items-center justify-between mb-3">
+                <Button
+                  variant="ghost"
+                  className="h-7 w-7 p-0 opacity-50 hover:opacity-100"
+                  onClick={() => setFocusedYear((y) => y - 1)}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+
+                <div className="font-bold text-sm">{focusedYear}</div>
+
+                <Button
+                  variant="ghost"
+                  className="h-7 w-7 p-0 opacity-50 hover:opacity-100"
+                  onClick={() => setFocusedYear((y) => y + 1)}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                {Array.from({ length: 12 }).map((_, i) => {
+                  const month = dayjs()
+                    .year(focusedYear)
+                    .month(i)
+                    .startOf("month");
+
+                  const isSelected =
+                    selectedMonth.format("YYYY-MM") === month.format("YYYY-MM");
+
+                  const isCurrent =
+                    dayjs().format("YYYY-MM") === month.format("YYYY-MM");
+
+                  return (
                     <Button
-                      variant="ghost"
-                      className="h-7 w-7 p-0 opacity-50 hover:opacity-100"
-                      onClick={() => setFocusedYear((y) => y - 1)}
+                      key={i}
+                      variant={isSelected ? "default" : "ghost"}
+                      onClick={() => setSelectedMonth(month)}
+                      className={`h-9 text-sm ${
+                        isSelected
+                          ? ""
+                          : "hover:bg-accent hover:text-accent-foreground"
+                      }`}
                     >
-                      <ChevronLeft className="h-4 w-4" />
+                      {month.format("MMM")}
+                      {isCurrent && (
+                        <span className="absolute top-1 right-1 h-1 w-1 rounded-full bg-primary" />
+                      )}
                     </Button>
-
-                    <div className="font-bold text-sm">{focusedYear}</div>
-
-                    <Button
-                      variant="ghost"
-                      className="h-7 w-7 p-0 opacity-50 hover:opacity-100"
-                      onClick={() => setFocusedYear((y) => y + 1)}
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2">
-                    {Array.from({ length: 12 }).map((_, i) => {
-                      const month = dayjs()
-                        .year(focusedYear)
-                        .month(i)
-                        .startOf("month");
-
-                      const isSelected =
-                        selectedMonth.format("YYYY-MM") ===
-                        month.format("YYYY-MM");
-
-                      const isCurrent =
-                        dayjs().format("YYYY-MM") === month.format("YYYY-MM");
-
-                      return (
-                        <Button
-                          key={i}
-                          variant={isSelected ? "default" : "ghost"}
-                          onClick={() => setSelectedMonth(month)}
-                          className={`h-9 text-sm ${
-                            isSelected
-                              ? ""
-                              : "hover:bg-accent hover:text-accent-foreground"
-                          }`}
-                        >
-                          {month.format("MMM")}
-                          {isCurrent && (
-                            <span className="absolute top-1 right-1 h-1 w-1 rounded-full bg-primary" />
-                          )}
-                        </Button>
-                      );
-                    })}
-                  </div>
-                </PopoverContent>
-              </Popover>
+                  );
+                })}
+              </div>
+            </PopoverContent>
+          </Popover>
         )}
       </div>
 

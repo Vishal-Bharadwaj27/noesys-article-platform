@@ -59,7 +59,7 @@ async function evaluateAndUpdate(
   articleTypeId: string,
   title: string,
   content: string,
-  version: number
+  version: number,
 ) {
   try {
     await evaluateArticle(
@@ -69,7 +69,7 @@ async function evaluateAndUpdate(
       articleTypeId,
       title,
       content,
-      version
+      version,
     );
   } catch (err: any) {
     const msg = err?.message || String(err);
@@ -94,7 +94,7 @@ articleRoutes.get("/mine", async (c) => {
         success: false,
         message: "Invalid month format. Expected YYYY-MM.",
       },
-      400
+      400,
     );
   }
 
@@ -117,7 +117,7 @@ articleRoutes.get("/mine", async (c) => {
     viewAll ? undefined : month || currentMonth(),
     viewAll,
     page,
-    limit
+    limit,
   );
 
   const data = articles.map((article) =>
@@ -131,7 +131,7 @@ articleRoutes.get("/mine", async (c) => {
       submitted_at: article.submitted_at,
       authorName: user.name,
       authorId: user.id,
-    })
+    }),
   );
 
   return c.json({
@@ -154,7 +154,7 @@ articleRoutes.get("/mine/:id", async (c) => {
         success: false,
         message: "Article not found",
       },
-      404
+      404,
     );
   }
 
@@ -172,8 +172,19 @@ articleRoutes.get("/mine/:id", async (c) => {
       (history.length > 0 ? history[history.length - 1].ai_feedback || "" : "");
 
   // parameter results for current version
-  const paramRows: any[] = (await db.prepare(`SELECT p.name as parameter_name, p.scope_type, r.numeric_value, r.option_id, po.label as option_label FROM article_parameter_results r JOIN parameters p ON p.id=r.parameter_id LEFT JOIN parameter_options po ON po.id=r.option_id WHERE r.article_id=? AND r.version=? ORDER BY p.sort_order`).bind(articleId, article.version).all()).results as any[];
-  const parameter_results = paramRows.map((r:any)=> ({ parameter_name: r.parameter_name, scope_type: r.scope_type, value: r.scope_type==='option' ? r.option_label : r.numeric_value }));
+  const paramRows: any[] = (
+    await db
+      .prepare(
+        `SELECT p.name as parameter_name, p.scope_type, r.numeric_value, r.option_id, po.label as option_label FROM article_parameter_results r JOIN parameters p ON p.id=r.parameter_id LEFT JOIN parameter_options po ON po.id=r.option_id WHERE r.article_id=? AND r.version=? ORDER BY p.sort_order`,
+      )
+      .bind(articleId, article.version)
+      .all()
+  ).results as any[];
+  const parameter_results = paramRows.map((r: any) => ({
+    parameter_name: r.parameter_name,
+    scope_type: r.scope_type,
+    value: r.scope_type === "option" ? r.option_label : r.numeric_value,
+  }));
   return c.json({
     message: "Article fetched successfully",
     data: {
@@ -238,7 +249,7 @@ articleRoutes.post("/", async (c) => {
         success: false,
         message: "Invalid JSON body",
       },
-      400
+      400,
     );
   }
 
@@ -248,10 +259,9 @@ articleRoutes.post("/", async (c) => {
     return c.json(
       {
         success: false,
-        message:
-          "Missing required fields: article_type_id, title, content",
+        message: "Missing required fields: article_type_id, title, content",
       },
-      400
+      400,
     );
   }
 
@@ -270,7 +280,7 @@ articleRoutes.post("/", async (c) => {
           success: false,
           message: "Article not found or does not belong to user",
         },
-        404
+        404,
       );
     }
 
@@ -295,8 +305,8 @@ articleRoutes.post("/", async (c) => {
         article_type_id,
         title,
         content,
-        nextVersion
-      )
+        nextVersion,
+      ),
     );
 
     // Return immediately with pending status
@@ -338,8 +348,8 @@ articleRoutes.post("/", async (c) => {
         article_type_id,
         title,
         content,
-        1 // New articles start at version 1
-      )
+        1, // New articles start at version 1
+      ),
     );
 
     // Return immediately with pending status (don't wait for AI)
@@ -360,18 +370,35 @@ articleRoutes.get("/:id/status", async (c) => {
   const db = c.env.DB;
   const articleId = c.req.param("id");
   const article = await getArticleById(db, articleId, user.id);
-  if (!article) return c.json({ success: false, message: "Article not found" }, 404);
+  if (!article)
+    return c.json({ success: false, message: "Article not found" }, 404);
   // Map internal status to spec status: pending / accepted / rejected
   let status: string = article.status;
   if (article.ai_score !== null) {
-    status = article.status === "approved" ? "accepted" : article.status === "failed" ? "rejected" : article.status === "rewrite_required" ? "rejected" : status;
+    status =
+      article.status === "approved"
+        ? "accepted"
+        : article.status === "failed"
+          ? "rejected"
+          : article.status === "rewrite_required"
+            ? "rejected"
+            : status;
     // normalize approved/rewrite_required to accepted/rejected for spec compatibility
     if (status === "approved") status = "accepted";
     if (status === "rewrite_required") status = "rejected";
   } else {
     status = "pending";
   }
-  return c.json({ success: true, data: { id: article.id, status, ai_score: article.ai_score, ai_feedback: article.ai_feedback || null, version: article.version } });
+  return c.json({
+    success: true,
+    data: {
+      id: article.id,
+      status,
+      ai_score: article.ai_score,
+      ai_feedback: article.ai_feedback || null,
+      version: article.version,
+    },
+  });
 });
 
 articleRoutes.get("/article-types", async (c) => {

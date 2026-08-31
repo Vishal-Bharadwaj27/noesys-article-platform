@@ -30,6 +30,7 @@ export async function evaluateArticle(
         "You are a article evaluator. Follow the scoring instructions exactly and only return values allowed by the schema. Keep in mind that the passing score is 10, and evaluate article's ai_score strictly between 0-10",
       prompt,
     });
+    console.log(prompt);
     
     return object as AIEvaluationResult;
   } catch (error) {

@@ -170,7 +170,9 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
   const locallyFilteredArticles = useMemo(() => {
     const normalizedTitle = titleFilter.trim().toLowerCase();
     if (!normalizedTitle) return articles;
-    return articles.filter((article) => article.title.toLowerCase().includes(normalizedTitle));
+    return articles.filter((article) =>
+      article.title.toLowerCase().includes(normalizedTitle),
+    );
   }, [articles, titleFilter]);
 
   useEffect(() => {
@@ -220,7 +222,14 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
         width: 340,
         render: (title: string) => (
           <Tooltip title={title}>
-            <Text ellipsis style={{ color: "var(--ant-color-link, #2f54eb)", fontWeight: 500, fontSize: fs }}>
+            <Text
+              ellipsis
+              style={{
+                color: "var(--ant-color-link, #2f54eb)",
+                fontWeight: 500,
+                fontSize: fs,
+              }}
+            >
               {title}
             </Text>
           </Tooltip>
@@ -234,8 +243,15 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
         ellipsis: true,
         render: (name: string) => (
           <Space size={8}>
-            <Avatar size={26} style={{ backgroundColor: "#7f77dd", fontSize: 11 }}>{initials(name)}</Avatar>
-            <Text ellipsis style={{ fontSize: fs }}>{name}</Text>
+            <Avatar
+              size={26}
+              style={{ backgroundColor: "#7f77dd", fontSize: 11 }}
+            >
+              {initials(name)}
+            </Avatar>
+            <Text ellipsis style={{ fontSize: fs }}>
+              {name}
+            </Text>
           </Space>
         ),
       },
@@ -244,7 +260,11 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
         dataIndex: "article_type_name",
         key: "type",
         width: 130,
-        render: (type: string) => <Tag bordered={false} style={{ fontSize: fs }}>{type}</Tag>,
+        render: (type: string) => (
+          <Tag bordered={false} style={{ fontSize: fs }}>
+            {type}
+          </Tag>
+        ),
       },
       {
         title: "Status",
@@ -253,7 +273,15 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
         width: 115,
         render: (status: ArticleStatus) => {
           const cfg = STATUS_CONFIG[status];
-          return <Tag color={cfg.color} icon={cfg.icon ? <ClockCircleOutlined /> : undefined} style={{ fontSize: fs }}>{cfg.label}</Tag>;
+          return (
+            <Tag
+              color={cfg.color}
+              icon={cfg.icon ? <ClockCircleOutlined /> : undefined}
+              style={{ fontSize: fs }}
+            >
+              {cfg.label}
+            </Tag>
+          );
         },
       },
       {
@@ -261,7 +289,9 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
         dataIndex: "version",
         key: "version",
         width: 85,
-        render: (version: number) => <Text style={{ fontSize: fs }}>v{version}</Text>,
+        render: (version: number) => (
+          <Text style={{ fontSize: fs }}>v{version}</Text>
+        ),
       },
       {
         title: "AI Score",
@@ -269,10 +299,20 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
         key: "ai_score",
         width: 130,
         render: (score: number | null) =>
-          score === null ? <Text style={{ fontSize: fs }}>—</Text> : (
+          score === null ? (
+            <Text style={{ fontSize: fs }}>—</Text>
+          ) : (
             <Space size={8} align="center">
-              <Progress percent={Math.min(Math.max(score, 0), 10) * 10} size="small" showInfo={false} strokeColor={scoreColor(score)} style={{ width: 56 }} />
-              <Text strong style={{ color: scoreColor(score), fontSize: fs }}>{score}</Text>
+              <Progress
+                percent={Math.min(Math.max(score, 0), 10) * 10}
+                size="small"
+                showInfo={false}
+                strokeColor={scoreColor(score)}
+                style={{ width: 56 }}
+              />
+              <Text strong style={{ color: scoreColor(score), fontSize: fs }}>
+                {score}
+              </Text>
             </Space>
           ),
       },
@@ -281,7 +321,9 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
         dataIndex: "submitted_at",
         key: "created_at",
         width: 125,
-        render: (date: string) => <Text style={{ fontSize: fs }}>{formatDate(date)}</Text>,
+        render: (date: string) => (
+          <Text style={{ fontSize: fs }}>{formatDate(date)}</Text>
+        ),
         defaultSortOrder: "descend",
       },
     ];
@@ -340,26 +382,42 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
       <Row gutter={[12, 12]}>
         <Col xs={24} sm={12} md={6} lg={6}>
           <Card size="small" styles={{ body: { padding: "10px 14px" } }}>
-            <Text type="secondary" style={{ fontSize: 12 }}>Total Articles</Text>
-            <div className="text-xl font-semibold mt-0.5">{dashboard.total}</div>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              Total Articles
+            </Text>
+            <div className="text-xl font-semibold mt-0.5">
+              {dashboard.total}
+            </div>
           </Card>
         </Col>
         <Col xs={24} sm={12} md={6} lg={6}>
           <Card size="small" styles={{ body: { padding: "10px 14px" } }}>
-            <Text type="secondary" style={{ fontSize: 12 }}>Accepted</Text>
-            <div className="text-xl font-semibold text-emerald-600 mt-0.5">{dashboard.approved}</div>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              Accepted
+            </Text>
+            <div className="text-xl font-semibold text-emerald-600 mt-0.5">
+              {dashboard.approved}
+            </div>
           </Card>
         </Col>
         <Col xs={24} sm={12} md={6} lg={6}>
           <Card size="small" styles={{ body: { padding: "10px 14px" } }}>
-            <Text type="secondary" style={{ fontSize: 12 }}>Pending</Text>
-            <div className="text-xl font-semibold text-amber-600 mt-0.5">{dashboard.pending}</div>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              Pending
+            </Text>
+            <div className="text-xl font-semibold text-amber-600 mt-0.5">
+              {dashboard.pending}
+            </div>
           </Card>
         </Col>
         <Col xs={24} sm={12} md={6} lg={6}>
           <Card size="small" styles={{ body: { padding: "10px 14px" } }}>
-            <Text type="secondary" style={{ fontSize: 12 }}>Rejected</Text>
-            <div className="text-xl font-semibold text-red-600 mt-0.5">{dashboard.rewriteRequired}</div>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              Rejected
+            </Text>
+            <div className="text-xl font-semibold text-red-600 mt-0.5">
+              {dashboard.rewriteRequired}
+            </div>
           </Card>
         </Col>
         {/* 
@@ -377,7 +435,32 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
       </Row>
 
       <div>
-        <Input allowClear value={titleFilter} onChange={(event) => setTitleFilter(event.target.value)} placeholder="Search title..." prefix={<Search size={15} className="text-slate-400" />} className="w-full h-9 rounded-lg" style={{ height: 36, borderColor: "#cbd5e1", background: "#fff" }} />
+        {/* <Input
+          allowClear
+          value={titleFilter}
+          onChange={(event) => setTitleFilter(event.target.value)}
+          placeholder="Search title..."
+          prefix={<Search size={15} className="text-slate-400" />}
+          className="w-full h-9 rounded-lg"
+          style={{ height: 36, borderColor: "#a2a0ff", background: "#fff" }}
+        /> */}
+
+        <div className="flex items-center gap-2 mb-4 w-full">
+          <div className="relative flex-1">
+            <Search
+              size={15}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+            />
+
+            <input
+              type="text"
+              value={titleFilter}
+              onChange={(e) => setTitleFilter(e.target.value)}
+              placeholder="Search title..."
+              className="w-full rounded-lg border border-slate-300 pl-9 pr-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent h-9"
+            />
+          </div>
+        </div>
       </div>
 
       {/* Table */}
