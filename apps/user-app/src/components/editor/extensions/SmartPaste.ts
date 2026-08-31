@@ -66,12 +66,27 @@ export const SmartPaste = Extension.create<SmartPasteOptions>({
             const cd = (event as ClipboardEvent).clipboardData;
             if (!cd) return false;
 
-            const html = cd.getData("text/html");
-            console.log("[SmartPaste] raw HTML has MsoHeading:", /MsoHeading/i.test(html));
-            console.log("[SmartPaste] raw HTML has outline-level:", /mso-outline-level/i.test(html));
-            console.log("[SmartPaste] raw HTML has Title/Heading class:", /class\s*=\s*['"](Title|Heading|Subtitle)/i.test(html));
-            console.log("[SmartPaste] raw HTML has mso-style-name:", /mso-style-name/i.test(html));
-            console.log("[SmartPaste] first 800 chars:", html.slice(0, 800));
+            let html = cd.getData("text/html");
+
+            // ── INTERCEPT WORD ONLINE HEADINGS (aria-level) ──────────────
+            if (html && html.includes("aria-level")) {
+              let processedHtml = html;
+              let conversionCount = 0;
+              for (let level = 1; level <= 6; level++) {
+                const pattern = new RegExp(`<(p|span|div)\\s+([^>]*?)aria-level="?${level}"?([^>]*)>([\\s\\S]*?)<\\/\\1>`, "gi");
+                processedHtml = processedHtml.replace(pattern, (_match: string, _tag: string, _a1: string, _a2: string, content: string) => {
+                  conversionCount++;
+                  return `<h${level}>${content}</h${level}>`;
+                });
+              }
+              if (conversionCount > 0) {
+                event.preventDefault();
+                const cleaned = cleanPastedHtml(processedHtml);
+                insertHtml(cleaned || "<p></p>");
+                return true;
+              }
+            }
+
             const text = cd.getData("text/plain");
             const imageFiles = Array.from(cd.files || []).filter((f) =>
               f.type.startsWith("image/"),
@@ -81,7 +96,6 @@ export const SmartPaste = Extension.create<SmartPasteOptions>({
             if (html && html.trim()) {
               event.preventDefault();
               const cleaned = cleanPastedHtml(html);
-              console.log("[SmartPaste] converted headings count:", (cleaned.match(/<h[1-6]/gi) || []).length);
               insertHtml(cleaned || "<p></p>");
 
               // Word dropped its images as file:/// links -> re-attach the

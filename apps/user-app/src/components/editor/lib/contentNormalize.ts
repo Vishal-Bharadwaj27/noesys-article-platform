@@ -1,5 +1,5 @@
 import { marked } from "marked";
-
+ 
 /**
  * Shared normalisation helpers for pasted / stored article content.
  *
@@ -11,13 +11,13 @@ import { marked } from "marked";
  *  3. resolveContentToHtml() -> used by the editor + the preview/viewer to
  *     decide whether stored content is HTML or markdown.
  */
-
+ 
 marked.setOptions({ gfm: true, breaks: false });
-
+ 
 /* ------------------------------------------------------------------ */
 /* Markdown                                                            */
 /* ------------------------------------------------------------------ */
-
+ 
 const MD_SIGNALS: RegExp[] = [
   /^\s{0,3}#{1,6}\s+\S/m, // # heading
   /^\s{0,3}(\*|-|\+)\s+\S/m, // - bullet
@@ -30,7 +30,7 @@ const MD_SIGNALS: RegExp[] = [
   /^\s{0,3}(-{3,}|\*{3,}|_{3,})\s*$/m, // --- rule
   /(\*\*|__)\S[\s\S]*?\1/, // **bold**
 ];
-
+ 
 export function isLikelyMarkdown(text: string): boolean {
   if (!text) return false;
   const t = text.trim();
@@ -39,18 +39,18 @@ export function isLikelyMarkdown(text: string): boolean {
   if (/^<[a-z!][\s\S]*>/i.test(t)) return false;
   return MD_SIGNALS.some((re) => re.test(t));
 }
-
+ 
 export function markdownToHtml(md: string): string {
   if (!md || !md.trim()) return "<p></p>";
   const html = marked.parse(md, { async: false }) as string;
   return html && html.trim() ? html : "<p></p>";
 }
-
+ 
 export function isLikelyHtml(value: string): boolean {
   if (!value) return true;
   return /^\s*<[a-z!][\s\S]*>/i.test(value.trim());
 }
-
+ 
 /** Decide how to feed stored/incoming content into Tiptap. */
 export function resolveContentToHtml(content: string): string {
   if (!content || !content.trim()) return "<p></p>";
@@ -58,102 +58,111 @@ export function resolveContentToHtml(content: string): string {
   if (isLikelyHtml(content)) return content;
   return markdownToHtml(content);
 }
-
+ 
 /* ------------------------------------------------------------------ */
 /* Word / Google Docs HTML                                             */
 /* ------------------------------------------------------------------ */
-
+ 
 /** src values Tiptap can actually render. file:// and cid: are dead links. */
 export function isUsableImageSrc(src: string | null): boolean {
   if (!src) return false;
   return /^(data:image\/|https?:|blob:)/i.test(src.trim());
 }
-
-function detectWordOnlineHeadings(html: string): string {
+ 
+/**
+ * Google Docs (and many plain web pages) never emit <b>/<strong>/<em>/<u>.
+ * Every bit of bold/italic/underline is a <span style="font-weight:700">
+ * (or font-style:italic / text-decoration:underline) instead. If we don't
+ * convert those to real tags now, the later cleanup strips the `style`
+ * attribute, the span ends up with zero attributes, and it gets unwrapped —
+ * silently dropping the formatting. Must run BEFORE detectAndConvertBoldHeadings
+ * (so it can see real <strong> for its "whole paragraph is bold" check) and
+ * before the attribute-stripping pass in cleanPastedHtml.
+ */
+function convertInlineStylesToSemanticTags(html: string): string {
   if (!html) return html;
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, "text/html");
-  const classToHeadingMap: Record<string, string> = {
-    Title: "h1",
-    Subtitle: "h2",
-    Heading: "h3",
-    Heading1: "h1",
-    Heading2: "h2",
-    Heading3: "h3",
-    Heading4: "h4",
-    Heading5: "h5",
-    Heading6: "h6",
-  };
-  Object.entries(classToHeadingMap).forEach(([wordClass, headingTag]) => {
-    const elements = doc.querySelectorAll(`[class*="${wordClass}"]`);
-    elements.forEach((el) => {
-      if (!["P", "DIV", "SPAN"].includes(el.tagName)) return;
-      if (el.closest("h1, h2, h3, h4, h5, h6")) return;
-      const text = (el.textContent || "").trim();
-      if (!text || text.length > 300) return;
-      const heading = doc.createElement(headingTag);
-      heading.innerHTML = el.innerHTML;
-      el.replaceWith(heading);
-    });
-  });
-  const allElements = doc.querySelectorAll("[style*='mso-style-name']");
-  allElements.forEach((el) => {
+  const doc = new DOMParser().parseFromString(html, "text/html");
+ 
+  const isBoldStyle = (style: string) =>
+    /font-weight\s*:\s*(bold|[6-9]\d{2}|1000)/i.test(style);
+  const isItalicStyle = (style: string) => /font-style\s*:\s*italic/i.test(style);
+  const isUnderlineStyle = (style: string) =>
+    /text-decoration[^;]*:\s*[^;]*underline/i.test(style);
+ 
+  // Reverse (innermost-first): setting el.innerHTML reparses its children,
+  // detaching the original child element objects. Processing children
+  // before their ancestors avoids skipping a nested styled span whose
+  // parent already got rewritten.
+  const styledEls = Array.from(doc.querySelectorAll("[style]")).reverse();
+  styledEls.forEach((el) => {
     const style = el.getAttribute("style") || "";
-    const styleMatch = /mso-style-name\s*:\s*['"](.*?)['"]/i.exec(style);
-    if (styleMatch) {
-      const styleName = styleMatch[1];
-      let headingTag: string | null = null;
-      if (/^Heading\s*1$/i.test(styleName)) headingTag = "h1";
-      else if (/^Heading\s*2$/i.test(styleName)) headingTag = "h2";
-      else if (/^Heading\s*3$/i.test(styleName)) headingTag = "h3";
-      else if (/^Heading\s*4$/i.test(styleName)) headingTag = "h4";
-      else if (/^Heading\s*5$/i.test(styleName)) headingTag = "h5";
-      else if (/^Heading\s*6$/i.test(styleName)) headingTag = "h6";
-      else if (/^Title$/i.test(styleName)) headingTag = "h1";
-      else if (/^Subtitle$/i.test(styleName)) headingTag = "h2";
-      if (headingTag && ["P", "DIV", "SPAN"].includes(el.tagName)) {
-        const heading = doc.createElement(headingTag);
-        heading.innerHTML = el.innerHTML;
-        el.replaceWith(heading);
-      }
-    }
+    const bold = isBoldStyle(style);
+    const italic = isItalicStyle(style);
+    const underline = isUnderlineStyle(style);
+    if (!bold && !italic && !underline) return;
+    if (!(el.textContent || "").trim()) return;
+ 
+    let inner = el.innerHTML;
+    if (bold && !el.closest("b,strong,h1,h2,h3,h4,h5,h6"))
+      inner = `<strong>${inner}</strong>`;
+    if (italic && !el.closest("em,i")) inner = `<em>${inner}</em>`;
+    if (underline && !el.closest("u")) inner = `<u>${inner}</u>`;
+    el.innerHTML = inner;
   });
+ 
   return doc.body.innerHTML;
 }
-
+ 
+/**
+ * A paragraph's own `style` attribute is where Word puts heading signals,
+ * but Google Docs puts font-size/font-weight on an inner <span> that wraps
+ * the whole line instead. Borrow that span's style ONLY when its text
+ * content matches the entire paragraph (so a small nested footnote span
+ * elsewhere in the paragraph can't falsely trigger a heading promotion).
+ */
+function getDominantStyle(p: HTMLElement): string {
+  const own = p.getAttribute("style") || "";
+  const text = (p.textContent || "").trim();
+  if (!text) return own;
+  const styled = Array.from(p.querySelectorAll("[style]")) as HTMLElement[];
+  const dominant = styled.find((e) => (e.textContent || "").trim() === text);
+  return dominant ? `${own};${dominant.getAttribute("style") || ""}` : own;
+}
+ 
 /**
  * Detect and convert Google Docs / web-page "fake headings" to semantic
  * heading tags. Google Docs and many websites don't emit <h1>-<h3>; they
- * present headings as <b> / <strong> with inline font-size and font-weight.
- * Walk the parsed DOM, and for any element whose text is bold and
- * visually large (font-size >= 18px OR font-weight >= 700) replace it
- * with a real <h1>-<h4> so Tiptap can serialize and re-render it correctly.
+ * present headings as bold text with a large inline font-size instead.
+ * Walk the parsed DOM, and for any paragraph whose (own or dominant span)
+ * style is bold and visually large (font-size >= 18px OR font-weight >= 700)
+ * replace it with a real <h1>-<h4> so Tiptap can serialize and re-render it
+ * correctly.
  */
 function detectAndConvertBoldHeadings(html: string): string {
   if (!html) return html;
   const doc = new DOMParser().parseFromString(html, "text/html");
-
+ 
   // Collect candidate style rules from <style> blocks before they're stripped:
   // Word defines headings via mso-style-name / mso-outline-level there.
   // We keep a map of class -> heading level derived from style text.
   let styleText = "";
   doc.querySelectorAll("style").forEach((s) => (styleText += s.textContent || ""));
-
+ 
   const getHeadingFromClass = (cls: string): string | null => {
     if (/MsoHeading\s*1/i.test(cls) || /MsoTitle/i.test(cls)) return "h1";
     if (/MsoHeading\s*2/i.test(cls)) return "h2";
     if (/MsoHeading\s*3/i.test(cls)) return "h3";
     return null;
   };
-
+ 
   // 1) Convert Word paragraphs that are actually headings (MsoHeading, outline-level, large bold)
   doc.querySelectorAll("p").forEach((p) => {
     if (p.closest("h1,h2,h3,h4,h5,h6,li,table")) return;
     const text = (p.textContent || "").trim();
     if (!text || text.length > 400) return;
-    const style = p.getAttribute("style") || "";
+    const style = getDominantStyle(p);
     const cls = p.getAttribute("class") || "";
-
+ 
     // Check Word heading signals
     const outlineMatch = /mso-outline-level:\s*(\d)/i.exec(style);
     const styleNameMatch = /mso-style-name:\s*"?Heading\s*(\d)"?/i.exec(style);
@@ -166,7 +175,7 @@ function detectAndConvertBoldHeadings(html: string): string {
     // Fallback: large + bold heuristic for Google Docs / unstyled Word export
     if (!level) {
       const fsMatch = /font-size\s*:\s*(\d+)\s*(?:pt|px)/i.exec(style);
-      const fwMatch = /font-weight\s*:\s*(bold|\d{2,3})/i.exec(style);
+      const fwMatch = /font-weight\s*:\s*(bold|[6-9]\d{2}|1000)/i.exec(style);
       let fontSize = fsMatch ? parseInt(fsMatch[1], 10) : 0;
       // pt to px approx
       if (fsMatch && /pt/i.test(fsMatch[0])) fontSize = Math.round(fontSize * 1.33);
@@ -188,7 +197,7 @@ function detectAndConvertBoldHeadings(html: string): string {
       p.replaceWith(h);
     }
   });
-
+ 
   // 2) Convert standalone bold spans/divs that act as headings (Google Docs)
   doc.querySelectorAll("b, strong").forEach((el) => {
     if (el.closest("h1,h2,h3,h4,h5,h6,li,p")) return;
@@ -210,10 +219,10 @@ function detectAndConvertBoldHeadings(html: string): string {
       target.replaceWith(h);
     }
   });
-
+ 
   return doc.body.innerHTML;
 }
-
+ 
 /**
  * Strip Office/Docs junk (conditional comments, <style>, mso-* classes,
  * <o:p>, VML shapes) but preserve structure (headings, lists, tables,
@@ -224,7 +233,7 @@ function detectAndConvertBoldHeadings(html: string): string {
  */
 export function cleanPastedHtml(rawHtml: string): string {
   if (!rawHtml) return "";
-
+ 
   // Kill IE conditional comments + Word's <style> blob before parsing:
   // they can hold megabytes of mso rules and confuse the parser.
   let html = rawHtml
@@ -234,14 +243,19 @@ export function cleanPastedHtml(rawHtml: string): string {
     .replace(/<xml[\s\S]*?<\/xml>/gi, "")
     .replace(/<\/?o:[a-z]+[^>]*>/gi, "")
     .replace(/<\/?w:[a-z]+[^>]*>/gi, "");
-
-  // FIRST PASS: Detect and convert Word 365/Online heading classes
-  html = detectWordOnlineHeadings(html);
-  // SECOND PASS: Detect and convert bold/large text headings (Google Docs fallback)
+ 
+  // Google Docs/web pages encode bold/italic/underline purely via inline
+  // styles on <span> (no <b>/<strong>/<em>/<u>). Convert those to semantic
+  // tags first so they survive both heading detection and the later
+  // attribute-stripping pass.
+  html = convertInlineStylesToSemanticTags(html);
+ 
+  // Then detect and convert Google Docs bold headings to semantic headings
+  // BEFORE the rest of the cleanup strips inline styles.
   html = detectAndConvertBoldHeadings(html);
-
+ 
   const doc = new DOMParser().parseFromString(html, "text/html");
-
+ 
   // VML shapes: <v:shape><v:imagedata src="..."/></v:shape> -> <img>
   doc.querySelectorAll("*").forEach((el) => {
     const tag = el.tagName.toLowerCase();
@@ -256,14 +270,14 @@ export function cleanPastedHtml(rawHtml: string): string {
       }
     }
   });
-
+ 
   // Drop leftover VML / namespaced elements, keeping their text.
   doc.querySelectorAll("*").forEach((el) => {
     if (el.tagName.includes(":")) {
       el.replaceWith(...Array.from(el.childNodes));
     }
   });
-
+ 
   // Unusable images (file:///, cid:) are removed so we don't render broken
   // icons; the paste handler re-attaches clipboard image files instead.
   doc.querySelectorAll("img").forEach((img) => {
@@ -277,7 +291,7 @@ export function cleanPastedHtml(rawHtml: string): string {
     img.removeAttribute("width");
     img.removeAttribute("height");
   });
-
+ 
   // Before stripping, collect Word list info (mso-list paragraphs)
   const wordListInfo = new Map<
     Element,
@@ -295,7 +309,7 @@ export function cleanPastedHtml(rawHtml: string): string {
       wordListInfo.set(el, { level, isOrdered });
     }
   });
-
+ 
   // Strip presentational attributes Tiptap ignores anyway, plus mso classes.
   doc.querySelectorAll("*").forEach((el) => {
     if (el.tagName.toLowerCase() === "img") return;
@@ -314,7 +328,7 @@ export function cleanPastedHtml(rawHtml: string): string {
       el.replaceWith(...Array.from(el.childNodes));
     }
   });
-
+ 
   // Convert Word "1. Heading" paragraphs (fake numbering with mso-tab-count)
   // into real <ol><li> / <ul><li> so Tiptap renders them as proper lists
   // and body text below aligns naturally instead of starting at extreme left
@@ -357,7 +371,7 @@ export function cleanPastedHtml(rawHtml: string): string {
       child.remove();
     }
   }
-
+ 
   // Fallback: even without mso-list markers, Google Docs sometimes pastes
   // numbered headings as plain "1.  Heading Title" paragraphs. Detect a run
   // of such paragraphs at the top and convert them too (heading + body pattern)
@@ -396,29 +410,29 @@ export function cleanPastedHtml(rawHtml: string): string {
       }
     }
   }
-
+ 
   // Word emits empty "spacer" paragraphs by the dozen.
   doc.querySelectorAll("p").forEach((p) => {
     const text = (p.textContent || "").replace(/\u00a0|\s/g, "");
     if (!text && !p.querySelector("img,table,br")) p.remove();
   });
-
+ 
   return doc.body.innerHTML;
 }
-
+ 
 /** True when the clipboard HTML came from Word / Outlook / Google Docs. */
 export function isOfficeHtml(html: string): boolean {
   return /mso-|urn:schemas-microsoft-com|class="?Mso|docs-internal-guid/i.test(
     html || "",
   );
 }
-
+ 
 /* ------------------------------------------------------------------ */
 /* Remote -> base64 (best effort)                                      */
 /* ------------------------------------------------------------------ */
-
+ 
 const MAX_INLINE_BYTES = 3 * 1024 * 1024;
-
+ 
 async function urlToDataUrl(url: string): Promise<string | null> {
   try {
     const res = await fetch(url, { mode: "cors", credentials: "omit" });
@@ -437,7 +451,7 @@ async function urlToDataUrl(url: string): Promise<string | null> {
     return null;
   }
 }
-
+ 
 /**
  * Converts http(s)/blob image sources in an HTML string to base64 data URLs so
  * the article keeps working after the source page expires. Best effort: any
@@ -458,7 +472,7 @@ export async function inlineRemoteImages(html: string): Promise<string> {
   );
   return doc.body.innerHTML;
 }
-
+ 
 export async function fileToDataUrl(file: File): Promise<string> {
   return await new Promise((resolve, reject) => {
     const fr = new FileReader();
