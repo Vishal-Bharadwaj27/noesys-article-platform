@@ -80,25 +80,66 @@ export function EmployeeSubmissionsTable({
   ];
 
   return (
-    <ConfigProvider theme={{ algorithm: antdTheme.defaultAlgorithm, token: { colorPrimary: "#534ab7", borderRadius: 8 }, components: { Table: { headerBg: "#e2e8f0", headerColor: "#1e293b", headerSplitColor: "#cbd5e1" } } }}>
-    <div style={{ background: "var(--ant-color-bg-container)", border: "1px solid var(--ant-color-border-secondary)", borderRadius: 12, overflow: "hidden" }}>
-    <Table
-      rowKey="userId"
-      columns={columns}
-      dataSource={data.rows}
-      pagination={false}
-      scroll={{ x: "max-content" }}
-      summary={() => (
-        <Table.Summary fixed>
-          <Table.Summary.Row>
-            <Table.Summary.Cell index={0} colSpan={2}>{data.rows.length} employees</Table.Summary.Cell>
-            {data.months.map((m, i) => (<Table.Summary.Cell key={m} index={i + 2} align="center">{data.monthlyTotals[m]}</Table.Summary.Cell>))}
-            <Table.Summary.Cell index={data.months.length + 2} align="center">{data.grandTotal}</Table.Summary.Cell>
-          </Table.Summary.Row>
-        </Table.Summary>
-      )}
-    />
-    </div>
+    <ConfigProvider
+      theme={{
+        algorithm: antdTheme.defaultAlgorithm,
+        token: { colorPrimary: "#534ab7", borderRadius: 8 },
+        components: {
+          Table: {
+            headerBg: "#e2e8f0",
+            headerColor: "#1e293b",
+            headerSplitColor: "#cbd5e1",
+          },
+        },
+      }}
+    >
+      <div
+        style={{
+          background: "var(--ant-color-bg-container)",
+          border: "1px solid var(--ant-color-border-secondary)",
+          borderRadius: 12,
+          overflow: "hidden",
+        }}
+      >
+        <Table
+          rowKey="userId"
+          columns={columns}
+          dataSource={data.rows}
+          pagination={false}
+          scroll={{ x: "max-content" }}
+          summary={() => (
+            <Table.Summary fixed>
+              <Table.Summary.Row style={{ background: "#e2e8f0" }}>
+                <Table.Summary.Cell index={0} colSpan={2}>
+                  <span className="text-slate-700">Total: </span>
+                  <span className="font-bold text-slate-700">
+                    {data.rows.length}
+                  </span>
+                </Table.Summary.Cell>
+                {data.months.map((m, i) => (
+                  <Table.Summary.Cell key={m} index={i + 2} align="center">
+                    <div style={{ background: "#e2e8f0", padding: "8px" }}>
+                      <span className="font-bold text-slate-700">
+                        {data.monthlyTotals[m]}
+                      </span>
+                    </div>
+                  </Table.Summary.Cell>
+                ))}
+                <Table.Summary.Cell
+                  index={data.months.length + 2}
+                  align="center"
+                >
+                  <div style={{ background: "#e2e8f0", padding: "8px" }}>
+                    <span className="font-bold text-slate-700">
+                      {data.grandTotal}
+                    </span>
+                  </div>
+                </Table.Summary.Cell>
+              </Table.Summary.Row>
+            </Table.Summary>
+          )}
+        />
+      </div>
     </ConfigProvider>
   );
 }
