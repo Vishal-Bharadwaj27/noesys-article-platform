@@ -1,6 +1,6 @@
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import Image from "@tiptap/extension-image";
+import { ResizableImage } from "./extensions/ResizableImage";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
 import Underline from "@tiptap/extension-underline";
@@ -47,7 +47,7 @@ function ToolBtn({ tip, active, onClick, children }: any) {
       <button
         type="button"
         onClick={onClick}
-        className={`p-1.5 rounded hover:bg-white border border-transparent hover:border-slate-200 ${active ? "bg-slate-800 text-white hover:bg-slate-800" : "text-slate-600"}`}
+        className={`p-1.5 rounded border border-transparent ${active ? "bg-slate-800 text-white hover:bg-slate-900 border-slate-800" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 hover:border-slate-200"}`}
       >
         {children}
       </button>
@@ -74,9 +74,9 @@ export default function TiptapEditor({
       StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
       Underline,
       Strike,
-      TextAlign.configure({ types: ["heading", "paragraph"] }),
+      TextAlign.configure({ types: ["heading", "paragraph", "image"] }),
       Link.configure({ openOnClick: false }),
-      Image.configure({ inline: false, allowBase64: true }),
+      ResizableImage,
       Placeholder.configure({
         placeholder: "Write your article content here...",
       }),
