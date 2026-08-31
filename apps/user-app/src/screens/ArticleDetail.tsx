@@ -1,7 +1,17 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import Header from "../components/Header";
-import {ChevronLeft,Edit3,X,Check,Clock,Loader2,Copy,ChevronDown,ChevronUp} from "lucide-react";
+import {
+  ChevronLeft,
+  Edit3,
+  X,
+  Check,
+  Clock,
+  Loader2,
+  Copy,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import dayjs from "dayjs";
 import {
   useArticle,
@@ -770,7 +780,7 @@ export default function ArticleDetail() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Article title"
-              className="flex-1 text-lg font-medium rounded-lg border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="flex-1 bg-white text-sm font-medium rounded-lg border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           ) : (
             <h1 className="text-2xl font-semibold text-slate-900 leading-snug">
@@ -795,7 +805,7 @@ export default function ArticleDetail() {
 
                   setSubmitError(null);
                 }}
-                className="flex items-center gap-1.5 text-sm text-slate-600 border border-slate-200 rounded-lg px-3 py-2 hover:bg-slate-100 transition-colors"
+                className="flex items-center gap-1.5 text-sm font-medium bg-white text-slate-700 border border-slate-200 rounded-lg px-3 py-2 transition-colors"
               >
                 <X size={14} />
                 Cancel
@@ -816,7 +826,10 @@ export default function ArticleDetail() {
             </div>
           ) : (
             <button
-              onClick={() => setEditing(true)}
+              onClick={() => {
+                setEditing(true);
+                setContentCollapsed(false);
+              }}
               className="flex items-center gap-1.5 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-3 py-2 transition-colors shrink-0"
             >
               <Edit3 size={14} />

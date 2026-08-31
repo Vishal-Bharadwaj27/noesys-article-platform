@@ -12,7 +12,7 @@ const currentMonthYear = () => {
 };
 
 const InsightsPage = () => {
-  const [insights, setInsights] = useState("Summary");
+  const [insights, setInsights] = useState("Employee Submissions");
   const [start, setStart] = useState(currentMonthYear());
   const [end, setEnd] = useState(currentMonthYear());
 

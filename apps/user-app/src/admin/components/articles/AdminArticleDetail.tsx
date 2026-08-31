@@ -441,7 +441,6 @@ export default function AdminArticleDetail() {
   const [parameterResults, setParameterResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  console.log(article);
 
   const [contentCollapsed, setContentCollapsed] = useState(true);
 

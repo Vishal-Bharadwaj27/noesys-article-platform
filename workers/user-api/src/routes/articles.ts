@@ -199,7 +199,7 @@ articleRoutes.get("/mine/:id", async (c) => {
 
         if (item.ai_score !== null) {
           // Default threshold for historical data (article type thresholds may have changed)
-          status = item.ai_score >= 7.0 ? "approved" : "rewrite_required";
+          status = item.ai_score >= 10.0 ? "approved" : "rewrite_required";
         }
 
         return {

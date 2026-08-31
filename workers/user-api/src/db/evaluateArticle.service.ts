@@ -61,7 +61,7 @@ export async function evaluateArticle(
       const key = `p${i}`;
       const rawValue = (aiResult.parameters as Record<string, number | string>)[
         key
-      ]; 
+      ];
 
       if (p.scope_type === "numeric") {
         const numericValue = rawValue as number;

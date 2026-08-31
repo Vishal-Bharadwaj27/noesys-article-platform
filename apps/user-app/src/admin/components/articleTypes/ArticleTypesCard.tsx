@@ -72,7 +72,6 @@ function ArticleTypesCard({
   onEdit,
   onDelete,
 }: ArticleTypesCardProps) {
-  console.log(type)
   return (
     <div className="group">
       <button
@@ -177,7 +176,7 @@ function ArticleTypesCard({
                           </p>
                         </div>
 
-                        <Badge variant="indigo">{param.scopeType}</Badge>
+                        <Badge variant="indigo">{param.scopeType.toUpperCase()}</Badge>
                       </div>
 
                       <div className="flex gap-1 my-1">
