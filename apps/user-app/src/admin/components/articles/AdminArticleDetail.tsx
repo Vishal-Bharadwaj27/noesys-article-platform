@@ -694,10 +694,10 @@ export default function AdminArticleDetail() {
                     </span>
                   </p>
 
-                  {hasScore && (
+                  {hasScore && colors && (
                     <div className="flex-1 h-2 rounded-full bg-slate-200 overflow-hidden">
                       <div
-                        className={`h-full rounded-full ${colors!.bar}`}
+                        className={`h-full rounded-full ${colors.bar}`}
                         style={{
                           width: `${(Math.min(displayScore!, 10) / 10) * 100}%`,
                         }}
