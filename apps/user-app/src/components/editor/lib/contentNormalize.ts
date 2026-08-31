@@ -69,6 +69,58 @@ export function isUsableImageSrc(src: string | null): boolean {
   return /^(data:image\/|https?:|blob:)/i.test(src.trim());
 }
 
+function detectWordOnlineHeadings(html: string): string {
+  if (!html) return html;
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, "text/html");
+  const classToHeadingMap: Record<string, string> = {
+    Title: "h1",
+    Subtitle: "h2",
+    Heading: "h3",
+    Heading1: "h1",
+    Heading2: "h2",
+    Heading3: "h3",
+    Heading4: "h4",
+    Heading5: "h5",
+    Heading6: "h6",
+  };
+  Object.entries(classToHeadingMap).forEach(([wordClass, headingTag]) => {
+    const elements = doc.querySelectorAll(`[class*="${wordClass}"]`);
+    elements.forEach((el) => {
+      if (!["P", "DIV", "SPAN"].includes(el.tagName)) return;
+      if (el.closest("h1, h2, h3, h4, h5, h6")) return;
+      const text = (el.textContent || "").trim();
+      if (!text || text.length > 300) return;
+      const heading = doc.createElement(headingTag);
+      heading.innerHTML = el.innerHTML;
+      el.replaceWith(heading);
+    });
+  });
+  const allElements = doc.querySelectorAll("[style*='mso-style-name']");
+  allElements.forEach((el) => {
+    const style = el.getAttribute("style") || "";
+    const styleMatch = /mso-style-name\s*:\s*['"](.*?)['"]/i.exec(style);
+    if (styleMatch) {
+      const styleName = styleMatch[1];
+      let headingTag: string | null = null;
+      if (/^Heading\s*1$/i.test(styleName)) headingTag = "h1";
+      else if (/^Heading\s*2$/i.test(styleName)) headingTag = "h2";
+      else if (/^Heading\s*3$/i.test(styleName)) headingTag = "h3";
+      else if (/^Heading\s*4$/i.test(styleName)) headingTag = "h4";
+      else if (/^Heading\s*5$/i.test(styleName)) headingTag = "h5";
+      else if (/^Heading\s*6$/i.test(styleName)) headingTag = "h6";
+      else if (/^Title$/i.test(styleName)) headingTag = "h1";
+      else if (/^Subtitle$/i.test(styleName)) headingTag = "h2";
+      if (headingTag && ["P", "DIV", "SPAN"].includes(el.tagName)) {
+        const heading = doc.createElement(headingTag);
+        heading.innerHTML = el.innerHTML;
+        el.replaceWith(heading);
+      }
+    }
+  });
+  return doc.body.innerHTML;
+}
+
 /**
  * Detect and convert Google Docs / web-page "fake headings" to semantic
  * heading tags. Google Docs and many websites don't emit <h1>-<h3>; they
@@ -183,8 +235,9 @@ export function cleanPastedHtml(rawHtml: string): string {
     .replace(/<\/?o:[a-z]+[^>]*>/gi, "")
     .replace(/<\/?w:[a-z]+[^>]*>/gi, "");
 
-  // First pass: detect and convert Google Docs bold headings to semantic
-  // headings BEFORE the rest of the cleanup strips inline styles.
+  // FIRST PASS: Detect and convert Word 365/Online heading classes
+  html = detectWordOnlineHeadings(html);
+  // SECOND PASS: Detect and convert bold/large text headings (Google Docs fallback)
   html = detectAndConvertBoldHeadings(html);
 
   const doc = new DOMParser().parseFromString(html, "text/html");
