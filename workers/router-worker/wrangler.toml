@@ -4,7 +4,6 @@ compatibility_date = "2026-08-23"
 
 [observability]
 enabled = true
-invocation_logs = true
 
 [env.production]
 vars = { ADMIN_API = "https://admin-api.vishal-97a.workers.dev/", USER_API = "https://user-api-production.vishal-97a.workers.dev" }
