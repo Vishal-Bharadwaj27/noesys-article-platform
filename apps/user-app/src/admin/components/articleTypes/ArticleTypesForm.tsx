@@ -119,14 +119,6 @@ export default function ArticleTypesForm() {
   // modal state
   const [modalOpen, setModalOpen] = useState(false);
   const [modalDraft, setModalDraft] = useState<ParameterDraft | null>(null);
-  const modalEditingId = modalDraft?.id ?? null;
-  const isModalEdit = modalDraft
-    ? (!modalDraft.isNew &&
-        form.parameters.some(
-          (p) => p.id === modalDraft.id && !modalDraft.isNew,
-        )) ||
-      form.parameters.find((p) => p.id === modalDraft.id)?.isNew === false
-    : false;
 
   useEffect(() => {
     if (!id) return;

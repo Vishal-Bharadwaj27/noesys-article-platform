@@ -2,7 +2,6 @@ import { useState } from "react";
 import {
   Mail,
   Briefcase,
-  Calendar,
   ShieldCheck,
   UserX,
   UserCheck,
@@ -10,7 +9,6 @@ import {
   ArrowDownCircle,
   ArrowUpCircle,
 } from "lucide-react";
-import { formatDate } from "../../utils/date";
 import { useAuth } from "@/contexts/AuthContext";
 
 export type AuthRole = "super_admin" | "admin" | "user";

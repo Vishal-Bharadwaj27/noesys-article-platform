@@ -1,5 +1,4 @@
 import { Trash2 } from "lucide-react";
-import React from "react";
 
 interface DeleteConfirmationProps {
   open: boolean;
