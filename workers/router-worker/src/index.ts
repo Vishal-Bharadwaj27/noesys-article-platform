@@ -1,5 +1,5 @@
 export default {
-  async fetch(request: Request): Promise<Response> {
+  async fetch(request: Request, env: any): Promise<Response> {
     if (request.method === "OPTIONS") {
       return new Response(null, {
         status: 204,
@@ -14,8 +14,8 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
 
-    const ADMIN_API = "https://admin-api-production.vishal-97a.workers.dev";
-    const USER_API = "https://user-api-production.vishal-97a.workers.dev";
+    const ADMIN_API = env.ADMIN_API;
+    const USER_API = env.USER_API;
 
     let targetUrl: string;
     if (path.startsWith("/admin")) {
