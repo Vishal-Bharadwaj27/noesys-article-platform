@@ -21,7 +21,10 @@ export async function convertImageToBase64(file: File): Promise<string> {
   });
   const img = new Image();
   img.src = dataUrl;
-  await new Promise((res, rej) => { img.onload = res; img.onerror = () => rej(new Error("Invalid image")); });
+  await new Promise((res, rej) => {
+    img.onload = res;
+    img.onerror = () => rej(new Error("Invalid image"));
+  });
   const scale = Math.min(1, MAX_WIDTH / img.width);
   const canvas = document.createElement("canvas");
   canvas.width = img.width * scale;

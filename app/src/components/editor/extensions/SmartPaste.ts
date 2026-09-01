@@ -73,11 +73,23 @@ export const SmartPaste = Extension.create<SmartPasteOptions>({
               let processedHtml = html;
               let conversionCount = 0;
               for (let level = 1; level <= 6; level++) {
-                const pattern = new RegExp(`<(p|span|div)\\s+([^>]*?)aria-level="?${level}"?([^>]*)>([\\s\\S]*?)<\\/\\1>`, "gi");
-                processedHtml = processedHtml.replace(pattern, (_match: string, _tag: string, _a1: string, _a2: string, content: string) => {
-                  conversionCount++;
-                  return `<h${level}>${content}</h${level}>`;
-                });
+                const pattern = new RegExp(
+                  `<(p|span|div)\\s+([^>]*?)aria-level="?${level}"?([^>]*)>([\\s\\S]*?)<\\/\\1>`,
+                  "gi",
+                );
+                processedHtml = processedHtml.replace(
+                  pattern,
+                  (
+                    _match: string,
+                    _tag: string,
+                    _a1: string,
+                    _a2: string,
+                    content: string,
+                  ) => {
+                    conversionCount++;
+                    return `<h${level}>${content}</h${level}>`;
+                  },
+                );
               }
               if (conversionCount > 0) {
                 event.preventDefault();

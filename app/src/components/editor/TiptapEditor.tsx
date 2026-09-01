@@ -229,9 +229,17 @@ export default function TiptapEditor({
         <span className="w-px h-5 bg-slate-300 mx-1" />
         <ToolBtn
           tip="Align left"
-          active={editor.isActive({ textAlign: "left" }) || editor.isActive("image", { textAlign: "left" })}
+          active={
+            editor.isActive({ textAlign: "left" }) ||
+            editor.isActive("image", { textAlign: "left" })
+          }
           onClick={() => {
-            if (editor.isActive("image")) editor.chain().focus().updateAttributes("image", { textAlign: "left" }).run();
+            if (editor.isActive("image"))
+              editor
+                .chain()
+                .focus()
+                .updateAttributes("image", { textAlign: "left" })
+                .run();
             else editor.chain().focus().setTextAlign("left").run();
           }}
         >
@@ -239,9 +247,17 @@ export default function TiptapEditor({
         </ToolBtn>
         <ToolBtn
           tip="Align center"
-          active={editor.isActive({ textAlign: "center" }) || editor.isActive("image", { textAlign: "center" })}
+          active={
+            editor.isActive({ textAlign: "center" }) ||
+            editor.isActive("image", { textAlign: "center" })
+          }
           onClick={() => {
-            if (editor.isActive("image")) editor.chain().focus().updateAttributes("image", { textAlign: "center" }).run();
+            if (editor.isActive("image"))
+              editor
+                .chain()
+                .focus()
+                .updateAttributes("image", { textAlign: "center" })
+                .run();
             else editor.chain().focus().setTextAlign("center").run();
           }}
         >
@@ -249,9 +265,17 @@ export default function TiptapEditor({
         </ToolBtn>
         <ToolBtn
           tip="Align right"
-          active={editor.isActive({ textAlign: "right" }) || editor.isActive("image", { textAlign: "right" })}
+          active={
+            editor.isActive({ textAlign: "right" }) ||
+            editor.isActive("image", { textAlign: "right" })
+          }
           onClick={() => {
-            if (editor.isActive("image")) editor.chain().focus().updateAttributes("image", { textAlign: "right" }).run();
+            if (editor.isActive("image"))
+              editor
+                .chain()
+                .focus()
+                .updateAttributes("image", { textAlign: "right" })
+                .run();
             else editor.chain().focus().setTextAlign("right").run();
           }}
         >

@@ -1,7 +1,13 @@
 import Header from "../components/Header";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ChevronLeft, Send, Loader2, Copy, Check } from "lucide-react";
 import { api } from "../http-client";
 import ReactMarkdown, { type Components } from "react-markdown";
@@ -456,7 +462,9 @@ export default function ArticleCreation() {
                   />
                 )}
 
-                {editorView === "preview" && <ArticleViewer content={values.content} />}
+                {editorView === "preview" && (
+                  <ArticleViewer content={values.content} />
+                )}
               </div>
             </div>
 

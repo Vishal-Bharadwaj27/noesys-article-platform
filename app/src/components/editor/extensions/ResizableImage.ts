@@ -77,4 +77,3 @@ export const ResizableImage = Image.extend({
     return ["img", { ...rest, style: style || undefined }];
   },
 }).configure({ inline: false, allowBase64: true });
- 

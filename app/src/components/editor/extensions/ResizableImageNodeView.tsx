@@ -44,7 +44,8 @@ export default function ResizableImageNodeView({
   // This is more reliable than margin:auto on the wrapper itself.
   let wrapperStyle: any = { display: "block", width: "100%", maxWidth: "100%" };
   const ta = node.attrs.textAlign || "left";
-  wrapperStyle.textAlign = ta === "center" ? "center" : ta === "right" ? "right" : "left";
+  wrapperStyle.textAlign =
+    ta === "center" ? "center" : ta === "right" ? "right" : "left";
   if (node.attrs.style) {
     node.attrs.style.split(";").forEach((p: string) => {
       const [k, v] = p.split(":").map((s: string) => s.trim());
@@ -59,7 +60,8 @@ export default function ResizableImageNodeView({
       wrapperStyle.marginRight = undefined;
       wrapperStyle.display = "block";
       wrapperStyle.width = "100%";
-      wrapperStyle.textAlign = ta === "center" ? "center" : ta === "right" ? "right" : "left";
+      wrapperStyle.textAlign =
+        ta === "center" ? "center" : ta === "right" ? "right" : "left";
     }
   }
 
