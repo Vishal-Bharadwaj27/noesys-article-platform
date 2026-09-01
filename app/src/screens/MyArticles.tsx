@@ -29,7 +29,6 @@ import {
   Tooltip,
   theme as antdTheme,
 } from "antd";
-import { ClockCircleOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import { Resizable } from "react-resizable";
 import "react-resizable/css/styles.css";
@@ -108,7 +107,7 @@ const ResizeableTitle = ({ onResize, width, children, ...restProps }: any) => {
 
 export default function MyArticles() {
   const navigate = useNavigate();
-  const { logout, user } = useAuth();
+  const { user } = useAuth();
 
   const currentMonth = dayjs().format("YYYY-MM");
   const [month, setMonth] = useState(currentMonth);
@@ -394,17 +393,11 @@ function MyArticlesTable({
         title: "Title",
         dataIndex: "title",
         key: "title",
-        ellipsis: { showTitle: false },
         width: 340,
         render: (v: string) => (
-          <Tooltip title={v}>
-            <Text
-              ellipsis
-              style={{ color: "#1e293b", fontWeight: 600, fontSize: fs }}
-            >
-              {v}
-            </Text>
-          </Tooltip>
+          <Text ellipsis className="text-slate-900 font-semibold">
+            {v}
+          </Text>
         ),
       },
       {
@@ -413,7 +406,7 @@ function MyArticlesTable({
         key: "type",
         width: 130,
         render: (v: string) => (
-          <Tag bordered={false} style={{ color: "#334155", fontSize: fs }}>
+          <Tag bordered={false} className="text-slate-700 text-xs">
             {v}
           </Tag>
         ),
@@ -424,7 +417,7 @@ function MyArticlesTable({
         key: "version",
         width: 85,
         render: (v: number) => (
-          <Text style={{ color: "#334155", fontSize: fs }}>v{v}</Text>
+          <span className="text-slate-700 text-xs">v{v}</span>
         ),
       },
       {
@@ -434,11 +427,9 @@ function MyArticlesTable({
         width: 130,
         render: (score: number | null) =>
           score === null ? (
-            <Text style={{ color: "#334155", fontSize: fs }}>—</Text>
+            <span className="text-slate-700 text-xs">—</span>
           ) : (
-            <span
-              style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
-            >
+            <span className="inline-flex items-center gap-2">
               <Progress
                 percent={Math.min(Math.max(score, 0), 10) * 10}
                 size="small"
@@ -448,7 +439,8 @@ function MyArticlesTable({
               />
               <Text
                 strong
-                style={{ color: scoreColorHex(score), fontSize: fs }}
+                className="text-xs"
+                style={{ color: scoreColorHex(score) }}
               >
                 {score}
               </Text>
@@ -463,7 +455,7 @@ function MyArticlesTable({
         render: (_: string, record: ArticleListItem) => {
           const cfg = getDisplayStatus(record);
           return (
-            <Tag color={cfg.color} style={{ fontSize: fs }}>
+            <Tag color={cfg.color} className="text-slate-700 text-xs">
               {cfg.label}
             </Tag>
           );
@@ -475,7 +467,7 @@ function MyArticlesTable({
         key: "created",
         width: 125,
         render: (d: string) => (
-          <Text style={{ color: "#334155", fontSize: fs }}>
+          <Text className="text-slate-700 text-xs">
             {dayjs(d).format("MMM D, YYYY")}
           </Text>
         ),
@@ -520,14 +512,7 @@ function MyArticlesTable({
         },
       }}
     >
-      <div
-        style={{
-          background: "var(--ant-color-bg-container)",
-          border: "1px solid var(--ant-color-border-secondary)",
-          borderRadius: 12,
-          overflow: "hidden",
-        }}
-      >
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
         <Table<ArticleListItem>
           components={{ header: { cell: ResizeableTitle } }}
           columns={mergedColumns}
