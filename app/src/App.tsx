@@ -55,7 +55,7 @@ function RootRedirect() {
 }
 
 export default function App() {
-  return (
+  return ( // <-- No BrowserRouter here, just Routes
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/" element={<RootRedirect />} />

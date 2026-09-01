@@ -50,7 +50,6 @@ const turndown = new TurndownService({
   bulletListMarker: "-",
 });
 
-// Add GFM table support to turndown
 turndown.addRule("table", {
   filter: "table",
   replacement: function (content) {
@@ -152,7 +151,6 @@ function toMarkdown(content: string): string {
       let md = turndown.turndown(content);
       md = decode(md);
 
-      // Clean up escaped characters except in code blocks
       md = md
         .split("\n")
         .map((line) => {
@@ -198,7 +196,6 @@ function toMarkdown(content: string): string {
 
     const el = node as HTMLElement;
 
-    // Handle top-level images
     if (el.tagName.toLowerCase() === "img") {
       const src = el.getAttribute("src") ?? "";
       const alt = el.getAttribute("alt") ?? "";
@@ -206,7 +203,6 @@ function toMarkdown(content: string): string {
       continue;
     }
 
-    // Handle images inside other elements
     const imgs = Array.from(el.querySelectorAll("img"));
     if (imgs.length > 0) {
       const clone = el.cloneNode(true) as HTMLElement;
@@ -394,7 +390,7 @@ export default function ArticleCreation() {
                 }
                 disabled={loadingTypes}
               >
-                <SelectTrigger className="w-full border-slate-400 bg-white shadow-sm text-slate-900 [&_span[data-placeholder]]:text-slate-500">
+                <SelectTrigger className="w-full border-slate-400 bg-white shadow-sm text-slate-900 [&_span[data-placeholder]]:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                   <SelectValue placeholder="Select an article type" />
                 </SelectTrigger>
 

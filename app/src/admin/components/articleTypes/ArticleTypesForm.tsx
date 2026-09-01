@@ -604,7 +604,11 @@ export default function ArticleTypesForm() {
                   setModalDraft({ ...modalDraft, scopeType: v })
                 }
                 className="w-full [&_.ant-select-selector]:!bg-white"
-                dropdownStyle={{ background: "#fff" }}
+                styles={{
+                  popup: {
+                    root: { background: "#fff" },
+                  },
+                }}
                 options={[
                   { value: "numeric", label: "Numeric" },
                   { value: "option", label: "Option" },
