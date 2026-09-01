@@ -9,16 +9,20 @@ import {
   Typography,
   Space,
   Empty,
+  Input,
   Card,
   Row,
   Col,
+  Tooltip,
 } from "antd";
 import type { ColumnsType, TableProps } from "antd/es/table";
 import { ClockCircleOutlined } from "@ant-design/icons";
 import { Search } from "lucide-react";
 import { Resizable } from "react-resizable";
 import "react-resizable/css/styles.css";
+
 import type { ArticleStatus, ArticleSummary } from "./ArticlesRow";
+import { useParams } from "react-router-dom";
 
 const { Text } = Typography;
 
@@ -54,12 +58,6 @@ function scoreColor(score: number) {
   if (score >= 10) return "#389e0d";
   if (score >= 6) return "#d48806";
   return "#cf1322";
-}
-
-function scoreTextClass(score: number) {
-  if (score >= 10) return "text-[#389e0d]";
-  if (score >= 6) return "text-[#d48806]";
-  return "text-[#cf1322]";
 }
 
 function formatDate(dateStr: string) {
@@ -131,6 +129,33 @@ const ResizeableTitle = ({
   );
 };
 
+function ArticleParameters({
+  parameters,
+}: {
+  parameters: ArticleSummary["parameters"];
+}) {
+  if (!parameters?.length) {
+    return <Text type="secondary">—</Text>;
+  }
+
+  return (
+    <Space wrap size={[4, 4]}>
+      {parameters.map((parameter) => (
+        <Tag
+          key={parameter.parameterId}
+          bordered={false}
+          style={{
+            marginInlineEnd: 0,
+            fontSize: 11,
+          }}
+        >
+          {parameter.parameterName}: {parameter.value}
+        </Tag>
+      ))}
+    </Space>
+  );
+}
+
 function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
   const [columns, setColumns] = useState<ColumnsType<ArticleSummary>>([]);
 
@@ -144,9 +169,7 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
 
   const locallyFilteredArticles = useMemo(() => {
     const normalizedTitle = titleFilter.trim().toLowerCase();
-
     if (!normalizedTitle) return articles;
-
     return articles.filter((article) =>
       article.title.toLowerCase().includes(normalizedTitle),
     );
@@ -190,19 +213,26 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
 
   useEffect(() => {
     const fs = 13;
-
     const initialColumns: ColumnsType<ArticleSummary> = [
       {
         title: "Title",
         dataIndex: "title",
         key: "title",
+        ellipsis: { showTitle: false },
         width: 340,
         render: (title: string) => (
-          <Text
-            className="font-medium text-[13px] text-[var(--ant-color-link,#2f54eb)]"
-          >
-            {title}
-          </Text>
+          <Tooltip title={title}>
+            <Text
+              ellipsis
+              style={{
+                color: "var(--ant-color-link, #2f54eb)",
+                fontWeight: 500,
+                fontSize: fs,
+              }}
+            >
+              {title}
+            </Text>
+          </Tooltip>
         ),
       },
       {
@@ -210,13 +240,16 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
         dataIndex: "author_name",
         key: "author_name",
         width: 160,
+        ellipsis: true,
         render: (name: string) => (
           <Space size={8}>
-            <Avatar size={26} className="bg-[#7f77dd] text-[11px]">
+            <Avatar
+              size={26}
+              style={{ backgroundColor: "#7f77dd", fontSize: 11 }}
+            >
               {initials(name)}
             </Avatar>
-
-            <Text className="text-[13px]">
+            <Text ellipsis style={{ fontSize: fs }}>
               {name}
             </Text>
           </Space>
@@ -228,7 +261,7 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
         key: "type",
         width: 130,
         render: (type: string) => (
-          <Tag bordered={false} className="text-[13px]">
+          <Tag bordered={false} style={{ fontSize: fs }}>
             {type}
           </Tag>
         ),
@@ -240,12 +273,11 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
         width: 115,
         render: (status: ArticleStatus) => {
           const cfg = STATUS_CONFIG[status];
-
           return (
             <Tag
               color={cfg.color}
               icon={cfg.icon ? <ClockCircleOutlined /> : undefined}
-              className="text-[13px]"
+              style={{ fontSize: fs }}
             >
               {cfg.label}
             </Tag>
@@ -258,7 +290,7 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
         key: "version",
         width: 85,
         render: (version: number) => (
-          <Text className="text-[13px]">v{version}</Text>
+          <Text style={{ fontSize: fs }}>v{version}</Text>
         ),
       },
       {
@@ -268,7 +300,7 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
         width: 130,
         render: (score: number | null) =>
           score === null ? (
-            <Text className="text-[13px]">—</Text>
+            <Text style={{ fontSize: fs }}>—</Text>
           ) : (
             <Space size={8} align="center">
               <Progress
@@ -276,10 +308,9 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
                 size="small"
                 showInfo={false}
                 strokeColor={scoreColor(score)}
-                className="w-[56px]"
+                style={{ width: 56 }}
               />
-
-              <Text strong className={`text-[13px] ${scoreTextClass(score)}`}>
+              <Text strong style={{ color: scoreColor(score), fontSize: fs }}>
                 {score}
               </Text>
             </Space>
@@ -291,12 +322,11 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
         key: "created_at",
         width: 125,
         render: (date: string) => (
-          <Text className="text-[13px]">{formatDate(date)}</Text>
+          <Text style={{ fontSize: fs }}>{formatDate(date)}</Text>
         ),
         defaultSortOrder: "descend",
       },
     ];
-
     setColumns(initialColumns);
   }, []);
 
@@ -351,56 +381,71 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
       {/* Dashboard - full width, reduced height */}
       <Row gutter={[12, 12]}>
         <Col xs={24} sm={12} md={6} lg={6}>
-          <Card size="small" className="[&_.ant-card-body]:!p-[10px_14px]">
-            <Text type="secondary" className="text-[12px]">
+          <Card size="small" styles={{ body: { padding: "10px 14px" } }}>
+            <Text type="secondary" style={{ fontSize: 12 }}>
               Total Articles
             </Text>
-
-            <div className="mt-0.5 text-xl font-semibold">
+            <div className="text-xl font-semibold mt-0.5">
               {dashboard.total}
             </div>
           </Card>
         </Col>
-
         <Col xs={24} sm={12} md={6} lg={6}>
-          <Card size="small" className="[&_.ant-card-body]:!p-[10px_14px]">
-            <Text type="secondary" className="text-[12px]">
+          <Card size="small" styles={{ body: { padding: "10px 14px" } }}>
+            <Text type="secondary" style={{ fontSize: 12 }}>
               Accepted
             </Text>
-
-            <div className="mt-0.5 text-xl font-semibold text-emerald-600">
+            <div className="text-xl font-semibold text-emerald-600 mt-0.5">
               {dashboard.approved}
             </div>
           </Card>
         </Col>
-
         <Col xs={24} sm={12} md={6} lg={6}>
-          <Card size="small" className="[&_.ant-card-body]:!p-[10px_14px]">
-            <Text type="secondary" className="text-[12px]">
+          <Card size="small" styles={{ body: { padding: "10px 14px" } }}>
+            <Text type="secondary" style={{ fontSize: 12 }}>
               Pending
             </Text>
-
-            <div className="mt-0.5 text-xl font-semibold text-amber-600">
+            <div className="text-xl font-semibold text-amber-600 mt-0.5">
               {dashboard.pending}
             </div>
           </Card>
         </Col>
-
         <Col xs={24} sm={12} md={6} lg={6}>
-          <Card size="small" className="[&_.ant-card-body]:!p-[10px_14px]">
-            <Text type="secondary" className="text-[12px]">
+          <Card size="small" styles={{ body: { padding: "10px 14px" } }}>
+            <Text type="secondary" style={{ fontSize: 12 }}>
               Rejected
             </Text>
-
-            <div className="mt-0.5 text-xl font-semibold text-red-600">
+            <div className="text-xl font-semibold text-red-600 mt-0.5">
               {dashboard.rewriteRequired}
             </div>
           </Card>
         </Col>
+        {/* 
+        <Col xs={24} sm={12} md={8} lg={5}>
+          <Card size="small">
+            <Text type="secondary">Average AI Score</Text>
+
+            <div className="text-2xl font-semibold mt-1">
+              {dashboard.averageScore === null
+                ? "—"
+                : dashboard.averageScore.toFixed(1)}
+            </div>
+          </Card>
+        </Col> */}
       </Row>
 
       <div>
-        <div className="mb-4 flex w-full items-center gap-2">
+        {/* <Input
+          allowClear
+          value={titleFilter}
+          onChange={(event) => setTitleFilter(event.target.value)}
+          placeholder="Search title..."
+          prefix={<Search size={15} className="text-slate-400" />}
+          className="w-full h-9 rounded-lg"
+          style={{ height: 36, borderColor: "#a2a0ff", background: "#fff" }}
+        /> */}
+
+        <div className="flex items-center gap-2 mb-4 w-full">
           <div className="relative flex-1">
             <Search
               size={15}
@@ -412,15 +457,30 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
               value={titleFilter}
               onChange={(e) => setTitleFilter(e.target.value)}
               placeholder="Search title..."
-              className="h-9 w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full rounded-lg border border-slate-300 pl-9 pr-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent h-9"
             />
           </div>
         </div>
       </div>
 
       {/* Table */}
-      <div className="overflow-hidden rounded-xl border border-[var(--ant-color-border-secondary)] bg-[var(--ant-color-bg-container)]">
-        <div className="flex items-center justify-between border-b border-[var(--ant-color-border-secondary)] px-5 py-4"></div>
+      <div
+        style={{
+          background: "var(--ant-color-bg-container)",
+          border: "1px solid var(--ant-color-border-secondary)",
+          borderRadius: 12,
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "16px 20px",
+            borderBottom: "1px solid var(--ant-color-border-secondary)",
+          }}
+        ></div>
 
         <Table<ArticleSummary>
           components={{
@@ -439,7 +499,9 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
           onChange={handleTableChange}
           onRow={(record) => ({
             onClick: () => onRowClick?.(record.id),
-            className: onRowClick ? "cursor-pointer" : "cursor-default",
+            style: {
+              cursor: onRowClick ? "pointer" : "default",
+            },
           })}
           locale={{
             emptyText: <Empty description="No articles found" />,

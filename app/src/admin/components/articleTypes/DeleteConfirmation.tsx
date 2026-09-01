@@ -1,7 +1,4 @@
 import { Trash2 } from "lucide-react";
-import Button from "../ui/Button";
-
-type DeleteVariant = "articleType" | "parameter";
 
 interface DeleteConfirmationProps {
   open: boolean;
@@ -9,7 +6,6 @@ interface DeleteConfirmationProps {
   submitting: boolean;
   onClose: () => void;
   onConfirm: () => void | Promise<void>;
-  variant?: DeleteVariant;
 }
 
 const DeleteConfirmation = ({
@@ -18,10 +14,8 @@ const DeleteConfirmation = ({
   submitting,
   onClose,
   onConfirm,
-  variant = "articleType",
 }: DeleteConfirmationProps) => {
   if (!open) return null;
-  const isParameter = variant === "parameter";
   return (
     <div>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -36,31 +30,27 @@ const DeleteConfirmation = ({
           <h2 className="mt-3 font-semibold text-slate-900">
             Delete "{name}"?
           </h2>
-          <p className="mt-1 text-sm text-slate-700">
-            {isParameter
-              ? "This will remove this parameter from the article type. This action cannot be undone."
-              : "This removes the article type and its scoring prompt.This action cannot be undone."}
+          <p className="mt-1 text-sm text-slate-500">
+            This removes the article type and its scoring prompt. Existing
+            articles of this type won't be deleted, but new submissions can no
+            longer use it.
           </p>
 
           <div className="mt-5 flex gap-2 justify-end">
-            <Button
-              variant="secondary"
+            <button
               onClick={() => onClose()}
               disabled={submitting}
-              type="button"
-              className="min-w-[90px]"
+              className="rounded-lg px-3.5 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 disabled:opacity-50"
             >
               Cancel
-            </Button>
-            <Button
-              variant="danger"
+            </button>
+            <button
               onClick={onConfirm}
-              loading={submitting}
-              type="button"
-              className="min-w-[90px]"
+              disabled={submitting}
+              className="rounded-lg px-3.5 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition-colors"
             >
-              Delete
-            </Button>
+              {submitting ? "Deleting..." : "Delete"}
+            </button>
           </div>
         </div>
       </div>
