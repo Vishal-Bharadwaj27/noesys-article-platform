@@ -1,13 +1,17 @@
 import { HistoryItem } from "@/hooks/useArticle";
-import { ConfigProvider, Table, Tag, Progress, theme as antdTheme } from "antd";
+import {
+  ConfigProvider,
+  Table,
+  Tag,
+  Progress,
+  theme as antdTheme,
+} from "antd";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Resizable } from "react-resizable";
-import type { CSSProperties } from "react";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
-
 
 function scoreColorHex(s: number) {
   if (s >= 10) return "#389e0d";
@@ -18,7 +22,6 @@ function scoreColorHex(s: number) {
 function formatScore(s: number) {
   return Number.isInteger(s) ? String(s) : s.toFixed(1);
 }
-
 
 export default function ScoringHistoryTable({
   history,
@@ -43,14 +46,9 @@ export default function ScoringHistoryTable({
             onClick={() =>
               navigate(`/admin/articles/${articleId}?version=${r.version}`)
             }
-            style={{
-              color: "#0284c7",
-              fontWeight: 600,
-              fontSize: 14,
-              cursor: "pointer",
-            }}
+            className="cursor-pointer text-[14px] font-semibold text-sky-600"
           >
-            Aritcle Version {v}
+            Article Version {v}
           </span>
         ),
       },
@@ -61,36 +59,19 @@ export default function ScoringHistoryTable({
         width: 130,
         render: (s: number | null) =>
           s === null ? (
-            <span
-              style={{
-                color: "#94a3b8",
-                fontSize: 13,
-              }}
-            >
-              —
-            </span>
+            <span className="text-[13px] text-slate-400">—</span>
           ) : (
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-              }}
-            >
+            <span className="inline-flex items-center gap-2">
               <Progress
                 percent={Math.min(Math.max(s, 0), 10) * 10}
                 size="small"
                 showInfo={false}
                 strokeColor={scoreColorHex(s)}
-                style={{ width: 56 }}
+                className="w-[56px]"
               />
-
               <span
-                style={{
-                  color: scoreColorHex(s),
-                  fontWeight: 600,
-                  fontSize: 13,
-                }}
+                className="text-[13px] font-semibold"
+                style={{ color: scoreColorHex(s) }}
               >
                 {formatScore(s)}
               </span>
@@ -126,7 +107,7 @@ export default function ScoringHistoryTable({
                     ? "red"
                     : "default"
               }
-              style={{ fontSize: 13 }}
+              className="text-[13px]"
             >
               {label}
             </Tag>
@@ -142,12 +123,7 @@ export default function ScoringHistoryTable({
           new Date(a.submitted_at).getTime() -
           new Date(b.submitted_at).getTime(),
         render: (d: string) => (
-          <span
-            style={{
-              color: "#334155",
-              fontSize: 13,
-            }}
-          >
+          <span className="text-[13px] text-slate-700">
             {dayjs(d).format("MMM D, YYYY h:mm A")}
           </span>
         ),
@@ -155,7 +131,7 @@ export default function ScoringHistoryTable({
     ];
 
     setCols(columns);
-  }, [articleId]);
+  }, [articleId, navigate]);
 
   const handleResize =
     (idx: number) =>
@@ -202,46 +178,18 @@ export default function ScoringHistoryTable({
         },
       }}
     >
-      <div
-        style={{
-          background: "#ffffff",
-          border: "1.5px solid #d1d5db",
-          borderRadius: 12,
-          overflow: "hidden",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "14px 20px",
-            borderBottom: "1.5px solid #d1d5db",
-          }}
-        >
-          <span
-            style={{
-              fontSize: 15,
-              fontWeight: 600,
-              color: "#111827",
-            }}
-          >
+      <div className="overflow-hidden rounded-xl border-[1.5px] border-[#d1d5db] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+        <div className="flex items-center justify-between border-b-[1.5px] border-[#d1d5db] px-5 py-[14px]">
+          <span className="text-[15px] font-semibold text-[#111827]">
             Scoring History
           </span>
-
-          <span
-            style={{
-              fontSize: 13,
-              color: "#64748b",
-            }}
-          >
+          <span className="text-[13px] text-slate-500">
             {history.length} versions
           </span>
         </div>
 
         <Table<HistoryItem>
-          columns={cols}
+          columns={merged}
           dataSource={history}
           rowKey="version"
           pagination={false}

@@ -7,9 +7,11 @@ import {
   Input,
   ConfigProvider,
   Table,
+  Tooltip,
   theme as antdTheme,
 } from "antd";
 import Button from "../../components/ui/Button";
+import DeleteConfirmation from "./DeleteConfirmation";
 import { tokenStorage } from "@/http-client";
 import Badge from "../../components/ui/Badge";
 
@@ -119,6 +121,7 @@ export default function ArticleTypesForm() {
   // modal state
   const [modalOpen, setModalOpen] = useState(false);
   const [modalDraft, setModalDraft] = useState<ParameterDraft | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<ParameterDraft | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -201,7 +204,9 @@ export default function ArticleTypesForm() {
     closeModal();
   };
 
-  const removeParameter = (parameterId: string) => {
+  const confirmRemoveParameter = () => {
+    if (!pendingDelete) return;
+    const parameterId = pendingDelete.id;
     const parameter = form.parameters.find((p) => p.id === parameterId);
     if (parameter && !parameter.isNew)
       setRemovedParameterIds((current) => [...current, parameterId]);
@@ -209,6 +214,7 @@ export default function ArticleTypesForm() {
       ...current,
       parameters: current.parameters.filter((p) => p.id !== parameterId),
     }));
+    setPendingDelete(null);
   };
 
   const scoreMinNum = Number(form.scoreMin);
@@ -456,7 +462,13 @@ export default function ArticleTypesForm() {
                   key: "prompt",
                   ellipsis: true,
                   render: (v: string) =>
-                    v || (
+                    v ? (
+                      <Tooltip title={v}>
+                        <span className="truncate block max-w-[260px] cursor-default">
+                          {v}
+                        </span>
+                      </Tooltip>
+                    ) : (
                       <span className="text-slate-300 italic">No prompt</span>
                     ),
                 },
@@ -493,7 +505,7 @@ export default function ArticleTypesForm() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => removeParameter(r.id)}
+                        onClick={() => setPendingDelete(r)}
                         className="p-1.5 rounded-md text-slate-400 hover:bg-red-50 hover:text-red-600"
                       >
                         <Trash2 size={13} />
@@ -531,6 +543,15 @@ export default function ArticleTypesForm() {
           </Button>
         </div>
       </div>
+
+      <DeleteConfirmation
+        open={!!pendingDelete}
+        name={pendingDelete?.name || "this parameter"}
+        submitting={false}
+        onClose={() => setPendingDelete(null)}
+        onConfirm={confirmRemoveParameter}
+        variant="parameter"
+      />
 
       <Modal
         open={modalOpen}

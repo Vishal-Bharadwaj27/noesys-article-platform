@@ -172,10 +172,10 @@ const feedbackMarkdownComponents: Components = {
     <ul className="list-disc list-inside ml-2 mb-3 space-y-1">{children}</ul>
   ),
   li: ({ children }: any) => (
-    <li className="text-sm text-slate-700 leading-relaxed">{children}</li>
+    <li className="text-md text-slate-700 leading-relaxed">{children}</li>
   ),
   p: ({ children }: any) => (
-    <p className="text-sm text-slate-600 mb-2">{children}</p>
+    <p className="text-md text-slate-600 mb-2">{children}</p>
   ),
   strong: ({ children }: any) => (
     <strong className="font-semibold text-slate-900">{children}</strong>
@@ -685,13 +685,7 @@ function ScoringHistoryTable({
             onClick={() =>
               navigate(`/articles/${articleId}?version=${r.version}`)
             }
-            style={{
-              color: "#0284c7",
-              fontWeight: 600,
-              fontSize: 14,
-              cursor: "pointer",
-              textUnderlineOffset: 3,
-            }}
+            className="text-sky-600 font-semibold text-sm cursor-pointer"
           >
             Aritcle Version {v}
           </span>
@@ -704,11 +698,9 @@ function ScoringHistoryTable({
         width: 130,
         render: (s: number | null) =>
           s === null ? (
-            <span style={{ color: "#94a3b8", fontSize: 13 }}>—</span>
+            <span className="text-slate-400 text-xs">—</span>
           ) : (
-            <span
-              style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
-            >
+            <span className="inline-flex items-center gap-2">
               <Progress
                 percent={Math.min(Math.max(s, 0), 10) * 10}
                 size="small"
@@ -717,11 +709,7 @@ function ScoringHistoryTable({
                 style={{ width: 56 }}
               />
               <span
-                style={{
-                  color: scoreColorHex(s),
-                  fontWeight: 600,
-                  fontSize: 13,
-                }}
+                className="font-semibold text-xs" style={{ color: scoreColorHex(s) }}
               >
                 {formatScore(s)}
               </span>
@@ -771,7 +759,7 @@ function ScoringHistoryTable({
           new Date(a.submitted_at).getTime() -
           new Date(b.submitted_at).getTime(),
         render: (d: string) => (
-          <span style={{ color: "#334155", fontSize: 13 }}>
+          <span className="text-slate-700 text-xs">
             {dayjs(d).format("MMM D, YYYY h:mm A")}
           </span>
         ),
@@ -818,27 +806,15 @@ function ScoringHistoryTable({
       }}
     >
       <div
-        style={{
-          background: "#ffffff",
-          border: "1.5px solid #d1d5db",
-          borderRadius: 12,
-          overflow: "hidden",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-        }}
+        className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm"
       >
         <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "14px 20px",
-            borderBottom: "1.5px solid #d1d5db",
-          }}
+          className="flex items-center justify-between px-5 py-3.5 border-b border-gray-200"
         >
-          <span style={{ fontSize: 15, fontWeight: 600, color: "#111827" }}>
+          <span className="text-base font-semibold text-gray-900">
             Scoring History
           </span>
-          <span style={{ fontSize: 13, color: "#64748b" }}>
+          <span className="text-xs text-slate-500">
             {history.length} versions
           </span>
         </div>
