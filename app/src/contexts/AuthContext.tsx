@@ -121,15 +121,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       tokenManager.set(result.token);
       setToken(result.token);
       setUser(result.user);
-      
+
       // Redirect based on role
-      if (result.user.auth_role === "admin" || result.user.auth_role === "super_admin") {
+      if (
+        result.user.auth_role === "admin" ||
+        result.user.auth_role === "super_admin"
+      ) {
         navigate("/admin/articles", { replace: true });
       } else {
         navigate("/", { replace: true });
       }
     },
-    [navigate]
+    [navigate],
   );
 
   const logout = useCallback(() => {
@@ -145,8 +148,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ user, token, loading, requestOTP, verifyOTP, logout, isAuthenticated }),
-    [user, token, loading, requestOTP, verifyOTP, logout, isAuthenticated]
+    () => ({
+      user,
+      token,
+      loading,
+      requestOTP,
+      verifyOTP,
+      logout,
+      isAuthenticated,
+    }),
+    [user, token, loading, requestOTP, verifyOTP, logout, isAuthenticated],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

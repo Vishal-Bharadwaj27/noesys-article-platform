@@ -22,7 +22,11 @@ export interface HistoryItem {
   submitted_at: string;
 }
 
-export type ParameterResult = { parameter_name: string; scope_type: string; value: string | number | null };
+export type ParameterResult = {
+  parameter_name: string;
+  scope_type: string;
+  value: string | number | null;
+};
 export interface ArticleDetailResponse {
   article: ArticleDetail;
   current_feedback: string;
@@ -36,7 +40,9 @@ export function useArticle(id: string) {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [currentScore, setCurrentScore] = useState<number | null>(null);
   const [currentFeedback, setCurrentFeedback] = useState<string>("");
-  const [parameterResults, setParameterResults] = useState<ParameterResult[]>([]);
+  const [parameterResults, setParameterResults] = useState<ParameterResult[]>(
+    [],
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
