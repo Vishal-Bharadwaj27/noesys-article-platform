@@ -46,10 +46,10 @@ const feedbackMarkdownComponents: Components = {
     <ul className="list-disc list-inside ml-2 mb-3 space-y-1">{children}</ul>
   ),
   li: ({ children }: any) => (
-    <li className="text-sm text-slate-700 leading-relaxed">{children}</li>
+    <li className="text-md text-slate-700 leading-relaxed">{children}</li>
   ),
   p: ({ children }: any) => (
-    <p className="text-sm text-slate-600 mb-2">{children}</p>
+    <p className="text-md text-slate-600 mb-2">{children}</p>
   ),
   strong: ({ children }: any) => (
     <strong className="font-semibold text-slate-900">{children}</strong>
