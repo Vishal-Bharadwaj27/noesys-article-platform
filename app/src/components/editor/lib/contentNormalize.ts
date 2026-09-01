@@ -70,74 +70,54 @@ export function isUsableImageSrc(src: string | null): boolean {
 }
 
 /**
- * Google Docs (and many plain web pages) never emit <b>/<strong>/<em>/<u>.
- * Every bit of bold/italic/underline is a <span style="font-weight:700">
- * (or font-style:italic / text-decoration:underline) instead. If we don't
- * convert those to real tags now, the later cleanup strips the `style`
- * attribute, the span ends up with zero attributes, and it gets unwrapped —
- * silently dropping the formatting. Must run BEFORE detectAndConvertBoldHeadings
- * (so it can see real <strong> for its "whole paragraph is bold" check) and
- * before the attribute-stripping pass in cleanPastedHtml.
+ * Convert Google Docs' inline "fake bold/italic/underline" to semantic tags.
+ * Google Docs represents INLINE (mid-paragraph) formatting as
+ * <span style="font-weight:700">word</span> / font-style:italic /
+ * text-decoration:underline — never <strong>/<em>/<u>. If we don't convert
+ * these to real tags here, the later "strip presentational styles" pass in
+ * cleanPastedHtml removes the style attribute, the span becomes attribute-less,
+ * and the "unwrap empty spans" pass then discards the formatting entirely —
+ * silently flattening every bold/italic word pasted from Docs. This only
+ * covers inline spans; whole-paragraph/whole-element bold that should become
+ * a HEADING is handled separately by detectAndConvertBoldHeadings below.
  */
-function convertInlineStylesToSemanticTags(html: string): string {
+function detectAndConvertInlineFormatting(html: string): string {
   if (!html) return html;
   const doc = new DOMParser().parseFromString(html, "text/html");
 
-  const isBoldStyle = (style: string) =>
-    /font-weight\s*:\s*(bold|[6-9]\d{2}|1000)/i.test(style);
-  const isItalicStyle = (style: string) =>
-    /font-style\s*:\s*italic/i.test(style);
-  const isUnderlineStyle = (style: string) =>
-    /text-decoration[^;]*:\s*[^;]*underline/i.test(style);
-
-  // Reverse (innermost-first): setting el.innerHTML reparses its children,
-  // detaching the original child element objects. Processing children
-  // before their ancestors avoids skipping a nested styled span whose
-  // parent already got rewritten.
-  const styledEls = Array.from(doc.querySelectorAll("[style]")).reverse();
-  styledEls.forEach((el) => {
+  doc.querySelectorAll("span[style]").forEach((el) => {
     const style = el.getAttribute("style") || "";
-    const bold = isBoldStyle(style);
-    const italic = isItalicStyle(style);
-    const underline = isUnderlineStyle(style);
-    if (!bold && !italic && !underline) return;
-    if (!(el.textContent || "").trim()) return;
+    const isBold =
+      /font-weight\s*:\s*(bold|7\d\d|[89]\d\d)/i.test(style);
+    const isItalic = /font-style\s*:\s*italic/i.test(style);
+    const isUnderline = /text-decoration\s*:\s*underline/i.test(style);
+    const isStrike = /text-decoration\s*:\s*line-through/i.test(style);
 
+    if (!isBold && !isItalic && !isUnderline && !isStrike) return;
+
+    // Wrap innerHTML in the semantic tags that apply, innermost first so
+    // e.g. bold+italic both survive (<strong><em>text</em></strong>).
     let inner = el.innerHTML;
-    if (bold && !el.closest("b,strong,h1,h2,h3,h4,h5,h6"))
-      inner = `<strong>${inner}</strong>`;
-    if (italic && !el.closest("em,i")) inner = `<em>${inner}</em>`;
-    if (underline && !el.closest("u")) inner = `<u>${inner}</u>`;
-    el.innerHTML = inner;
+    if (isStrike) inner = `<s>${inner}</s>`;
+    if (isUnderline) inner = `<u>${inner}</u>`;
+    if (isItalic) inner = `<em>${inner}</em>`;
+    if (isBold) inner = `<strong>${inner}</strong>`;
+
+    const wrapper = doc.createElement("span");
+    wrapper.innerHTML = inner;
+    el.replaceWith(...Array.from(wrapper.childNodes));
   });
 
   return doc.body.innerHTML;
 }
 
 /**
- * A paragraph's own `style` attribute is where Word puts heading signals,
- * but Google Docs puts font-size/font-weight on an inner <span> that wraps
- * the whole line instead. Borrow that span's style ONLY when its text
- * content matches the entire paragraph (so a small nested footnote span
- * elsewhere in the paragraph can't falsely trigger a heading promotion).
- */
-function getDominantStyle(p: HTMLElement): string {
-  const own = p.getAttribute("style") || "";
-  const text = (p.textContent || "").trim();
-  if (!text) return own;
-  const styled = Array.from(p.querySelectorAll("[style]")) as HTMLElement[];
-  const dominant = styled.find((e) => (e.textContent || "").trim() === text);
-  return dominant ? `${own};${dominant.getAttribute("style") || ""}` : own;
-}
-
-/**
  * Detect and convert Google Docs / web-page "fake headings" to semantic
  * heading tags. Google Docs and many websites don't emit <h1>-<h3>; they
- * present headings as bold text with a large inline font-size instead.
- * Walk the parsed DOM, and for any paragraph whose (own or dominant span)
- * style is bold and visually large (font-size >= 18px OR font-weight >= 700)
- * replace it with a real <h1>-<h4> so Tiptap can serialize and re-render it
- * correctly.
+ * present headings as <b> / <strong> with inline font-size and font-weight.
+ * Walk the parsed DOM, and for any element whose text is bold and
+ * visually large (font-size >= 18px OR font-weight >= 700) replace it
+ * with a real <h1>-<h4> so Tiptap can serialize and re-render it correctly.
  */
 function detectAndConvertBoldHeadings(html: string): string {
   if (!html) return html;
@@ -147,9 +127,7 @@ function detectAndConvertBoldHeadings(html: string): string {
   // Word defines headings via mso-style-name / mso-outline-level there.
   // We keep a map of class -> heading level derived from style text.
   let styleText = "";
-  doc
-    .querySelectorAll("style")
-    .forEach((s) => (styleText += s.textContent || ""));
+  doc.querySelectorAll("style").forEach((s) => (styleText += s.textContent || ""));
 
   const getHeadingFromClass = (cls: string): string | null => {
     if (/MsoHeading\s*1/i.test(cls) || /MsoTitle/i.test(cls)) return "h1";
@@ -163,7 +141,7 @@ function detectAndConvertBoldHeadings(html: string): string {
     if (p.closest("h1,h2,h3,h4,h5,h6,li,table")) return;
     const text = (p.textContent || "").trim();
     if (!text || text.length > 400) return;
-    const style = getDominantStyle(p);
+    const style = p.getAttribute("style") || "";
     const cls = p.getAttribute("class") || "";
 
     // Check Word heading signals
@@ -178,15 +156,11 @@ function detectAndConvertBoldHeadings(html: string): string {
     // Fallback: large + bold heuristic for Google Docs / unstyled Word export
     if (!level) {
       const fsMatch = /font-size\s*:\s*(\d+)\s*(?:pt|px)/i.exec(style);
-      const fwMatch = /font-weight\s*:\s*(bold|[6-9]\d{2}|1000)/i.exec(style);
+      const fwMatch = /font-weight\s*:\s*(bold|\d{2,3})/i.exec(style);
       let fontSize = fsMatch ? parseInt(fsMatch[1], 10) : 0;
       // pt to px approx
-      if (fsMatch && /pt/i.test(fsMatch[0]))
-        fontSize = Math.round(fontSize * 1.33);
-      const isBold =
-        fwMatch !== null ||
-        !!p.querySelector("b,strong") ||
-        /font-weight:\s*bold/i.test(style);
+      if (fsMatch && /pt/i.test(fsMatch[0])) fontSize = Math.round(fontSize * 1.33);
+      const isBold = fwMatch !== null || !!p.querySelector("b,strong") || /font-weight:\s*bold/i.test(style);
       const hasLarge = fontSize >= 16;
       // Only promote short paragraphs that are bold+larger than body
       if (isBold && hasLarge) {
@@ -200,9 +174,7 @@ function detectAndConvertBoldHeadings(html: string): string {
       // Preserve inner formatting (bold/italic) but strip Word junk spans
       h.innerHTML = p.innerHTML;
       // Clean mso tab stops inside heading
-      h.innerHTML = h.innerHTML
-        .replace(/<span[^>]*mso-tab-count[^>]*>[\s\S]*?<\/span>/gi, " ")
-        .trim();
+      h.innerHTML = h.innerHTML.replace(/<span[^>]*mso-tab-count[^>]*>[\s\S]*?<\/span>/gi, " ").trim();
       p.replaceWith(h);
     }
   });
@@ -215,8 +187,7 @@ function detectAndConvertBoldHeadings(html: string): string {
     const parent = el.parentElement;
     // Only if the bold element is the dominant content of its parent
     if (parent && (parent.textContent || "").trim() !== text) return;
-    const style =
-      (el.getAttribute("style") || "") + (parent?.getAttribute("style") || "");
+    const style = (el.getAttribute("style") || "") + (parent?.getAttribute("style") || "");
     const fsMatch = /font-size\s*:\s*(\d+)\s*px/i.exec(style);
     const fontSize = fsMatch ? parseInt(fsMatch[1], 10) : 0;
     if (fontSize >= 18 || el.tagName === "B" || el.tagName === "STRONG") {
@@ -254,15 +225,14 @@ export function cleanPastedHtml(rawHtml: string): string {
     .replace(/<\/?o:[a-z]+[^>]*>/gi, "")
     .replace(/<\/?w:[a-z]+[^>]*>/gi, "");
 
-  // Google Docs/web pages encode bold/italic/underline purely via inline
-  // styles on <span> (no <b>/<strong>/<em>/<u>). Convert those to semantic
-  // tags first so they survive both heading detection and the later
-  // attribute-stripping pass.
-  html = convertInlineStylesToSemanticTags(html);
-
-  // Then detect and convert Google Docs bold headings to semantic headings
-  // BEFORE the rest of the cleanup strips inline styles.
+  // First pass: detect and convert Google Docs bold headings to semantic
+  // headings BEFORE the rest of the cleanup strips inline styles.
   html = detectAndConvertBoldHeadings(html);
+
+  // Second pass: convert any remaining inline bold/italic/underline/strike
+  // spans (mid-paragraph formatting) to <strong>/<em>/<u>/<s> — otherwise
+  // the style-stripping pass below silently deletes this formatting.
+  html = detectAndConvertInlineFormatting(html);
 
   const doc = new DOMParser().parseFromString(html, "text/html");
 

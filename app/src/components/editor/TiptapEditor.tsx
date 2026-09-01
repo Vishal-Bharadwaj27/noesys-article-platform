@@ -318,7 +318,7 @@ export default function TiptapEditor({
       </div>
       <EditorContent
         editor={editor}
-        className="min-h-[300px] max-h-[45vh] overflow-auto"
+        className="min-h-[300px] max-h-[75vh] overflow-auto"
       />
     </div>
   );

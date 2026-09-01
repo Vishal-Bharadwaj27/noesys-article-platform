@@ -144,18 +144,23 @@ export default function UserCard({
 
         {/* Action */}
         <div className="flex flex-col gap-1.5 shrink-0">
-          <button
-            onClick={() => setModalOpen(true)}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors
+          {currentUser?.id !== user.id && (
+            <button
+              onClick={() => setModalOpen(true)}
+              className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors
               ${isActive ? "bg-red-50 text-red-600 hover:bg-red-100" : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"}`}
-          >
-            {isActive ? <UserX size={14} /> : <UserCheck size={14} />}
-            {isActive ? "Deactivate" : "Activate"}
-          </button>
+            >
+              {isActive ? <UserX size={14} /> : <UserCheck size={14} />}
+              {isActive ? "Deactivate" : "Activate"}
+            </button>
+          )}
 
           {/* promote/demote, hidden entirely for super_admin */}
           {user.auth_role === "user" && (
-            <button onClick={() => openRoleChange("admin")} className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium bg-emerald-500 text-white hover:bg-emerald-600 transition-colors">
+            <button
+              onClick={() => openRoleChange("admin")}
+              className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium bg-emerald-500 text-white hover:bg-emerald-600 transition-colors"
+            >
               <ArrowUpCircle size={14} />
               Promote to Admin
             </button>
@@ -172,13 +177,6 @@ export default function UserCard({
 
           {user.auth_role === "admin" && (
             <>
-              {/* <button
-                onClick={() => openRoleChange("admin")}
-                className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors"
-              >
-                <ArrowUpCircle size={14} />
-                Promote to Super Admin
-              </button> */}
               <button
                 onClick={() => openRoleChange("user")}
                 className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium bg-slate-50 text-slate-600 hover:bg-slate-100 transition-colors"
