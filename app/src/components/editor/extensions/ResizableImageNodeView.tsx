@@ -6,11 +6,14 @@ export default function ResizableImageNodeView({
   selected,
   updateAttributes,
   extension,
+  editor,
 }: any) {
   const { src, alt, title, width } = node.attrs;
   const containerRef = useRef<HTMLDivElement>(null);
+  const isEditable = editor?.isEditable ?? true;
 
   const onMouseDown = (e: React.MouseEvent, dir: string) => {
+    if (!isEditable) return;
     e.preventDefault();
     const startX = e.clientX;
     const img = containerRef.current?.querySelector(
@@ -44,8 +47,7 @@ export default function ResizableImageNodeView({
   // This is more reliable than margin:auto on the wrapper itself.
   let wrapperStyle: any = { display: "block", width: "100%", maxWidth: "100%" };
   const ta = node.attrs.textAlign || "left";
-  wrapperStyle.textAlign =
-    ta === "center" ? "center" : ta === "right" ? "right" : "left";
+  wrapperStyle.textAlign = ta === "center" ? "center" : ta === "right" ? "right" : "left";
   if (node.attrs.style) {
     node.attrs.style.split(";").forEach((p: string) => {
       const [k, v] = p.split(":").map((s: string) => s.trim());
@@ -60,16 +62,15 @@ export default function ResizableImageNodeView({
       wrapperStyle.marginRight = undefined;
       wrapperStyle.display = "block";
       wrapperStyle.width = "100%";
-      wrapperStyle.textAlign =
-        ta === "center" ? "center" : ta === "right" ? "right" : "left";
+      wrapperStyle.textAlign = ta === "center" ? "center" : ta === "right" ? "right" : "left";
     }
   }
 
   return (
     <NodeViewWrapper
-      className={`resizable-image-wrapper ${selected ? "ProseMirror-selectednode" : ""}`}
+      className={`resizable-image-wrapper ${selected && isEditable ? "ProseMirror-selectednode" : ""}`}
       style={wrapperStyle}
-      data-drag-handle
+      data-drag-handle={isEditable ? true : undefined}
     >
       <div
         ref={containerRef}
@@ -91,7 +92,7 @@ export default function ResizableImageNodeView({
             borderRadius: 6,
           }}
         />
-        {selected && (
+        {selected && isEditable && (
           <>
             <div
               onMouseDown={(e) => onMouseDown(e, "w")}

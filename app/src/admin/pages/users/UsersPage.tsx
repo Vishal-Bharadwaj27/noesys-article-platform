@@ -104,10 +104,22 @@ const UsersPage = () => {
     );
   };
 
+  const ROLE_ORDER = {
+    super_admin: 0,
+    admin: 1,
+    user: 2,
+  };
+
   const filteredUsers = useMemo(() => {
-    return users.filter((u) =>
-      u.name.toLowerCase().includes(search.trim().toLowerCase()),
-    );
+    return users
+      .filter((u) => u.name.toLowerCase().includes(search.trim().toLowerCase()))
+      .sort((a, b) => {
+        const roleDiff = ROLE_ORDER[a.auth_role] - ROLE_ORDER[b.auth_role];
+
+        if (roleDiff !== 0) return roleDiff;
+
+        return a.name.localeCompare(b.name);
+      });
   }, [users, search]);
 
   return (
@@ -130,18 +142,6 @@ const UsersPage = () => {
             onSelect={(value) => setSearch(value)}
             style={{ width: "100%" }}
           >
-            {/* <Input
-              prefix={<Search size={15} className="text-slate-400" />}
-              placeholder="Search user"
-              className="h-9 rounded-lg"
-              style={{
-                borderRadius: 8,
-                height: 36,
-                borderColor: "#cbd5e1",
-                background: "#fff",
-              }}
-            /> */}
-
             <div className="flex items-center gap-2 mb-4 w-full">
               <div className="relative flex-1">
                 <Search
