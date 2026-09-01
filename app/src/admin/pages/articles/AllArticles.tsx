@@ -293,7 +293,11 @@ const AllArticles = () => {
           optionFilterProp="label"
           placeholder="All Types"
           className="w-full h-9 [&_.ant-select-selector]:!bg-white [&_.ant-select-selector]:!rounded-lg [&_.ant-select-selector]:!border-slate-300 [&_.ant-select-selector]:!h-9 text-sm"
-          dropdownStyle={{ background: "#fff" }}
+            styles={{
+            popup: {
+              root: { background: "#fff" },
+            },
+          }}
           listHeight={192}
           options={[
             { value: "all", label: "All Types" },
@@ -313,7 +317,11 @@ const AllArticles = () => {
           optionFilterProp="label"
           placeholder="All Statuses"
           className="w-full h-9 [&_.ant-select-selector]:!bg-white [&_.ant-select-selector]:!rounded-lg [&_.ant-select-selector]:!border-slate-300 [&_.ant-select-selector]:!h-9 text-sm"
-          dropdownStyle={{ background: "#fff" }}
+          styles={{
+            popup: {
+              root: { background: "#fff" },
+            },
+          }}
           listHeight={192}
           options={STATUS_OPTIONS}
           filterOption={(input, opt) =>
@@ -327,7 +335,11 @@ const AllArticles = () => {
           optionFilterProp="label"
           placeholder="Sort"
           className="w-full h-9 [&_.ant-select-selector]:!bg-white [&_.ant-select-selector]:!rounded-lg [&_.ant-select-selector]:!border-slate-300 [&_.ant-select-selector]:!h-9 text-sm"
-          dropdownStyle={{ background: "#fff" }}
+          styles={{
+            popup: {
+              root: { background: "#fff" },
+            },
+          }}
           listHeight={192}
           options={[
             { value: "created_desc", label: "Created (Newest First)" },
@@ -349,7 +361,11 @@ const AllArticles = () => {
             optionFilterProp="label"
             placeholder="All Authors"
             className="w-full h-9 [&_.ant-select-selector]:!bg-white [&_.ant-select-selector]:!rounded-lg [&_.ant-select-selector]:!border-slate-300 [&_.ant-select-selector]:!h-9 text-sm"
-            dropdownStyle={{ background: "#fff" }}
+            styles={{
+              popup: {
+                root: { background: "#fff" },
+              },
+            }}
             listHeight={192}
             options={[
               { value: "all", label: "All Authors" },
