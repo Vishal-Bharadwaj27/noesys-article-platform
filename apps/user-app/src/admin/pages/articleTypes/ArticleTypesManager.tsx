@@ -3,7 +3,6 @@ import { Plus, Search, Tag } from "lucide-react";
 
 import DeleteConfirmation from "../../components/articleTypes/DeleteConfirmation";
 import ArticleTypesCard from "../../components/articleTypes/ArticleTypesCard";
-import Button from "../../components/ui/Button";
 import EmptyState from "../../components/ui/EmptyState";
 import { useNavigate } from "react-router-dom";
 

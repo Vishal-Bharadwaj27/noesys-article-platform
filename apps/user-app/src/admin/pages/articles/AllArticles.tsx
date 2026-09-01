@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import ArticlesTable from "../../components/articles/ArticlesTable";
 import type { ArticleSummary } from "../../components/articles/ArticlesRow";
 import { useNavigate, useParams } from "react-router-dom";
