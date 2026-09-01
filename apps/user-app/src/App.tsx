@@ -12,7 +12,6 @@ import AllArticles from "./admin/pages/articles/AllArticles";
 import UsersPage from "./admin/pages/users/UsersPage";
 import ArticleTypesPage from "./admin/pages/articleTypes/ArticleTypesPage";
 
-import Sidebar from "./admin/components/Sidebar";
 import AdminHeader from "./admin/components/AdminHeader";
 import AdminArticleDetail from "./admin/components/articles/AdminArticleDetail";
 import ArticleTypesForm from "./admin/components/articleTypes/ArticleTypesForm";

@@ -50,9 +50,7 @@ export default function AdminHeader({ title }: { title?: string }) {
       <div className="w-full px-4 md:px-8 h-14 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <img src={logoImage} alt="Logo" className="h-12 w-20 rounded-lg" />
-          <span className="font-semibold text-slate-900">
-            Article Platform
-          </span>
+          <span className="font-semibold text-slate-900">Article Platform</span>
         </div>
         {title && (
           <span className="text-sm font-medium text-slate-700 hidden md:block">

@@ -96,17 +96,6 @@ export default function ParameterRow({
               className="rounded-md border border-slate-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
 
-            {/* <select
-              value={draft.scopeType}
-              onChange={(e) =>
-                onChange({ ...draft, scopeType: e.target.value as ScopeType })
-              }
-              className="rounded-md border border-slate-200 px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="numeric">Numeric</option>
-              <option value="option">Option</option>
-            </select> */}
-
             <Select
               onChange={(scopeType: ScopeType) =>
                 onChange({ ...draft, scopeType })
