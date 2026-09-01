@@ -22,7 +22,11 @@ const InsightsPage = () => {
       <div className="flex items-center gap-3 mb-5">
         <Select
           className="w-[200px] h-9 [&_.ant-select-selector]:!bg-white [&_.ant-select-selector]:!rounded-lg [&_.ant-select-selector]:!border-slate-300 [&_.ant-select-selector]:!h-9 text-sm"
-          dropdownStyle={{ background: "#fff" }}
+          styles={{
+            popup: {
+              root: { background: "#fff" },
+            },
+          }}  
           showSearch
           optionFilterProp="label"
           filterOption={(input, opt) =>

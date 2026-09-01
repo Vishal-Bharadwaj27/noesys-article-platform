@@ -274,7 +274,11 @@ export default function MyArticles() {
             placeholder="Filter by Type"
             style={{ width: 180, height: 36 }}
             className="[&_.ant-select-selector]:!bg-white [&_.ant-select-selector]:!rounded-lg [&_.ant-select-selector]:!border-slate-300 [&_.ant-select-selector]:!h-9"
-            dropdownStyle={{ background: "#fff" }}
+            styles={{
+              popup: {
+                root: { background: "#fff" },
+              },
+            }}
             options={[
               { value: "all", label: "All Types" },
               ...articleTypes.map((t) => ({ value: t.id, label: t.name })),
@@ -293,7 +297,11 @@ export default function MyArticles() {
             placeholder="Filter by Status"
             style={{ width: 180, height: 36 }}
             className="[&_.ant-select-selector]:!bg-white [&_.ant-select-selector]:!rounded-lg [&_.ant-select-selector]:!border-slate-300 [&_.ant-select-selector]:!h-9"
-            dropdownStyle={{ background: "#fff" }}
+            styles={{
+              popup: {
+                root: { background: "#fff" },
+              },
+            }}
             options={[
               { value: "all", label: "All Status" },
               { value: "accepted", label: "Accepted" },

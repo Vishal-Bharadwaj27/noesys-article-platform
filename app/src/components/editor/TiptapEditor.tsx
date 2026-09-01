@@ -1,15 +1,12 @@
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { ResizableImage } from "./extensions/ResizableImage";
-import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
-import Underline from "@tiptap/extension-underline";
 import TextAlign from "@tiptap/extension-text-align";
 import { Table } from "@tiptap/extension-table";
 import { TableRow } from "@tiptap/extension-table-row";
 import { TableHeader } from "@tiptap/extension-table-header";
 import { TableCell } from "@tiptap/extension-table-cell";
-import Strike from "@tiptap/extension-strike";
 import { useRef, useCallback, useEffect } from "react";
 import { convertImageToBase64 } from "@/utils/imageToBase64";
 import { Tooltip } from "antd";
@@ -64,24 +61,19 @@ export default function TiptapEditor({
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Normalize whatever comes in on first mount: HTML passes through,
-  // legacy markdown gets converted once up front. Keep resolveContentToHtml
-  // for markdown + image rendering.
   const initialHtml = resolveContentToHtml(value);
 
   const editor = useEditor({
     shouldRerenderOnTransaction: true,
     extensions: [
-      StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
-      Underline,
-      Strike,
+      StarterKit.configure({
+        heading: { levels: [1, 2, 3] }
+      }),
       TextAlign.configure({ types: ["heading", "paragraph", "image"] }),
-      Link.configure({ openOnClick: false }),
       ResizableImage,
       Placeholder.configure({
         placeholder: "Write your article content here...",
       }),
-      // Handles Word / Google Docs / Markdown pastes (see extensions/SmartPaste.ts)
       SmartPaste,
       Table.configure({ resizable: true }),
       TableRow,
