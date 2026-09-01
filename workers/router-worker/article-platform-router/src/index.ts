@@ -1,9 +1,9 @@
 ﻿export default {
-	async fetch(request: Request): Promise<Response> {
+	async fetch(request: Request, env: any): Promise<Response> {
 		const url = new URL(request.url);
 		const path = url.pathname;
-		const ADMIN_API = 'https://admin-api.vishal-97a.workers.dev/';
-		const USER_API = 'https://user-api-production.vishal-97a.workers.dev';
+		const ADMIN_API = env.ADMIN_API;
+		const USER_API = env.USER_API;
 
 		const target = path.startsWith('/admin') ? ADMIN_API : USER_API;
 		const newUrl = target + path;
