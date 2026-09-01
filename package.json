@@ -5,12 +5,12 @@
   "private": true,
   "type": "module",
   "workspaces": [
-    "apps/*",
+    "app",
     "workers/*"
   ],
   "scripts": {
     "dev": "npm run dev --workspaces",
-    "build": "npm run build --workspace=user-app",
+    "build": "npm run build --workspace=app",
     "lint": "npm run lint --workspaces"
   },
   "devDependencies": {
