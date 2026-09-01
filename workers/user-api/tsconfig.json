@@ -18,5 +18,4 @@
     "types": ["@cloudflare/workers-types"]
   },
   "include": ["src"],
-  "references": [{ "path": "../../packages/types" }]
 }
