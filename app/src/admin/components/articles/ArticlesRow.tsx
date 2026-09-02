@@ -47,7 +47,7 @@ const STATUS_LABELS: Record<ArticleStatus, string> = {
   failed: "failed"
 };
 
-function scoreColor(score: number) {
+function getAiScoreColors(score: number) {
   if (score >= 10) {
     return {
       bar: "bg-emerald-500",
@@ -68,7 +68,7 @@ function scoreColor(score: number) {
   };
 }
 
-function formatDate(dateStr: string) {
+function formatDateToUSLocale(dateStr: string) {
   const d = new Date(dateStr);
 
   if (Number.isNaN(d.getTime())) {
@@ -95,7 +95,7 @@ export default function ArticleRow({ article, onClick }: ArticleRowProps) {
   } = article;
 
   const hasScore = ai_score !== null;
-  const colors = hasScore ? scoreColor(ai_score) : null;
+  const colors = hasScore ? getAiScoreColors(ai_score) : null;
 
   return (
     <div
@@ -160,7 +160,7 @@ export default function ArticleRow({ article, onClick }: ArticleRowProps) {
           {STATUS_LABELS[status]}
         </span>
 
-        <span className="text-slate-400 text-sm">{formatDate(created_at)}</span>
+        <span className="text-slate-400 text-sm">{formatDateToUSLocale(created_at)}</span>
       </div>
     </div>
   );

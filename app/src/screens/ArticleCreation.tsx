@@ -246,28 +246,6 @@ function toMarkdown(content: string): string {
   return raw.trim();
 }
 
-function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false);
-  const handleCopy = () => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-  return (
-    <button
-      onClick={handleCopy}
-      className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-colors"
-      title="Copy to clipboard"
-    >
-      {copied ? (
-        <Check size={16} className="text-emerald-600" />
-      ) : (
-        <Copy size={16} />
-      )}
-    </button>
-  );
-}
-
 type CreateResponse = { id: string; status: string };
 type FormValues = { article_type_id: string; title: string; content: string };
 type ArticleType = { id: string; name: string; description: string | null };
@@ -289,7 +267,7 @@ export default function ArticleCreation() {
   useEffect(() => {
     let active = true;
 
-    async function loadTypes() {
+    async function loadArticleTypes() {
       try {
         const result = await api<ArticleType[]>("/article-types");
         if (active) setTypes(result);
@@ -304,7 +282,7 @@ export default function ArticleCreation() {
       }
     }
 
-    loadTypes();
+    loadArticleTypes();
 
     return () => {
       active = false;

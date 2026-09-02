@@ -1,4 +1,4 @@
-export function formatDate(dateStr: string) {
+export function formatDateToUSLocale(dateStr: string) {
   const d = new Date(dateStr);
 
   if (Number.isNaN(d.getTime())) return dateStr;

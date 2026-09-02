@@ -23,7 +23,7 @@ function currentMonth(): string {
   return new Date().toISOString().slice(0, 7);
 }
 
-function toListItem(article: {
+function articleToListItem(article: {
   id: string;
   title: string;
   article_type_name: string;
@@ -52,7 +52,7 @@ function toListItem(article: {
 }
 
 // Background evaluation function - runs asynchronously
-async function evaluateAndUpdate(
+async function backgroundEvaluateArticle(
   db: any,
   env: any,
   articleId: string,
@@ -121,7 +121,7 @@ articleRoutes.get("/mine", async (c) => {
   );
 
   const data = articles.map((article) =>
-    toListItem({
+    articleToListItem({
       id: article.id,
       title: article.title,
       article_type_name: article.article_type_name,
@@ -298,7 +298,7 @@ articleRoutes.post("/", async (c) => {
     // ✅ ADDED: Background evaluation via waitUntil
     const currentVersion = existingArticle.version;
     c.executionCtx.waitUntil(
-      evaluateAndUpdate(
+      backgroundEvaluateArticle(
         db,
         c.env,
         articleId,
@@ -341,7 +341,7 @@ articleRoutes.post("/", async (c) => {
     // ❌ REMOVED: Synchronous evaluation (was blocking 10-30s)
     // ✅ ADDED: Background evaluation via waitUntil
     c.executionCtx.waitUntil(
-      evaluateAndUpdate(
+      backgroundEvaluateArticle(
         db,
         c.env,
         articleId,
