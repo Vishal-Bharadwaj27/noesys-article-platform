@@ -20,6 +20,20 @@ export type AuthContext = {
   };
 };
 
+
+export interface ArticleHistoryEntry {
+  id: string;
+  article_id: string;
+  version: number;
+  title: string;
+  content: string;
+  ai_score: number | null;
+  ai_feedback: string | null;
+  submitted_at: string | null;
+  scored_at: string | null;
+  snapshotted_at: string;
+}
+
 export type AuthenticatedUser = {
   id: string;
   email: string;

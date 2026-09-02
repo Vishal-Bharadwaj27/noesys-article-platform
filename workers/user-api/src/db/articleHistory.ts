@@ -89,6 +89,7 @@ export async function updateArticleForRewrite(
           status = 'pending',
           ai_score = NULL,
           ai_feedback = NULL,
+          submitted_at = CURRENT_TIMESTAMP,
           scored_at = NULL,
           retry_count = retry_count + 1
         WHERE id = ?

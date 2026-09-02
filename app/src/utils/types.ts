@@ -18,6 +18,7 @@ export interface HistoryItem {
   feedback: string | null;
   status: string;
   submitted_at: string;
+  snapshotted_at?: string;
 }
 
 export type ParameterResult = {

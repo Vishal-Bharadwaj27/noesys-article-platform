@@ -7,15 +7,24 @@ import {
 export async function getParameterResults(
   db: D1Database,
   articleId: string,
+  version?: number,
 ): Promise<ParameterResultRow[]> {
+  const conditions: string[] = ["r.article_id = ?"];
+  const params: unknown[] = [articleId];
+
+  if (version !== undefined && version !== null) {
+    conditions.push("r.version = ?");
+    params.push(version);
+  }
+
   const sql = `
     SELECT r.id, r.parameter_id, p.name, r.value, r.version, r.scored_at
     FROM article_parameter_results r
     JOIN parameters p ON p.id = r.parameter_id
-    WHERE r.article_id = ?
+    WHERE ${conditions.join(" AND ")}
     ORDER BY r.version DESC, p.name ASC
   `;
-  const data = await db.prepare(sql).bind(articleId).all<ParameterResultRow>();
+  const data = await db.prepare(sql).bind(...params).all<ParameterResultRow>();
   return data.results;
 }
 

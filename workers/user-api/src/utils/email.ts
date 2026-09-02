@@ -14,7 +14,7 @@ export async function sendOTPEmail(
     return false;
   }
 
-  console.log(`[Email] Attempting to send OTP to ${email} from ${fromEmail}`);
+  // console.log(`[Email] Attempting to send OTP to ${email} from ${fromEmail}`);
 
   try {
     const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
@@ -45,7 +45,7 @@ export async function sendOTPEmail(
       return false;
     }
 
-    console.log(`[Email] Successfully sent OTP to ${email}. SendGrid Status: ${response.status}`);
+    // console.log(`[Email] Successfully sent OTP to ${email}. SendGrid Status: ${response.status}`);
     return true;
   } catch (error) {
     console.error("[Email] Failed to send OTP email:", error);
