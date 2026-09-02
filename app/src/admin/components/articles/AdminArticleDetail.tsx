@@ -156,6 +156,45 @@ export default function AdminArticleDetail() {
     : (currentFeedback ?? "");
   const displaySubmittedAt = effectiveSnapshot?.submitted_at ?? null;
 
+  useEffect(() => {
+    if (!id || !versionParam) return;
+    const controller = new AbortController();
+
+    (async () => {
+      try {
+        const base = ((import.meta.env.VITE_BACKEND_URL as string | undefined) || "").replace(/\/$/, "");
+        const token =
+          tokenStorage.get() || localStorage.getItem("token") || sessionStorage.getItem("token");
+
+        const headers: Record<string, string> = {};
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+
+        const res = await fetch(`${base}/api/articles/${id}/parameter-results?version=${versionParam}`, {
+          credentials: "include",
+          headers,
+          signal: controller.signal,
+        });
+
+        if (res.ok) {
+          const json = await res.json();
+          if (json.data) {
+            setParameterResults(
+              json.data.map((r: { name?: string; parameterName?: string; parameter_name?: string; scopeType?: string; scope_type?: string; value: string | number }) => ({
+                parameter_name: r.parameterName || r.parameter_name || r.name || "",
+                scope_type: r.scopeType || r.scope_type || "",
+                value: r.value,
+              }))
+            );
+          }
+        }
+      } catch (e: unknown) {
+        if (e instanceof DOMException && e.name === "AbortError") return;
+      }
+    })();
+
+    return () => controller.abort();
+  }, [id, versionParam]);
+
   const hasScore = displayScore !== null;
   const colors = hasScore ? getAiScoreColors(displayScore!) : null;
 

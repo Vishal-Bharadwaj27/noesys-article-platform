@@ -52,7 +52,7 @@ articlesRoute.get("/:id", async (c) => {
       ? history[history.length - 1].ai_feedback || ""
       : "");
 
-  const parameter_results = await getParameterResults(db, articleId);
+  const parameter_results = await getParameterResults(db, articleId, article.version);
 
   return c.json({
     message: "Article fetched successfully",
@@ -96,7 +96,9 @@ articlesRoute.get("/:id", async (c) => {
 
 articlesRoute.get("/:id/parameter-results", async (c) => {
   const id = c.req.param("id");
-  const data = await getParameterResults(c.env.DB, id);
+  const versionQuery = c.req.query("version");
+  const version = versionQuery ? parseInt(versionQuery, 10) : undefined;
+  const data = await getParameterResults(c.env.DB, id, isNaN(version!) ? undefined : version);
   return c.json({ message: "Parameter results fetched", data });
 });
 
