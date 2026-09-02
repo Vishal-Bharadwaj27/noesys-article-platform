@@ -1,18 +1,30 @@
+import {
+  ALLOWED_AUTH_ROLES,
+  ALLOWED_SUBMISSION_STATUSES,
+  ArticleByUser,
+  AssignableAuthRole,
+  SubmissionStatus,
+  UserListItem,
+  UserProfile,
+} from "../types";
+
 export async function getUsers(
   db: D1Database,
   month_year?: string,
   submissionStatus?: string,
-) {
+): Promise<UserListItem[]> {
   if (month_year && !/^\d{4}-\d{2}$/.test(month_year)) {
     throw new Error("Invalid month format. Expected YYYY-MM");
   }
 
-  const allowedStatuses = ["submitted", "not_submitted"];
-  if (submissionStatus && !allowedStatuses.includes(submissionStatus)) {
+  if (
+    submissionStatus &&
+    !ALLOWED_SUBMISSION_STATUSES.includes(submissionStatus as SubmissionStatus)
+  ) {
     throw new Error("Invalid submission_status");
   }
 
-  let stmt;
+  let stmt: D1PreparedStatement;
 
   // GET /users?month=2026-08&submission_status=submitted
   if (month_year && submissionStatus === "submitted") {
@@ -82,14 +94,16 @@ export async function getUsers(
     `);
   }
 
-  const result = await stmt.all();
+  const result = await stmt.all<UserListItem>();
 
   return result.results;
 }
 
-// single user function - fetch a user by id
-export async function getUserById(db: D1Database, id: string) {
-  return db
+export async function getUserById(
+  db: D1Database,
+  id: string,
+): Promise<UserProfile | null> {
+  const user = await db
     .prepare(
       `
       SELECT
@@ -106,7 +120,9 @@ export async function getUserById(db: D1Database, id: string) {
     `,
     )
     .bind(id)
-    .first();
+    .first<UserProfile>();
+
+  return user;
 }
 
 export async function updateUser(
@@ -115,7 +131,7 @@ export async function updateUser(
   name: string,
   jobRole: string,
   isActive: boolean,
-) {
+): Promise<void> {
   await db
     .prepare(
       `
@@ -135,10 +151,8 @@ export async function updateUserAuthRole(
   db: D1Database,
   id: string,
   role: string,
-) {
-  const allowedRoles = ["user", "admin"];
-
-  if (!allowedRoles.includes(role)) {
+): Promise<void> {
+  if (!ALLOWED_AUTH_ROLES.includes(role as AssignableAuthRole)) {
     throw new Error("Invalid role");
   }
 
@@ -168,7 +182,7 @@ export async function getArticlesByUser(
   month?: string,
   status?: string,
   type?: string,
-) {
+): Promise<ArticleByUser[]> {
   const conditions = ["a.user_id = ?"];
   const params: unknown[] = [userId];
 
@@ -216,26 +230,28 @@ export async function getArticlesByUser(
     ORDER BY a.submitted_at DESC
   `;
 
+  type ArticleRow = Omit<ArticleByUser, "parameters">;
+
   const results = (
     await db
       .prepare(sql)
       .bind(...params)
-      .all()
-  ).results as any[];
+      .all<ArticleRow>()
+  ).results;
 
-  return results.map((article) => ({
-    ...article,
-
-    // keep same shape as All Articles page
-    parameters: [],
-  }));
+  return results.map(
+    (article): ArticleByUser => ({
+      ...article,
+      parameters: [],
+    }),
+  );
 }
 
 export async function updateUserStatus(
   db: D1Database,
   id: string,
   isActive: boolean,
-) {
+): Promise<D1Result> {
   return db
     .prepare(
       `

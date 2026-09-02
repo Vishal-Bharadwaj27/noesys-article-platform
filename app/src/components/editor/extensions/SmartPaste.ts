@@ -7,31 +7,9 @@ import {
   isLikelyMarkdown,
   markdownToHtml,
 } from "../lib/contentNormalize";
+import { SmartPasteOptions } from "@/utils/types";
 
-export interface SmartPasteOptions {
-  /** Convert http(s) images to base64 after paste. Default true. */
-  inlineRemoteImages: boolean;
-}
 
-/**
- * SmartPaste
- * ----------
- * One paste handler that covers the two cases we care about:
- *
- * 1. Rich document paste (Microsoft Word, Outlook, Google Docs, web page):
- *    clipboard carries `text/html`. We clean the Office junk and insert the
- *    WHOLE document — headings, lists, tables, bold/italic and images.
- *    If Word gave us dead `file:///` image links but also put the bitmaps in
- *    `clipboardData.files`, those files are inserted as base64 instead so no
- *    image is lost.
- *
- * 2. Markdown paste (a .md file's text, including `![alt](data:image/png;base64,…)`):
- *    clipboard carries only `text/plain` that looks like markdown. We render it
- *    with `marked` and insert the resulting HTML, so the editor and the Preview
- *    tab both show formatted markdown plus the inline images.
- *
- * Anything else falls through to Tiptap's default paste behaviour.
- */
 export const SmartPaste = Extension.create<SmartPasteOptions>({
   name: "smartPaste",
 

@@ -84,78 +84,6 @@ function initials(name: string) {
     .toUpperCase();
 }
 
-interface ResizeableTitleProps {
-  onResize?: (
-    e: React.SyntheticEvent<Element>,
-    data: {
-      size: {
-        width: number;
-        height: number;
-      };
-    },
-  ) => void;
-
-  width?: number | string;
-  children?: React.ReactNode;
-}
-
-const ResizeableTitle = ({
-  onResize,
-  width,
-  children,
-  ...restProps
-}: ResizeableTitleProps & React.HTMLAttributes<HTMLTableHeaderCellElement>) => {
-  if (!width || typeof width !== "number") {
-    return <th {...restProps}>{children}</th>;
-  }
-
-  return (
-    <Resizable
-      width={width}
-      height={10}
-      onResize={onResize}
-      draggableOpts={{
-        enableUserSelectHack: false,
-      }}
-      handle={
-        <span
-          className="column-resize-handle"
-          onClick={(event) => event.stopPropagation()}
-        />
-      }
-    >
-      <th {...restProps}>{children}</th>
-    </Resizable>
-  );
-};
-
-function ArticleParameters({
-  parameters,
-}: {
-  parameters: ArticleSummary["parameters"];
-}) {
-  if (!parameters?.length) {
-    return <Text type="secondary">—</Text>;
-  }
-
-  return (
-    <Space wrap size={[4, 4]}>
-      {parameters.map((parameter) => (
-        <Tag
-          key={parameter.parameterId}
-          bordered={false}
-          style={{
-            marginInlineEnd: 0,
-            fontSize: 11,
-          }}
-        >
-          {parameter.parameterName}: {parameter.value}
-        </Tag>
-      ))}
-    </Space>
-  );
-}
-
 function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
   const [columns, setColumns] = useState<ColumnsType<ArticleSummary>>([]);
 
@@ -420,31 +348,9 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
             </div>
           </Card>
         </Col>
-        {/* 
-        <Col xs={24} sm={12} md={8} lg={5}>
-          <Card size="small">
-            <Text type="secondary">Average AI Score</Text>
-
-            <div className="text-2xl font-semibold mt-1">
-              {dashboard.averageScore === null
-                ? "—"
-                : dashboard.averageScore.toFixed(1)}
-            </div>
-          </Card>
-        </Col> */}
       </Row>
 
       <div>
-        {/* <Input
-          allowClear
-          value={titleFilter}
-          onChange={(event) => setTitleFilter(event.target.value)}
-          placeholder="Search title..."
-          prefix={<Search size={15} className="text-slate-400" />}
-          className="w-full h-9 rounded-lg"
-          style={{ height: 36, borderColor: "#a2a0ff", background: "#fff" }}
-        /> */}
-
         <div className="flex items-center gap-2 mb-4 w-full">
           <div className="relative flex-1">
             <Search
@@ -484,9 +390,6 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
 
         <Table<ArticleSummary>
           components={{
-            header: {
-              cell: ResizeableTitle,
-            },
           }}
           columns={mergedColumns}
           dataSource={locallyFilteredArticles}

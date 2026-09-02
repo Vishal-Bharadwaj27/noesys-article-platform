@@ -1,39 +1,11 @@
 import { useEffect, useState, useCallback } from "react";
 import { api } from "../http-client";
-
-export interface ArticleDetail {
-  id: string;
-  title: string;
-  content: string;
-  article_type_id: string;
-  article_type_name: string;
-  status: string;
-  version: number;
-}
-
-export interface HistoryItem {
-  article_id: string;
-  version: number;
-  title: string;
-  content: string;
-  score: number | null;
-  feedback: string | null;
-  status: string;
-  submitted_at: string;
-}
-
-export type ParameterResult = {
-  parameter_name: string;
-  scope_type: string;
-  value: string | number | null;
-};
-export interface ArticleDetailResponse {
-  article: ArticleDetail;
-  current_feedback: string;
-  current_score: number | null;
-  history: HistoryItem[];
-  parameter_results?: ParameterResult[];
-}
+import {
+  ArticleDetail,
+  ArticleDetailResponse,
+  HistoryItem,
+  ParameterResult,
+} from "@/utils/types";
 
 export function useArticle(id: string) {
   const [article, setArticle] = useState<ArticleDetail | null>(null);

@@ -1,16 +1,4 @@
-export type ArticleHistory = {
-  id: string;
-  article_id: string;
-  article_type_id: string;
-  title: string;
-  ai_feedback: string | null;
-  content: string;
-  ai_score: number | null;
-  version: number;
-  submitted_at: string;
-  scored_at: string | null;
-  snapshotted_at: string;
-};
+import { ArticleHistory } from "../types";
 
 export async function getArticleHistory(
   db: D1Database,

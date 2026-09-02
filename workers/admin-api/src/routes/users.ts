@@ -7,12 +7,36 @@ import {
   updateUserAuthRole,
   updateUserStatus,
 } from "../services/users.service";
-import type { Env } from "../types";
-import { AuthContext, authMiddleware } from "../middleware/auth";
+import { ALLOWED_ROLES, Env, UpdateUserBody, UpdateUserRoleBody, UpdateUserStatusBody } from "../types";
+import { AuthContext } from "../middleware/auth";
 import { requiredRole } from "../middleware/requiredRole";
 
 const usersRoute = new Hono<{ Bindings: Env } & AuthContext>();
 // usersRoute.use("*", requiredRole("admin", "super_admin"));
+
+
+function parseUpdateUserBody(
+  body: unknown,
+): { success: true; data: UpdateUserBody } | { success: false } {
+  if (typeof body !== "object" || body === null) {
+    return { success: false };
+  }
+
+  const raw = body as Record<string, unknown>;
+
+  if (!raw.name || !raw.job_role || raw.is_active === undefined) {
+    return { success: false };
+  }
+
+  return {
+    success: true,
+    data: {
+      name: raw.name as string,
+      job_role: raw.job_role as string,
+      is_active: raw.is_active as boolean,
+    },
+  };
+}
 
 // get users based on submission_status and month_year
 usersRoute.get("/", async (c) => {
@@ -43,6 +67,7 @@ usersRoute.get("/:id/articles", async (c) => {
     data,
   });
 });
+
 // update a specific user's role
 usersRoute.patch("/:id/role", async (c) => {
   const id = c.req.param("id");
@@ -50,9 +75,8 @@ usersRoute.patch("/:id/role", async (c) => {
     return c.json({ message: "Invalid id" }, 400);
   }
 
-  const body = await c.req.json<{ role: string }>();
-  const allowedRoles = ["user", "admin", "super_admin"];
-  if (!body.role || !allowedRoles.includes(body.role)) {
+  const body = await c.req.json<UpdateUserRoleBody>();
+  if (!body.role || !ALLOWED_ROLES.includes(body.role as (typeof ALLOWED_ROLES)[number])) {
     return c.json({ message: "Invalid role" }, 400);
   }
 
@@ -84,17 +108,19 @@ usersRoute.get("/:id", async (c) => {
 // update a specific user's data
 usersRoute.patch("/:id", async (c) => {
   const id = c.req.param("id");
-  const body = await c.req.json();
+  const body: unknown = await c.req.json();
 
   if (!id || id.trim() === "") {
     return c.json({ message: "Invalid id" }, 400);
   }
 
-  if (!body.name || !body.job_role || body.is_active === undefined) {
-    return c.json({ message: "Invalid role" }, 400);
+  const parsed = parseUpdateUserBody(body);
+  if (!parsed.success) {
+    return c.json({ message: "Invalid role" }, 400); // kept original (misleading) message
   }
 
-  await updateUser(c.env.DB, id, body.name, body.job_role, body.is_active);
+  const { name, job_role, is_active } = parsed.data;
+  await updateUser(c.env.DB, id, name, job_role, is_active);
 
   return c.json({
     message: "User updated successfully",
@@ -104,7 +130,7 @@ usersRoute.patch("/:id", async (c) => {
 usersRoute.patch("/:id/status", async (c) => {
   const id = c.req.param("id");
 
-  const body = await c.req.json();
+  const body = await c.req.json<UpdateUserStatusBody>();
 
   await updateUserStatus(c.env.DB, id, body.is_active);
 

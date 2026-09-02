@@ -1,36 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { apiFull } from "../http-client";
+import { ArticleListItem, ArticleRow, PaginationInfo, UseMyArticlesOptions } from "@/utils/types";
 
-export interface ArticleListItem {
-  id: string;
-  title: string;
-  type: string;
-  version: number;
-  ai_score: number | null;
-  ai_feedback?: string | null;
-  status: string;
-  created: string;
-  authorName?: string;
-}
-
-export interface PaginationInfo {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-}
-
-interface UseMyArticlesOptions {
-  month?: string;
-  viewAll?: boolean;
-  page?: number;
-  limit?: number;
-}
-
-interface ArticleRow {
-  article: Omit<ArticleListItem, "authorName">;
-  author?: { id: string; name: string };
-}
 
 const POLLING_INTERVAL = 2500;
 const MAX_POLL_DURATION = 300000;

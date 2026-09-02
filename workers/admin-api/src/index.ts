@@ -6,7 +6,6 @@ import usersRoute from "./routes/users";
 import type { Env } from "./types";
 import articlesRoute from "./routes/articles";
 import articleTypesRoute from "./routes/articleTypes";
-import authRoutes from "./routes/authRoute";
 import parametersRoute from "./routes/parameters";
 import insightsRoute from "./routes/insights";
 
@@ -42,9 +41,6 @@ app.get("/", (c) => {
   });
 });
 
-
-// auth routes
-app.route("/api/auth", authRoutes);
 
 // user routes
 app.route("/api/users", usersRoute);

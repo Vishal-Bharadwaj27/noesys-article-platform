@@ -1,45 +1,32 @@
-export type ArticleListItem = {
-  id: string;
-  title: string;
-  status: string;
-  ai_score: number | null;
-  version: number;
-  month_year: string;
-  submitted_at: string;
-  user_id: string;
-  article_type_name: string;
-  user_name: string;
-  email: string;
-  job_role: string;
-};
- 
+import { ArticleListRawRow, ArticleListResult, ArticleParameterResult } from "../types";
+
 export async function getArticles(
   db: D1Database,
   month?: string,
   status?: string,
   type?: string,
-) {
+): Promise<ArticleListResult[]> {
   const conditions: string[] = [];
   const params: unknown[] = [];
- 
+
   if (month) {
     conditions.push("a.month_year = ?");
     params.push(month);
   }
- 
+
   if (status) {
     conditions.push("a.status = ?");
     params.push(status);
   }
- 
+
   if (type) {
     conditions.push("a.article_type_id = ?");
     params.push(type);
   }
- 
+
   const whereClause =
     conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
- 
+
   const sql = `
     SELECT
       a.id,
@@ -48,13 +35,13 @@ export async function getArticles(
       a.ai_score,
       a.version,
       a.submitted_at,
- 
+
       u.id AS user_id,
       u.name AS author_name,
- 
+
       at.id AS article_type_id,
       at.name AS article_type_name,
- 
+
       json_group_array(
         CASE
           WHEN p.id IS NOT NULL THEN
@@ -66,49 +53,72 @@ export async function getArticles(
             )
         END
       ) AS parameters
- 
+
     FROM articles a
- 
+
     JOIN users u
       ON u.id = a.user_id
- 
+
     JOIN article_types at
       ON at.id = a.article_type_id
- 
+
     LEFT JOIN article_parameter_results apr
       ON apr.article_id = a.id
       AND apr.version = a.version
- 
+
     LEFT JOIN parameters p
       ON p.id = apr.parameter_id
- 
+
     ${whereClause}
- 
+
     GROUP BY
       a.id,
       u.id,
       at.id
- 
+
     ORDER BY a.submitted_at DESC
   `;
- 
+
   const result = await db
     .prepare(sql)
     .bind(...params)
-    .all();
- 
-  return result.results.map((row: any) => ({
-    ...row,
-    parameters: row.parameters
-      ? JSON.parse(row.parameters).filter(Boolean)
-      : [],
-  }));
+    .all<ArticleListRawRow>();
+
+  return result.results.map(
+    (row): ArticleListResult => ({
+      ...row,
+      parameters: row.parameters
+        ? (JSON.parse(row.parameters) as (ArticleParameterResult | null)[]).filter(
+            (p): p is ArticleParameterResult => p !== null,
+          )
+        : [],
+    }),
+  );
 }
- 
+
+export interface ArticleDetail {
+  id: string;
+  title: string;
+  content: string;
+  status: string;
+  ai_score: number | null;
+  version: number;
+  month_year: string;
+  user_id: string;
+  article_type_id: string;
+  submitted_at: string | null;
+  created_at: string;
+  updated_at: string;
+  article_type_name: string;
+  author_name: string;
+  author_email: string;
+  job_role: string;
+}
+
 export async function getArticleById(
   db: D1Database,
   id: string,
-): Promise<any | null> {
+): Promise<ArticleDetail | null> {
   return db
     .prepare(
       `
@@ -127,10 +137,28 @@ WHERE a.id = ?
       `,
     )
     .bind(id)
-    .first();
+    .first<ArticleDetail>();
 }
- 
-export async function getArticleHistory(db: D1Database, articleId: string) {
+
+// ---------- getArticleHistory ----------
+
+export interface ArticleHistoryEntry {
+  id: string;
+  article_id: string;
+  version: number;
+  title: string;
+  content: string;
+  ai_score: number | null;
+  ai_feedback: string | null;
+  submitted_at: string | null;
+  scored_at: string | null;
+  snapshotted_at: string;
+}
+
+export async function getArticleHistory(
+  db: D1Database,
+  articleId: string,
+): Promise<ArticleHistoryEntry[]> {
   const result = await db
     .prepare(
       `
@@ -151,23 +179,36 @@ export async function getArticleHistory(db: D1Database, articleId: string) {
       `,
     )
     .bind(articleId)
-    .all();
- 
+    .all<ArticleHistoryEntry>();
+
   return result.results;
 }
- 
-function currentMonthYear() {
+
+function currentMonthYear(): string {
   return new Date().toISOString().slice(0, 7);
 }
- 
-export async function getArticleStats(db: D1Database, month?: string) {
+
+// ---------- getArticleStats ----------
+
+export interface ArticleStats {
+  total_articles: number;
+  approved: number;
+  rewrite_required: number;
+  pending: number;
+  average_score: number | null;
+}
+
+export async function getArticleStats(
+  db: D1Database,
+  month?: string,
+): Promise<ArticleStats | null> {
   const targetMonth = month || currentMonthYear();
- 
+
   const sql = `
     SELECT
- 
+
       COUNT(*) AS total_articles,
- 
+
       SUM(
         CASE
           WHEN status = 'approved'
@@ -175,7 +216,7 @@ export async function getArticleStats(db: D1Database, month?: string) {
           ELSE 0
         END
       ) AS approved,
- 
+
       SUM(
         CASE
           WHEN status = 'rewrite_required'
@@ -183,7 +224,7 @@ export async function getArticleStats(db: D1Database, month?: string) {
           ELSE 0
         END
       ) AS rewrite_required,
- 
+
       SUM(
         CASE
           WHEN status = 'pending'
@@ -191,16 +232,15 @@ export async function getArticleStats(db: D1Database, month?: string) {
           ELSE 0
         END
       ) AS pending,
- 
+
       ROUND(AVG(ai_score), 2) AS average_score
- 
+
     FROM articles
- 
+
     WHERE month_year = ?
   `;
- 
-  const result = await db.prepare(sql).bind(targetMonth).first();
- 
+
+  const result = await db.prepare(sql).bind(targetMonth).first<ArticleStats>();
+
   return result;
 }
- 

@@ -7,182 +7,31 @@ import {
   X,
   Check,
   Loader2,
-  Copy,
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
 import dayjs from "dayjs";
-import {
-  useArticle,
-  type HistoryItem,
-  type ArticleDetailResponse,
-} from "../hooks/useArticle";
+import { useArticle } from "../hooks/useArticle";
 import { api } from "../http-client";
-import ReactMarkdown, { type Components } from "react-markdown";
-import remarkGfm from "remark-gfm";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
-import type { CSSProperties } from "react";
-import { formatFeedbackAsMarkdown } from "../utils/formatFeedback";
-import { ConfigProvider, Table, Tag, Progress, theme as antdTheme } from "antd";
-import type { ColumnsType } from "antd/es/table";
-import { Resizable } from "react-resizable";
 import "react-resizable/css/styles.css";
 import { useAuth } from "@/contexts/AuthContext";
 import AdminHeader from "@/admin/components/AdminHeader";
 import ArticleViewer from "@/components/shadcnEditor/ArticleViewer";
 import TiptapEditor from "@/components/editor/TiptapEditor";
-
-const syntaxTheme = oneDark as { [key: string]: CSSProperties };
-
-const ResizeableTitle = ({ onResize, width, children, ...restProps }: any) => {
-  if (!width || typeof width !== "number")
-    return <th {...restProps}>{children}</th>;
-  return (
-    <Resizable
-      width={width}
-      height={10}
-      onResize={onResize}
-      draggableOpts={{ enableUserSelectHack: false }}
-      handle={
-        <span
-          className="column-resize-handle"
-          onClick={(e) => e.stopPropagation()}
-        />
-      }
-    >
-      <th {...restProps}>{children}</th>
-    </Resizable>
-  );
-};
+import ParameterResultsBox from "@/admin/components/articles/ParameterResultsBox";
+import ScoringHistoryTable from "@/admin/components/articles/ScoringHistoryTable";
+import FeedbackBlock from "@/admin/components/articles/FeedbackBlock";
+import CopyButton from "@/admin/utils/CopyButton";
+import { ArticleDetailResponse } from "@/utils/types";
 
 function formatScore(s: number) {
   return Number.isInteger(s) ? String(s) : s.toFixed(1);
-}
-
-function scoreColorHex(score: number) {
-  if (score >= 10) return "#389e0d";
-  if (score >= 6) return "#d48806";
-  return "#cf1322";
-}
-function ParameterResultsBox({
-  results,
-}: {
-  results: { parameter_name: string; value: any }[];
-}) {
-  const [open, setOpen] = useState(false);
-  if (!results || !results.length)
-    return (
-      <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <button
-          onClick={() => setOpen((v) => !v)}
-          className="w-full flex items-center justify-between px-4 py-3"
-        >
-          <p className="text-md font-semibold uppercase tracking-wide text-slate-600">
-            Parameter Results
-          </p>
-          {open ? (
-            <ChevronUp size={18} className="text-slate-400" />
-          ) : (
-            <ChevronDown size={18} className="text-slate-400" />
-          )}
-        </button>
-        {open && (
-          <div className="px-4 pb-4">
-            <p className="text-sm text-slate-400">No parameter results yet</p>
-          </div>
-        )}
-      </div>
-    );
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-4 py-3"
-      >
-        <p className="text-md font-semibold uppercase tracking-wide text-slate-600">
-          Parameter Results
-        </p>
-        {open ? (
-          <ChevronUp size={18} className="text-slate-400" />
-        ) : (
-          <ChevronDown size={18} className="text-slate-400" />
-        )}
-      </button>
-      {open && (
-        <div className="px-4 pb-4 grid gap-2">
-          {results.map((r: any, i: number) => (
-            <div
-              key={i}
-              className="flex justify-between items-center bg-slate-50 rounded-lg px-3 py-2 border border-slate-100"
-            >
-              <span className="text-sm font-medium text-slate-700">
-                {r.parameter_name}
-              </span>
-              <span className="text-sm font-semibold text-slate-900 bg-white border border-slate-200 rounded-full px-2.5 py-0.5">
-                {r.value == null ? "—" : String(r.value)}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
 }
 
 function goBack(navigate: any) {
   if (window.history.length > 1) navigate(-1);
   else navigate("/");
 }
-
-const MarkdownCode: Components["code"] = ({
-  className,
-  children,
-  ...props
-}) => {
-  const match = /language-(\w+)/.exec(className || "");
-
-  if (match) {
-    return (
-      <SyntaxHighlighter style={syntaxTheme} language={match[1]} PreTag="div">
-        {String(children).replace(/\n$/, "")}
-      </SyntaxHighlighter>
-    );
-  }
-
-  return (
-    <code className={className} {...props}>
-      {children}
-    </code>
-  );
-};
-
-const feedbackMarkdownComponents: Components = {
-  h2: ({ children }: any) => (
-    <h2 className="text-lg font-bold text-slate-900 mt-4 mb-3 border-b border-slate-200 pb-2">
-      {children}
-    </h2>
-  ),
-  h3: ({ children }: any) => (
-    <h3 className="text-base font-semibold text-slate-800 mt-3 mb-2">
-      {children}
-    </h3>
-  ),
-  ul: ({ children }: any) => (
-    <ul className="list-disc list-inside ml-2 mb-3 space-y-1">{children}</ul>
-  ),
-  li: ({ children }: any) => (
-    <li className="text-md text-slate-700 leading-relaxed">{children}</li>
-  ),
-  p: ({ children }: any) => (
-    <p className="text-md text-slate-600 mb-2">{children}</p>
-  ),
-  strong: ({ children }: any) => (
-    <strong className="font-semibold text-slate-900">{children}</strong>
-  ),
-  em: ({ children }: any) => <em className="italic">{children}</em>,
-};
-
 function scoreColor(score: number) {
   if (score >= 10) {
     return { bar: "bg-emerald-500", badge: "bg-emerald-50 text-emerald-700" };
@@ -193,49 +42,6 @@ function scoreColor(score: number) {
   }
 
   return { bar: "bg-red-500", badge: "bg-red-50 text-red-600" };
-}
-
-function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  return (
-    <button
-      onClick={handleCopy}
-      className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-colors"
-      title="Copy to clipboard"
-    >
-      {copied ? (
-        <Check size={16} className="text-emerald-600" />
-      ) : (
-        <Copy size={16} />
-      )}
-    </button>
-  );
-}
-
-function FeedbackBlock({ feedback }: { feedback: string }) {
-  // Strip "Overall Score: X/10" line from feedback
-  const strippedFeedback = feedback
-    .replace(/^###\s*Overall\s*Score:.*?\/10.*$/m, "")
-    .trim();
-  const formattedFeedback = formatFeedbackAsMarkdown(strippedFeedback);
-
-  return (
-    <div className="prose prose-sm prose-slate max-w-none bg-white p-4 rounded-lg border border-slate-200">
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        components={feedbackMarkdownComponents}
-      >
-        {formattedFeedback}
-      </ReactMarkdown>
-    </div>
-  );
 }
 
 export default function ArticleDetail() {
@@ -293,7 +99,6 @@ export default function ArticleDetail() {
       : null;
   const effectiveSnapshot = isVersionSnapshot ? snapshot : null;
   const displayTitle = effectiveSnapshot?.title ?? article?.title ?? "";
-  const displayContent = effectiveSnapshot?.content ?? article?.content ?? "";
   const displayScore = effectiveSnapshot
     ? effectiveSnapshot.score
     : currentScore;
@@ -660,198 +465,5 @@ export default function ArticleDetail() {
         </div>
       </div>
     </div>
-  );
-}
-
-function ScoringHistoryTable({
-  history,
-  articleId,
-}: {
-  history: HistoryItem[];
-  articleId: string;
-}) {
-  const navigate = useNavigate();
-  const [cols, setCols] = useState<ColumnsType<HistoryItem>>([]);
-  useEffect(() => {
-    const columns: ColumnsType<HistoryItem> = [
-      {
-        title: "Version",
-        dataIndex: "version",
-        key: "version",
-        width: 90,
-        sorter: (a, b) => a.version - b.version,
-        render: (v: number, r: HistoryItem) => (
-          <span
-            onClick={() =>
-              navigate(`/articles/${articleId}?version=${r.version}`)
-            }
-            style={{
-              color: "#0284c7",
-              fontWeight: 600,
-              fontSize: 14,
-              cursor: "pointer",
-              textUnderlineOffset: 3,
-            }}
-          >
-            Aritcle Version {v}
-          </span>
-        ),
-      },
-      {
-        title: "AI Score",
-        dataIndex: "score",
-        key: "score",
-        width: 130,
-        render: (s: number | null) =>
-          s === null ? (
-            <span style={{ color: "#94a3b8", fontSize: 13 }}>—</span>
-          ) : (
-            <span
-              style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
-            >
-              <Progress
-                percent={Math.min(Math.max(s, 0), 10) * 10}
-                size="small"
-                showInfo={false}
-                strokeColor={scoreColorHex(s)}
-                style={{ width: 56 }}
-              />
-              <span
-                style={{
-                  color: scoreColorHex(s),
-                  fontWeight: 600,
-                  fontSize: 13,
-                }}
-              >
-                {formatScore(s)}
-              </span>
-            </span>
-          ),
-      },
-      {
-        title: "Status",
-        dataIndex: "status",
-        key: "status",
-        width: 130,
-        render: (_: any, r: HistoryItem) => {
-          const ds =
-            r.score === null
-              ? "scoring"
-              : r.score === 10
-                ? "accepted"
-                : "rejected";
-          const label =
-            ds === "scoring"
-              ? "Scoring..."
-              : ds === "accepted"
-                ? "Accepted"
-                : "Rejected";
-          return (
-            <Tag
-              color={
-                ds === "accepted"
-                  ? "green"
-                  : ds === "rejected"
-                    ? "red"
-                    : "default"
-              }
-              style={{ fontSize: 13 }}
-            >
-              {label}
-            </Tag>
-          );
-        },
-      },
-      {
-        title: "Submitted",
-        dataIndex: "submitted_at",
-        key: "submitted_at",
-        width: 160,
-        sorter: (a, b) =>
-          new Date(a.submitted_at).getTime() -
-          new Date(b.submitted_at).getTime(),
-        render: (d: string) => (
-          <span style={{ color: "#334155", fontSize: 13 }}>
-            {dayjs(d).format("MMM D, YYYY h:mm A")}
-          </span>
-        ),
-      },
-    ];
-    setCols(columns);
-  }, [articleId]);
-  const handleResize =
-    (idx: number) =>
-    (_: any, { size }: { size: { width: number } }) =>
-      setCols((cur) => {
-        const n = [...cur];
-        n[idx] = { ...n[idx], width: size.width };
-        return n;
-      });
-  const merged = cols.map((c, i) => ({
-    ...c,
-    ...(typeof c.width === "number"
-      ? { onHeaderCell: () => ({ width: c.width, onResize: handleResize(i) }) }
-      : {}),
-  }));
-  return (
-    <ConfigProvider
-      theme={{
-        algorithm: antdTheme.defaultAlgorithm,
-        token: {
-          colorPrimary: "#111827",
-          borderRadius: 8,
-          colorText: "#111827",
-          colorTextSecondary: "#374151",
-          fontSize: 14,
-          colorBgContainer: "#ffffff",
-        },
-        components: {
-          Table: {
-            headerBg: "#ffffff",
-            headerColor: "#111827",
-            headerSplitColor: "#d1d5db",
-            borderColor: "#d1d5db",
-            rowHoverBg: "#f9fafb",
-            cellPaddingBlock: 14,
-          },
-        },
-      }}
-    >
-      <div
-        style={{
-          background: "#ffffff",
-          border: "1.5px solid #d1d5db",
-          borderRadius: 12,
-          overflow: "hidden",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "14px 20px",
-            borderBottom: "1.5px solid #d1d5db",
-          }}
-        >
-          <span style={{ fontSize: 15, fontWeight: 600, color: "#111827" }}>
-            Scoring History
-          </span>
-          <span style={{ fontSize: 13, color: "#64748b" }}>
-            {history.length} versions
-          </span>
-        </div>
-        <Table<HistoryItem>
-          components={{ header: { cell: ResizeableTitle } }}
-          columns={merged}
-          dataSource={history}
-          rowKey="version"
-          pagination={false}
-          scroll={{ x: "max-content" }}
-          locale={{ emptyText: "No scoring history yet." }}
-        />
-      </div>
-    </ConfigProvider>
   );
 }

@@ -2,14 +2,7 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { generateObject } from "ai";
 import type { z } from "zod";
-
-interface AIEvaluationResult {
-  score: number;
-  feedback: string;
-  parameters: Record<string, string | number>;
-}
-// ai.service.ts
-import { NoObjectGeneratedError } from "ai";
+import { AIEvaluationResult } from "../types";
 
 export async function evaluateArticle(
   apiKey: string,
@@ -34,11 +27,6 @@ export async function evaluateArticle(
     
     return object as AIEvaluationResult;
   } catch (error) {
-    if (NoObjectGeneratedError.isInstance(error)) {
-      console.error("RAW MODEL OUTPUT:", error.text);
-      console.error("FINISH REASON:", error.finishReason);
-      console.error("USAGE:", error.usage);
-    }
     throw error;
   }
 }

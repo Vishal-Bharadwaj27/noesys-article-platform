@@ -1,18 +1,4 @@
-type ScopeType = "numeric" | "option";
-
-export interface ParameterOptionInput {
-  id?: string;
-  label: string;
-}
-
-export interface ParameterInput {
-  name: string;
-  prompt: string;
-  scopeType: ScopeType;
-  minValue?: number;
-  maxValue?: number;
-  options?: ParameterOptionInput[];
-}
+import { ParameterInput } from "../types";
 
 function validateScope(input: ParameterInput): string | null {
   if (input.scopeType === "numeric") {

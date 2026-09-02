@@ -1,4 +1,9 @@
-export async function getArticleTypes(db: D1Database) {
+import { ArticleTypeDetail, ArticleTypeInput, ArticleTypeListItem, ArticleTypeListRow, ArticleTypeRow, CreateArticleTypeResult, ParameterRow } from "../types";
+
+
+export async function getArticleTypes(
+  db: D1Database,
+): Promise<ArticleTypeListItem[]> {
   const sql = `
     SELECT
   at.id,
@@ -60,24 +65,38 @@ export async function getArticleTypes(db: D1Database) {
     ORDER BY at.name ASC;
   `;
 
-  const result = await db.prepare(sql).all();
+  const result = await db.prepare(sql).all<ArticleTypeListRow>();
 
-  return result.results.map((row: any) => ({
-    ...row,
-
-    parameters:
+  return result.results.map((row): ArticleTypeListItem => {
+    const parsedParameters: ParameterRow[] =
       typeof row.parameters === "string"
-        ? JSON.parse(row.parameters).filter(Boolean)
-        : [],
+        ? (JSON.parse(row.parameters) as (ParameterRow | null)[]).filter(
+            (p): p is ParameterRow => p !== null,
+          )
+        : [];
 
-    parameter_count: Number(row.parameter_count),
-  }));
+    return {
+      id: row.id,
+      name: row.name,
+      description: row.description,
+      is_active: row.is_active,
+      pass_threshold: row.pass_threshold,
+      score_prompt: row.score_prompt,
+      score_min: row.score_min,
+      score_max: row.score_max,
+      created_by: row.created_by,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+      parameters: parsedParameters,
+      parameter_count: Number(row.parameter_count),
+    };
+  });
 }
 
 export async function getArticleTypeById(
   db: D1Database,
   articleTypeId: string,
-) {
+): Promise<ArticleTypeDetail> {
   const articleType = await db
     .prepare(
       `
@@ -96,7 +115,7 @@ export async function getArticleTypeById(
     `,
     )
     .bind(articleTypeId)
-    .first();
+    .first<ArticleTypeRow>();
 
   if (!articleType) {
     throw new Error("Article type not found");
@@ -105,20 +124,11 @@ export async function getArticleTypeById(
   return articleType;
 }
 
-export interface ArticleTypeInput {
-  name: string;
-  description?: string;
-  passThreshold: number;
-  scorePrompt: string;
-  scoreMin: number;
-  scoreMax: number;
-}
-
 export async function createArticleType(
   db: D1Database,
   input: ArticleTypeInput,
   createdBy: string,
-) {
+): Promise<CreateArticleTypeResult> {
   const existing = await db
     .prepare(
       `
@@ -129,7 +139,8 @@ export async function createArticleType(
     `,
     )
     .bind(input.name)
-    .first();
+    .first<{ id: string }>();
+
   if (existing) {
     throw new Error("Article type already exists");
   }
@@ -191,7 +202,7 @@ export async function updateArticleType(
   db: D1Database,
   articleTypeId: string,
   input: ArticleTypeInput,
-) {
+): Promise<void> {
   const existing = await db
     .prepare(
       `
@@ -202,7 +213,7 @@ export async function updateArticleType(
     `,
     )
     .bind(articleTypeId)
-    .first();
+    .first<{ id: string }>();
 
   if (!existing) {
     throw new Error("Article type not found");
@@ -219,7 +230,7 @@ export async function updateArticleType(
     `,
     )
     .bind(input.name, articleTypeId)
-    .first();
+    .first<{ id: string }>();
 
   if (duplicate) {
     throw new Error("Article type already exists");
@@ -269,7 +280,7 @@ export async function updateArticleType(
 export async function deactivateArticleType(
   db: D1Database,
   articleTypeId: string,
-) {
+): Promise<void> {
   const existing = await db
     .prepare(
       `
@@ -280,7 +291,7 @@ export async function deactivateArticleType(
     `,
     )
     .bind(articleTypeId)
-    .first();
+    .first<{ id: string }>();
 
   if (!existing) {
     throw new Error("Article type not found");
