@@ -10,18 +10,7 @@ import {
   ArrowUpCircle,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-
-export type AuthRole = "super_admin" | "admin" | "user";
-
-export type User = {
-  id: string;
-  email: string;
-  name: string;
-  auth_role: AuthRole;
-  job_role: string;
-  created_at: string;
-  is_active: number; // 1 = active, 0 = inactive
-};
+import { AuthRole, User } from "@/admin/utils/types";
 
 type UserCardProps = {
   user: User;

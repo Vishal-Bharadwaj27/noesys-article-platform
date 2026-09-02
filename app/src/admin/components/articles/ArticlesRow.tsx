@@ -1,37 +1,6 @@
+import { ArticleRowProps, ArticleStatus } from "@/admin/utils/types";
 import { Clock } from "lucide-react";
 
-export type ArticleStatus =
-  | "approved"
-  | "rewrite_required"
-  | "pending"
-  | "failed";
-
-
-export type ArticleParameterResult = {
-  parameterId: string;
-  parameterName: string;
-  scopeType: "numeric" | "option";
-  value: string;
-};
-
-export type ArticleSummary = {
-  id: string;
-  title: string;
-  type: string;
-  version: number;
-  ai_score: number | null;
-  status: ArticleStatus;
-  created_at: string;
-  author_name: string;
-  submitted_at: string;
-  month_year: string;
-  parameters: ArticleParameterResult[];
-};
-
-type ArticleRowProps = {
-  article: ArticleSummary;
-  onClick?: (id: string) => void;
-};
 
 const STATUS_STYLES: Record<ArticleStatus, string> = {
   approved: "bg-indigo-50 text-indigo-700",

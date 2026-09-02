@@ -9,7 +9,6 @@ import {
   Typography,
   Space,
   Empty,
-  Input,
   Card,
   Row,
   Col,
@@ -18,11 +17,9 @@ import {
 import type { ColumnsType, TableProps } from "antd/es/table";
 import { ClockCircleOutlined } from "@ant-design/icons";
 import { Search } from "lucide-react";
-import { Resizable } from "react-resizable";
 import "react-resizable/css/styles.css";
 
 import type { ArticleStatus, ArticleSummary } from "./ArticlesRow";
-import { useParams } from "react-router-dom";
 
 const { Text } = Typography;
 

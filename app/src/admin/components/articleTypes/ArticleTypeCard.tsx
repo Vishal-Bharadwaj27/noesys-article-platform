@@ -9,7 +9,7 @@ import {
 import { ArticleTypeWithPrompt } from "../../pages/articleTypes/ArticleTypesManager";
 import { formatDateToUSLocale } from "../../utils/date";
 import Badge from "../ui/Badge";
-import { ParameterOptionDraft } from "./ArticleTypesForm";
+import { ParameterOptionDraft } from "@/admin/utils/types";
 
 type ArticleTypeCardProps = {
   type: ArticleTypeWithPrompt;

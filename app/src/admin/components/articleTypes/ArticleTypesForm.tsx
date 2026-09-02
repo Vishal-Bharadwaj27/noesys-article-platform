@@ -13,20 +13,16 @@ import Button from "../../components/ui/Button";
 import DeleteConfirmation from "./DeleteConfirmation";
 import { tokenStorage } from "@/http-client";
 import Badge from "../../components/ui/Badge";
+import { ArticleTypeResponse, FormState, ParameterDraft, ParameterResponse, ScopeType } from "@/admin/utils/types";
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
-
-export type ScopeType = "numeric" | "option";
-export type ParameterOptionDraft = { id?: string; label: string };
-export type ParameterDraft = {
-  id: string;
-  name: string;
-  prompt: string;
-  scopeType: ScopeType;
-  minValue: string;
-  maxValue: string;
-  options: ParameterOptionDraft[];
-  isNew: boolean;
+const EMPTY_FORM: FormState = {
+  name: "",
+  description: "",
+  promptContent: "",
+  scoreMin: "0",
+  scoreMax: "10",
+  passThreshold: "10",
+  parameters: [],
 };
 
 const EMPTY_PARAM_DRAFT: Omit<ParameterDraft, "id" | "isNew"> = {
@@ -38,43 +34,9 @@ const EMPTY_PARAM_DRAFT: Omit<ParameterDraft, "id" | "isNew"> = {
   options: [],
 };
 
-type FormState = {
-  name: string;
-  description: string;
-  promptContent: string;
-  scoreMin: string;
-  scoreMax: string;
-  passThreshold: string;
-  parameters: ParameterDraft[];
-};
-const EMPTY_FORM: FormState = {
-  name: "",
-  description: "",
-  promptContent: "",
-  scoreMin: "0",
-  scoreMax: "10",
-  passThreshold: "10",
-  parameters: [],
-};
 
-type ArticleTypeResponse = {
-  id: string;
-  name: string;
-  description: string | null;
-  pass_threshold: number;
-  score_prompt: string;
-  score_min: number;
-  score_max: number;
-};
-type ParameterResponse = {
-  id: string;
-  name: string;
-  prompt: string;
-  scope_type: ScopeType;
-  min_value: number | null;
-  max_value: number | null;
-  options: ParameterOptionDraft[];
-};
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 function parameterFromResponse(p: ParameterResponse): ParameterDraft {
   return {
