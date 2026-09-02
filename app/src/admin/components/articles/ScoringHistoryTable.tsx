@@ -112,14 +112,27 @@ export default function ScoringHistoryTable({
         dataIndex: "submitted_at",
         key: "submitted_at",
         width: 160,
-        sorter: (a, b) =>
-          new Date(a.submitted_at).getTime() -
-          new Date(b.submitted_at).getTime(),
-        render: (d: string) => (
-          <span className="text-slate-700 text-[13px]">
-            {dayjs(d).format("MMM D, YYYY h:mm A")}
-          </span>
-        ),
+        sorter: (a, b) => {
+          // Compare using snapshotted_at (when available) for accurate timeline archiving order
+          const tA = new Date(a.snapshotted_at || a.submitted_at).getTime();
+          const tB = new Date(b.snapshotted_at || b.submitted_at).getTime();
+          return tA - tB;
+        },
+        render: (_: string, r: HistoryItem) => {
+          // snapshotted_at reflects when this version was archived/replaced when a rewrite was triggered.
+          // Using snapshotted_at for historical timeline display ensures each version's row accurately
+          // represents when that version ended and entered history, avoiding duplicated timestamps across versions.
+          const dateStr = r.snapshotted_at || r.submitted_at;
+          if (!dateStr) return <span className="text-slate-400 text-[13px]">—</span>;
+          const normalized = typeof dateStr === "string" && dateStr.includes("T") && !dateStr.endsWith("Z") && !/[+-]\d{2}:\d{2}$/.test(dateStr)
+            ? `${dateStr}Z`
+            : dateStr;
+          return (
+            <span className="text-slate-700 text-[13px]">
+              {dayjs(normalized).format("MMM D, YYYY h:mm A")}
+            </span>
+          );
+        },
       },
     ];
 

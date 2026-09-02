@@ -222,6 +222,7 @@ articleRoutes.get("/mine/:id", async (c) => {
           feedback: item.ai_feedback || null,
           status,
           submitted_at: item.submitted_at,
+          snapshotted_at: item.snapshotted_at,
         };
       }),
     },

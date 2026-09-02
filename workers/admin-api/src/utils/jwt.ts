@@ -39,7 +39,6 @@ export async function verifyJWT(token: string, secret: string) {
     throw new Error("JWT_SECRET is not configured");
   }
   try {
-    console.log(secret)
     const { payload } = await jwtVerify(token, new TextEncoder().encode(secret));
     return payload;
   } catch (error) {

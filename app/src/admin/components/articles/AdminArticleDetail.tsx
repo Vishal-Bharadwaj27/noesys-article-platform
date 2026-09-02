@@ -117,6 +117,7 @@ export default function AdminArticleDetail() {
             feedback: h.ai_feedback ?? h.feedback ?? null,
             status: h.status || "pending",
             submitted_at: (h.submitted_at || h.snapshotted_at || "") as string,
+            snapshotted_at: h.snapshotted_at || "",
           }));
           setHistory(hist as HistoryItem[]);
         }
