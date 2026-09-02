@@ -3,7 +3,7 @@ import ArticlesTable from "../../components/articles/ArticlesTable";
 import { useNavigate, useParams } from "react-router-dom";
 import { DatePicker, Select, Empty } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
-import { api, tokenManager } from "@/http-client";
+import { api, tokenManager, tokenStorage } from "@/http-client";
 
 import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import {
@@ -112,7 +112,7 @@ const AllArticles = () => {
 
       const res = await fetch(endpoint, {
         headers: {
-          Authorization: `Bearer ${tokenManager.get()}`
+          Authorization: `Bearer ${tokenStorage.get()}`
         }
       });
 

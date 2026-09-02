@@ -17,8 +17,18 @@ export function authMiddleware(...allowedRoles: ("admin" | "super_admin")[]) {
       );
     }
     const token = header.slice("Bearer ".length).trim();
-
-    const payload = await verifyJWT(token, c.env.JWT_SECRET);
+    let payload;
+    try {
+      payload = await verifyJWT(token, c.env.JWT_SECRET);
+    } catch (error) {
+      return c.json(
+        {
+          success: false,
+          message: "Unauthorized: Invalid or expired token",
+        },
+        401,
+      );
+    }
 
     if (!payload?.sub) {
       return c.json(
