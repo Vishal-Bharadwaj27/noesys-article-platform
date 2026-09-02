@@ -60,7 +60,7 @@ export default function AdminArticleDetail() {
       try {
         const BACKEND = import.meta.env.VITE_BACKEND_URL;
         const token =
-          localStorage.getItem("token") || sessionStorage.getItem("token");
+          tokenStorage.get();
 
         const headers: Record<string, string> = {};
 

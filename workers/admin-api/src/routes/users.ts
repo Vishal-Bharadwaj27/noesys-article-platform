@@ -7,13 +7,18 @@ import {
   updateUserAuthRole,
   updateUserStatus,
 } from "../services/users.service";
-import { ALLOWED_ROLES, Env, UpdateUserBody, UpdateUserRoleBody, UpdateUserStatusBody } from "../types";
-import { AuthContext } from "../middleware/auth";
-import { requiredRole } from "../middleware/requiredRole";
+import {
+  ALLOWED_ROLES,
+  AuthContext,
+  Env,
+  UpdateUserBody,
+  UpdateUserRoleBody,
+  UpdateUserStatusBody,
+} from "../types";
+import { authMiddleware } from "../middleware/auth";
 
 const usersRoute = new Hono<{ Bindings: Env } & AuthContext>();
-// usersRoute.use("*", requiredRole("admin", "super_admin"));
-
+usersRoute.use("*", authMiddleware("admin", "super_admin"));
 
 function parseUpdateUserBody(
   body: unknown,
@@ -76,7 +81,10 @@ usersRoute.patch("/:id/role", async (c) => {
   }
 
   const body = await c.req.json<UpdateUserRoleBody>();
-  if (!body.role || !ALLOWED_ROLES.includes(body.role as (typeof ALLOWED_ROLES)[number])) {
+  if (
+    !body.role ||
+    !ALLOWED_ROLES.includes(body.role as (typeof ALLOWED_ROLES)[number])
+  ) {
     return c.json({ message: "Invalid role" }, 400);
   }
 

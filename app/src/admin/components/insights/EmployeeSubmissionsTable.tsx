@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
 import { Table, Spin, ConfigProvider, theme as antdTheme } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { EmployeeSubmissionRow, EmployeeSubmissionsResult } from "@/admin/utils/types";
+import {
+  EmployeeSubmissionRow,
+  EmployeeSubmissionsResult,
+} from "@/admin/utils/types";
+import { tokenManager } from "@/http-client";
 
 const MONTH_LABELS = [
   "Jan",
@@ -35,13 +39,25 @@ export function EmployeeSubmissionsTable({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
-    fetch(
-      `${BACKEND_URL}/api/insights/employee-submissions?start=${start}&end=${end}`,
-    )
-      .then((res) => res.json())
-      .then(setData)
-      .finally(() => setLoading(false));
+    async function loadEmployeeSubmissions() {
+      setLoading(true);
+      try {
+        const res = await fetch(
+          `${BACKEND_URL}/api/insights/employee-submissions?start=${start}&end=${end}`,
+          {
+            headers: {
+              Authorization: `Bearer ${tokenManager.get()}`,
+            },
+          },
+        );
+        const data = await res.json();
+        setData(data);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadEmployeeSubmissions();
   }, [start, end]);
 
   if (loading) return <Spin className="mt-10 flex justify-center" />;

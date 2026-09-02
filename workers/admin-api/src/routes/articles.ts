@@ -10,8 +10,10 @@ import {
   getParameterResults,
   storeParameterResults,
 } from "../services/articleParameterResults.service";
+import { authMiddleware } from "../middleware/auth";
  
 const articlesRoute = new Hono<{ Bindings: Env }>();
+articlesRoute.use("*", authMiddleware("admin", "super_admin"));
  
 articlesRoute.get("/", async (c) => {
   const month = c.req.query("month");
