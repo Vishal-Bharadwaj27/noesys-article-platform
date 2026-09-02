@@ -57,7 +57,7 @@ export async function evaluateArticle(
 
     const aiResult = await callAI(GOOGLE_API_KEY, prompt, schema);
 
-    const parameter_results: ParameterResultInput[] = scoreable.map((p, i) => {
+    const parameterResults: ParameterResultInput[] = scoreable.map((p, i) => {
       const key = `p${i}`;
       const rawValue = (aiResult.parameters as Record<string, number | string>)[
         key
@@ -98,7 +98,7 @@ export async function evaluateArticle(
       ai_score: aiResult.score,
       ai_feedback: aiResult.feedback,
       status,
-      parameter_results,
+      parameter_results: parameterResults,
     });
   } catch (error: any) {
     const msg = error?.message || String(error);
