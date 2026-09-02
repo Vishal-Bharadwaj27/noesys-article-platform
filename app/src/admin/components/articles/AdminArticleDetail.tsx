@@ -58,7 +58,7 @@ const feedbackMarkdownComponents: Components = {
 };
 
 function scoreColor(score: number) {
-  if (score >= 8) return { bar: "bg-emerald-500" };
+  if (score >= 10) return { bar: "bg-emerald-500" };
   if (score >= 6) return { bar: "bg-amber-500" };
   return { bar: "bg-red-500" };
 }

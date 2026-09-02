@@ -48,7 +48,7 @@ const STATUS_LABELS: Record<ArticleStatus, string> = {
 };
 
 function scoreColor(score: number) {
-  if (score >= 8) {
+  if (score >= 10) {
     return {
       bar: "bg-emerald-500",
       badge: "bg-emerald-50 text-emerald-700",
