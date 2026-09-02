@@ -5,8 +5,10 @@ import {
   getEmployeeSubmissions,
 } from "../services/insights.service";
 import { Env } from "../types";
+import { authMiddleware } from "../middleware/auth";
 
 const insightsRoute = new Hono<{ Bindings: Env }>();
+insightsRoute.use("*", authMiddleware("admin", "super_admin"))
 
 insightsRoute.get("/summary", async (c) => {
   const start = c.req.query("start");

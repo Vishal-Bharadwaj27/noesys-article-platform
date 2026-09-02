@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import ArticlesTable from "../../components/articles/ArticlesTable";
-import type { ArticleSummary } from "../../components/articles/ArticlesRow";
 import { useNavigate, useParams } from "react-router-dom";
 import { DatePicker, Select, Empty } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
-import { api } from "@/http-client";
+import { api, tokenManager, tokenStorage } from "@/http-client";
 
 import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import {
@@ -13,6 +12,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
+import { ArticleSummary } from "@/admin/utils/types";
 
 const BACKEND_URL = ((import.meta.env.VITE_BACKEND_URL as string | undefined) || "").replace(/\/$/, "");
 
@@ -111,10 +111,9 @@ const AllArticles = () => {
         : `${base}/api/articles?${params.toString()}`;
 
       const res = await fetch(endpoint, {
-        credentials: "include",
         headers: {
-          ...(localStorage.getItem("auth:token") ? { Authorization: `Bearer ${localStorage.getItem("auth:token")}` } : {}),
-        },
+          Authorization: `Bearer ${tokenStorage.get()}`
+        }
       });
 
       const ct = res.headers.get("content-type") || "";

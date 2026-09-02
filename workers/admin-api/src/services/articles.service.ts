@@ -97,6 +97,7 @@ export async function getArticles(
 }
 
 export interface ArticleDetail {
+  ai_feedback: string;
   id: string;
   title: string;
   content: string;

@@ -1,8 +1,8 @@
-import { ParameterDraft, ScopeType } from "./ArticleTypesForm";
 import Badge from "../../components/ui/Badge";
 import { Pencil, Trash2 } from "lucide-react";
 import Button from "../../components/ui/Button";
 import { Select } from "antd";
+import { ParameterDraft, ScopeType } from "@/admin/utils/types";
 
 export default function ParameterRow({
   draft,

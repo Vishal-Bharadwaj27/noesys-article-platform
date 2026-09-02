@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import UserCard, { User } from "../../components/users/UserCard";
+import UserCard from "../../components/users/UserCard";
 import { Search } from "lucide-react";
 import { DatePicker, AutoComplete, Input } from "antd";
 import { useNavigate } from "react-router-dom";
@@ -12,6 +12,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
+import { User } from "@/admin/utils/types";
+import { tokenManager } from "@/http-client";
 
 const BACKEND_URL = ((import.meta.env.VITE_BACKEND_URL as string | undefined) || "").replace(/\/$/, "");
 
@@ -26,7 +28,9 @@ async function fetchUsers(
   }
 
   const res = await fetch(`${BACKEND_URL}/api/users?${params}`, {
-    credentials: "include",
+    headers: {
+      Authorization: `Bearer ${tokenManager.get()}`,
+    },
   });
 
   if (!res.ok) {
@@ -72,8 +76,7 @@ const UsersPage = () => {
   const handleToggleActive = async (userId: string, nextIsActive: boolean) => {
     const res = await fetch(`${BACKEND_URL}/api/users/${userId}/status`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
+      headers: { Authorization: `Bearer ${tokenManager.get()}` },
       body: JSON.stringify({ is_active: nextIsActive }),
     });
 
@@ -92,7 +95,7 @@ const UsersPage = () => {
   ) => {
     const res = await fetch(`${BACKEND_URL}/api/users/${userId}/role`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      headers: { Authorization: `Bearer ${tokenManager.get()}` },
       credentials: "include",
       body: JSON.stringify({ role: nextRole }),
     });

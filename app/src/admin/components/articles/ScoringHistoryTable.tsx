@@ -5,7 +5,6 @@ import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-
 function getAiScoreColorsHex(s: number) {
   if (s >= 10) return "#389e0d";
   if (s >= 6) return "#d48806";
@@ -15,7 +14,6 @@ function getAiScoreColorsHex(s: number) {
 function formatAiScore(s: number) {
   return Number.isInteger(s) ? String(s) : s.toFixed(1);
 }
-
 
 export default function ScoringHistoryTable({
   history,
@@ -40,12 +38,7 @@ export default function ScoringHistoryTable({
             onClick={() =>
               navigate(`/admin/articles/${articleId}?version=${r.version}`)
             }
-            style={{
-              color: "#0284c7",
-              fontWeight: 600,
-              fontSize: 14,
-              cursor: "pointer",
-            }}
+            className="text-sky-600 font-semibold text-sm cursor-pointer"
           >
             Aritcle Version {v}
           </span>
@@ -58,36 +51,20 @@ export default function ScoringHistoryTable({
         width: 130,
         render: (s: number | null) =>
           s === null ? (
-            <span
-              style={{
-                color: "#94a3b8",
-                fontSize: 13,
-              }}
-            >
-              —
-            </span>
+            <span className="text-slate-400 text-[13px]">—</span>
           ) : (
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-              }}
-            >
+            <span className="inline-flex items-center gap-2">
               <Progress
                 percent={Math.min(Math.max(s, 0), 10) * 10}
                 size="small"
                 showInfo={false}
                 strokeColor={getAiScoreColorsHex(s)}
-                style={{ width: 56 }}
+                className="w-14"
               />
 
               <span
-                style={{
-                  color: getAiScoreColorsHex(s),
-                  fontWeight: 600,
-                  fontSize: 13,
-                }}
+                style={{ color: getAiScoreColorsHex(s) }}
+                className="font-semibold text-[13px]"
               >
                 {formatAiScore(s)}
               </span>
@@ -123,7 +100,7 @@ export default function ScoringHistoryTable({
                     ? "red"
                     : "default"
               }
-              style={{ fontSize: 13 }}
+              className="text-[13px]"
             >
               {label}
             </Tag>
@@ -139,12 +116,7 @@ export default function ScoringHistoryTable({
           new Date(a.submitted_at).getTime() -
           new Date(b.submitted_at).getTime(),
         render: (d: string) => (
-          <span
-            style={{
-              color: "#334155",
-              fontSize: 13,
-            }}
-          >
+          <span className="text-slate-700 text-[13px]">
             {dayjs(d).format("MMM D, YYYY h:mm A")}
           </span>
         ),
@@ -199,40 +171,13 @@ export default function ScoringHistoryTable({
         },
       }}
     >
-      <div
-        style={{
-          background: "#ffffff",
-          border: "1.5px solid #d1d5db",
-          borderRadius: 12,
-          overflow: "hidden",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "14px 20px",
-            borderBottom: "1.5px solid #d1d5db",
-          }}
-        >
-          <span
-            style={{
-              fontSize: 15,
-              fontWeight: 600,
-              color: "#111827",
-            }}
-          >
+      <div className="bg-white border-[1.5px] border-gray-300 rounded-xl overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b-[1.5px] border-gray-300">
+          <span className="text-[15px] font-semibold text-gray-900">
             Scoring History
           </span>
 
-          <span
-            style={{
-              fontSize: 13,
-              color: "#64748b",
-            }}
-          >
+          <span className="text-[13px] text-slate-500">
             {history.length} versions
           </span>
         </div>

@@ -2,9 +2,22 @@ export type Env = {
   DB: D1Database;
   DEV_EMAIL?: string;
   JWT_SECRET: string;
-  ENVIRONMENT: string;
-  SENDGRID_API_KEY: string;
-  FROM_EMAIL: string;
+  ENVIRONMENT?: string;
+  SENDGRID_API_KEY?: string;
+  FROM_EMAIL?: string;
+};
+
+export type AuthContext = {
+  Variables: {
+    user: {
+      id: string;
+      email: string;
+      name: string;
+      job_role: string;
+      auth_role: string;
+      is_active: number;
+    };
+  };
 };
 
 export type AuthenticatedUser = {

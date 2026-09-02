@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { Env, ParameterInput } from "../types";
+import { AuthContext, Env, ParameterInput } from "../types";
 import {
   createParameter,
   deactivateParameter,
@@ -7,11 +7,10 @@ import {
   getParametersByArticleType,
   updateParameter,
 } from "../services/parameters.service";
-import { requiredRole } from "../middleware/requiredRole";
-import { AuthContext } from "../middleware/auth";
+import { authMiddleware } from "../middleware/auth";
 
 const parametersRoute = new Hono<{ Bindings: Env } & AuthContext>();
-// parametersRoute.use("*", requiredRole("admin", "super_admin"));
+parametersRoute.use("*", authMiddleware("admin", "super_admin"));
 
 function parseParameterBody(body: unknown): ParameterInput | { error: string } {
   const b = body as Record<string, unknown>;

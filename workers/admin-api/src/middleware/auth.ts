@@ -1,49 +1,88 @@
 import type { Context, Next } from "hono";
-import type { Env, AuthenticatedUser } from "../types";
+import { getUserById } from "../services/users.service";
+import type { AuthContext, Env } from "../types";
+import { verifyJWT } from "../utils/jwt";
 
-export type AuthContext = {
-  Variables: {
-    user: AuthenticatedUser;
+export function authMiddleware(...allowedRoles: ("admin" | "super_admin")[]) {
+  return async (c: Context<{ Bindings: Env } & AuthContext>, next: Next) => {
+    const header = c.req.header("Authorization");
+
+    if (!header || !header.startsWith("Bearer ")) {
+      return c.json(
+        {
+          success: false,
+          message: "Unauthorized: Missing token",
+        },
+        401,
+      );
+    }
+    const token = header.slice("Bearer ".length).trim();
+    let payload;
+    try {
+      payload = await verifyJWT(token, c.env.JWT_SECRET);
+    } catch (error) {
+      return c.json(
+        {
+          success: false,
+          message: "Unauthorized: Invalid or expired token",
+        },
+        401,
+      );
+    }
+
+    if (!payload?.sub) {
+      return c.json(
+        {
+          success: false,
+          message: "Unauthorized: Invalid or expired token",
+        },
+        401,
+      );
+    }
+
+    const user = await getUserById(c.env.DB, payload.sub as string);
+
+    if (!user) {
+      return c.json(
+        {
+          success: false,
+          message: "Unauthorized: User not found",
+        },
+        401,
+      );
+    }
+
+    if (user.is_active !== 1) {
+      return c.json(
+        {
+          success: false,
+          message: "Forbidden: Account is inactive",
+        },
+        403,
+      );
+    }
+
+    if (
+      allowedRoles.length > 0 &&
+      !allowedRoles.includes(user.auth_role as any)
+    ) {
+      return c.json(
+        {
+          success: false,
+          message: "Forbidden: Insufficient permissions",
+        },
+        403,
+      );
+    }
+    c.set("user", {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      job_role: user.job_role,
+      auth_role: user.auth_role,
+      is_active: user.is_active,
+    });
+
+    await next();
   };
-};
-
-export async function authMiddleware(
-  c: Context<{ Bindings: Env } & AuthContext>,
-  next: Next,
-) {
-  const jwt = c.req.header("Cf-Access-Jwt-Assertion");
-
-  if (!jwt) {
-    return c.json({ message: "Unauthorized: missing access token" }, 401);
-  }
-
-  // Cloudflare Access already verifies the JWT signature at the edge
-  // before it reaches your Worker, so here you just need the claims.
-  // Decode the payload (base64) to get the verified email.
-  const payload = JSON.parse(atob(jwt.split(".")[1]));
-  const email = payload.email as string | undefined;
-
-  if (!email) {
-    return c.json({ message: "Unauthorized: invalid token" }, 401);
-  }
-
-  const user = await c.env.DB.prepare(
-    `SELECT id, email, name, auth_role, job_role, is_active
-     FROM users
-     WHERE email = ?`,
-  )
-    .bind(email)
-    .first<AuthenticatedUser>();
-
-  if (!user) {
-    return c.json({ message: "Unauthorized: user not found" }, 401);
-  }
-
-  if (!user.is_active) {
-    return c.json({ message: "Forbidden: account is inactive" }, 403);
-  }
-
-  c.set("user", user);
-  return await next();
 }
-

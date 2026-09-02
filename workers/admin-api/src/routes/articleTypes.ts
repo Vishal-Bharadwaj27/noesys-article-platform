@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { ArticleTypeInput, Env } from "../types";
+import { ArticleTypeInput, AuthContext, Env } from "../types";
 import {
   createArticleType,
   deactivateArticleType,
@@ -7,11 +7,10 @@ import {
   updateArticleType,
   getArticleTypes,
 } from "../services/articleTypes.service";
-import { requiredRole } from "../middleware/requiredRole";
-import { AuthContext } from "../middleware/auth";
+import { authMiddleware } from "../middleware/auth";
 
 const articleTypesRoute = new Hono<{ Bindings: Env } & AuthContext>();
-// articleTypesRoute.use("*", requiredRole("admin", "super_admin"));
+articleTypesRoute.use("*", authMiddleware("admin", "super_admin"));
 
 function parseArticleTypeBody(body: unknown): ArticleTypeInput | { error: string } {
   const b = body as Record<string, unknown>;
