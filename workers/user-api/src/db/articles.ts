@@ -1,19 +1,5 @@
-export type Article = {
-  id: string;
-  user_id: string;
-  article_type_id: string;
-  article_type_name: string;
-  title: string;
-  content: string;
-  status: string;
-  ai_score: number | null;
-  version: number;
-  submitted_at: string;
-  scored_at: string | null;
-  month_year: string;
-  retry_count: number;
-  ai_feedback: string | null;
-};
+import { Article, ArticlePagination } from "../types";
+
 
 const ARTICLE_COLUMNS = `
   a.id,
@@ -31,13 +17,6 @@ const ARTICLE_COLUMNS = `
   a.retry_count,
   a.ai_feedback
 `;
-
-export type ArticlePagination = {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-};
 
 export async function getArticlesByUser(
   db: D1Database,

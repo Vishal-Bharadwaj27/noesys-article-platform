@@ -1,20 +1,7 @@
 import { useEffect, useState } from "react";
 import { Table, Spin, ConfigProvider, theme as antdTheme } from "antd";
 import type { ColumnsType } from "antd/es/table";
-
-interface EmployeeSubmissionRow {
-  userId: string;
-  name: string;
-  jobRole: string;
-  monthly: Record<string, number>;
-  total: number;
-}
-interface EmployeeSubmissionsResult {
-  months: string[];
-  rows: EmployeeSubmissionRow[];
-  monthlyTotals: Record<string, number>;
-  grandTotal: number;
-}
+import { EmployeeSubmissionRow, EmployeeSubmissionsResult } from "@/admin/utils/types";
 
 const MONTH_LABELS = [
   "Jan",

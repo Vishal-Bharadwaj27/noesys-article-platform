@@ -9,7 +9,7 @@ import {
   Loader2,
 } from "lucide-react";
 import dayjs from "dayjs";
-import { useMyArticles, type ArticleListItem } from "../hooks/useMyArticles";
+import { useMyArticles } from "../hooks/useMyArticles";
 import { useAuth } from "../contexts/AuthContext";
 import {
   Popover,
@@ -33,6 +33,7 @@ import { ClockCircleOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import { Resizable } from "react-resizable";
 import "react-resizable/css/styles.css";
+import { ArticleListItem } from "@/utils/types";
 
 const { Text } = Typography;
 

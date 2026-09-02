@@ -8,37 +8,9 @@ import {
   theme as antdTheme,
   Tooltip,
 } from "antd";
+import { ArticleTypeSummary, NumericDistributionBucket, ParameterSummary } from "@/admin/utils/types";
 
-interface OptionBreakdown {
-  label: string;
-  count: number;
-}
 
-interface NumericDistributionBucket {
-  value: number;
-  count: number;
-}
-
-interface ParameterSummary {
-  parameterId: string;
-  parameterName: string;
-  scopeType: "numeric" | "option";
-  options?: OptionBreakdown[];
-  numeric?: {
-    avg: number;
-    min: number;
-    max: number;
-    count: number;
-    distribution: NumericDistributionBucket[];
-  };
-}
-
-interface ArticleTypeSummary {
-  articleTypeId: string;
-  articleTypeName: string;
-  totalArticles: number;
-  parameters: ParameterSummary[];
-}
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 

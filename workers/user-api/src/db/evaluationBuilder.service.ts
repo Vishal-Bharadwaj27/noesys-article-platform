@@ -1,6 +1,6 @@
 // services/evaluationBuilder.service.ts
 import { z } from "zod";
-import type { ArticleTypeConfig, ParameterConfig } from "./evaluation.service";
+import { ArticleTypeConfig, ParameterConfig } from "../types";
 
 // Only include parameters that CAN be scored:
 // - numeric always qualifies

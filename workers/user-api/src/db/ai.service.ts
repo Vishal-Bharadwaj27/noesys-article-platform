@@ -2,14 +2,7 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { generateObject } from "ai";
 import type { z } from "zod";
-
-interface AIEvaluationResult {
-  score: number;
-  feedback: string;
-  parameters: Record<string, string | number>;
-}
-// ai.service.ts
-import { NoObjectGeneratedError } from "ai";
+import { AIEvaluationResult } from "../types";
 
 export async function evaluateArticle(
   apiKey: string,

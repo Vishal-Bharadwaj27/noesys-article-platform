@@ -53,7 +53,7 @@ export default function ParameterResultsBox({
               className="flex justify-between items-center bg-slate-50 rounded-lg px-3 py-2 border border-slate-100"
             >
               <span className="text-sm font-medium text-slate-700">
-                {r.parameter_name}
+                {r.parameter_name || r.name}
               </span>
               <span className="text-sm font-semibold text-slate-900 bg-white border border-slate-200 rounded-full px-2.5 py-0.5">
                 {r.value == null ? "—" : String(r.value)}

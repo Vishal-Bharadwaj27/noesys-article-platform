@@ -1,36 +1,4 @@
-// Database helpers for evaluation system
-
-export type ArticleTypeConfig = {
-  id: string;
-  name: string;
-  description: string | null;
-  score_prompt: string;
-  score_min: number;
-  score_max: number;
-  pass_threshold: number;
-  is_active: number;
-};
-
-export type ParameterConfig = {
-  id: string;
-  article_type_id: string;
-  name: string;
-  prompt: string;
-  scope_type: "numeric" | "option";
-  min_value: number | null;
-  max_value: number | null;
-  is_active: number;
-  sort_order: number;
-  options: ParameterOption[]; // only populated when scope_type = 'option'
-};
-
-export type ParameterOption = {
-  id: string;
-  parameter_id: string;
-  label: string;
-  is_active: number;
-  sort_order: number;
-};
+import { ArticleTypeConfig, ParameterConfig, ParameterOption } from "../types";
 
 /**
  * Fetch article type by ID with scoring configuration

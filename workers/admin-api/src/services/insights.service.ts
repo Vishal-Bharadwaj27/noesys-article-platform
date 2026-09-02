@@ -1,42 +1,4 @@
-// services/insights.service.ts
-
-interface DateRange {
-  start: string; // 'YYYY-MM'
-  end: string; // 'YYYY-MM'
-}
-
-interface OptionBreakdown {
-  label: string;
-  count: number;
-  sortOrder: number;
-}
-
-interface NumericDistributionBucket {
-  value: number;
-  count: number;
-}
-
-interface ParameterSummary {
-  parameterId: string;
-  parameterName: string;
-  scopeType: "numeric" | "option";
-  sortOrder: number;
-  options?: OptionBreakdown[];
-  numeric?: {
-    avg: number;
-    min: number;
-    max: number;
-    count: number;
-    distribution: NumericDistributionBucket[];
-  };
-}
-
-interface ArticleTypeSummary {
-  articleTypeId: string;
-  articleTypeName: string;
-  totalArticles: number;
-  parameters: ParameterSummary[];
-}
+import { ArticleTypeSummary, DateRange, NumericDistributionBucket, ParameterSummary } from "../types";
 
 export async function getSummary(
   db: D1Database,
@@ -80,23 +42,6 @@ export async function getSummary(
 
     for (const p of params.results as any[]) {
       if (p.scope_type === "option") {
-        // Problem 1 fix: start from parameter_options (all active options for
-        // this parameter) and LEFT JOIN a pre-filtered subquery of actual
-        // results. The subquery applies the version join, parameter_id
-        // filter, and month_year range *before* the join, so it only ever
-        // contributes rows for results that truly match. Because the outer
-        // query starts from parameter_options, every active option is
-        // returned even when the subquery has no matching row for it, in
-        // which case COUNT(filtered.article_id) naturally evaluates to 0.
-        //
-        // This is deliberately NOT written as:
-        //   LEFT JOIN article_parameter_results apr ON apr.option_id = po.id
-        //   LEFT JOIN articles a ON a.id = apr.article_id AND a.month_year BETWEEN ? AND ?
-        // because putting the month_year filter in the articles ON clause
-        // (rather than pre-filtering) would let an apr row "count" even when
-        // its article falls outside the requested range -- the apr row
-        // still has a non-null article_id, so COUNT(apr.article_id) would
-        // include it despite a being NULL for that row.
         const rows = await db
           .prepare(
             `
@@ -143,17 +88,6 @@ export async function getSummary(
           .bind(p.id, range.start, range.end)
           .first<any>();
 
-        // Problem 2 fix: build a recursive CTE that enumerates every integer
-        // from parameters.min_value to parameters.max_value, then LEFT JOIN
-        // a pre-filtered subquery of results (same "filter first, then
-        // left join" shape as above, and for the same reason: filtering
-        // inside the ON clause of the join to `articles` would let
-        // out-of-range rows leak into the count). Buckets with no matching
-        // result naturally get COUNT(...) = 0.
-        //
-        // Guarded because min_value/max_value may be null for legacy
-        // numeric parameters that predate bounded ranges -- in that case we
-        // fall back to an empty distribution rather than a query error.
         let distribution: NumericDistributionBucket[] = [];
         if (p.min_value != null && p.max_value != null) {
           const distRows = await db

@@ -1,12 +1,4 @@
-export type OtpCode = {
-  id: string;
-  email: string;
-  code: string;
-  purpose: string;
-  expires_at: string;
-  created_at: string;
-  used_at: string | null;
-};
+import { OtpCode } from "../types";
 
 const OTP_COLUMNS = `
   id,

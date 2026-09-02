@@ -1,21 +1,48 @@
-import MarkdownViewer from "./MarkdownViewer";
+import remarkGfm from "remark-gfm";
+import { formatFeedbackAsMarkdown } from "../../../utils/formatFeedback";
+import ReactMarkdown, { type Components } from "react-markdown";
 
-export default function FeedbackBlock({
-  feedback,
-}: {
-  feedback: string;
-}) {
+const feedbackMarkdownComponents: Components = {
+  h2: ({ children }: any) => (
+    <h2 className="text-lg font-bold text-slate-900 mt-4 mb-3 border-b border-slate-200 pb-2">
+      {children}
+    </h2>
+  ),
+  h3: ({ children }: any) => (
+    <h3 className="text-base font-semibold text-slate-800 mt-3 mb-2">
+      {children}
+    </h3>
+  ),
+  ul: ({ children }: any) => (
+    <ul className="list-disc list-inside ml-2 mb-3 space-y-1">{children}</ul>
+  ),
+  li: ({ children }: any) => (
+    <li className="text-sm text-slate-700 leading-relaxed">{children}</li>
+  ),
+  p: ({ children }: any) => (
+    <p className="text-sm text-slate-600 mb-2">{children}</p>
+  ),
+  strong: ({ children }: any) => (
+    <strong className="font-semibold text-slate-900">{children}</strong>
+  ),
+  em: ({ children }: any) => <em className="italic">{children}</em>,
+};
+
+export default function FeedbackBlock({ feedback }: { feedback: string }) {
+  const stripped = feedback
+    .replace(/^###\s*Overall\s*Score:.*?\/10.*$/m, "")
+    .trim();
+
+  const fmt = formatFeedbackAsMarkdown(stripped);
+
   return (
-    <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-      <div className="mb-3">
-        <p className="text-md font-semibold uppercase tracking-wide text-slate-600">
-          Feedback
-        </p>
-      </div>
-
-      <div className="bg-white p-4 rounded-lg border border-slate-200">
-        <MarkdownViewer content={feedback} />
-      </div>
+    <div className="prose prose-sm prose-slate max-w-none bg-white p-4 rounded-lg border border-slate-200">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={feedbackMarkdownComponents}
+      >
+        {fmt}
+      </ReactMarkdown>
     </div>
   );
 }

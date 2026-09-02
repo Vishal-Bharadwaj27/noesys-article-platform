@@ -149,16 +149,7 @@ const AllArticles = () => {
   useEffect(() => {
     fetchArticles();
   }, [fetchArticles]);
-
-  const handleMonthChange = (date: Dayjs | null) => {
-    // Clearing the month resets it to current month.
-    if (!date) {
-      setSelectedMonth(dayjs().startOf("month"));
-      return;
-    }
-
-    setSelectedMonth(date.startOf("month"));
-  };
+  
   const [sortBy, setSortBy] = useState("created_desc");
 
   const filteredByAuthor = useMemo(() => {

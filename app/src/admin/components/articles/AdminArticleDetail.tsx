@@ -1,26 +1,14 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import {
-  ChevronLeft,
-  Loader2,
-  Copy,
-  Check,
-  ChevronDown,
-  ChevronUp,
-} from "lucide-react";
+import { ChevronLeft, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import dayjs from "dayjs";
-import { api, tokenStorage } from "../../../http-client";
-import type {
-  HistoryItem,
-  ArticleDetailResponse,
-} from "../../../hooks/useArticle";
-import ReactMarkdown, { type Components } from "react-markdown";
-import remarkGfm from "remark-gfm";
-import { formatFeedbackAsMarkdown } from "../../../utils/formatFeedback";
-import "react-resizable/css/styles.css";
+import { tokenStorage } from "../../../http-client";
 import ArticleViewer from "@/components/shadcnEditor/ArticleViewer";
 import ScoringHistoryTable from "./ScoringHistoryTable";
 import ParameterResultsBox from "./ParameterResultsBox";
+import FeedbackBlock from "./FeedbackBlock";
+import CopyButton from "@/admin/utils/CopyButton";
+import { HistoryItem } from "@/utils/types";
 
 function formatAiScore(s: number) {
   return Number.isInteger(s) ? String(s) : s.toFixed(1);
@@ -31,77 +19,10 @@ function navigateBackOrToArticles(navigate: any) {
   else navigate("/admin/articles");
 }
 
-const feedbackMarkdownComponents: Components = {
-  h2: ({ children }: any) => (
-    <h2 className="text-lg font-bold text-slate-900 mt-4 mb-3 border-b border-slate-200 pb-2">
-      {children}
-    </h2>
-  ),
-  h3: ({ children }: any) => (
-    <h3 className="text-base font-semibold text-slate-800 mt-3 mb-2">
-      {children}
-    </h3>
-  ),
-  ul: ({ children }: any) => (
-    <ul className="list-disc list-inside ml-2 mb-3 space-y-1">{children}</ul>
-  ),
-  li: ({ children }: any) => (
-    <li className="text-sm text-slate-700 leading-relaxed">{children}</li>
-  ),
-  p: ({ children }: any) => (
-    <p className="text-sm text-slate-600 mb-2">{children}</p>
-  ),
-  strong: ({ children }: any) => (
-    <strong className="font-semibold text-slate-900">{children}</strong>
-  ),
-  em: ({ children }: any) => <em className="italic">{children}</em>,
-};
-
 function getAiScoreColors(score: number) {
   if (score >= 10) return { bar: "bg-emerald-500" };
   if (score >= 6) return { bar: "bg-amber-500" };
   return { bar: "bg-red-500" };
-}
-
-function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false);
-
-  return (
-    <button
-      onClick={() => {
-        navigator.clipboard.writeText(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      }}
-      className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-colors"
-      title="Copy"
-    >
-      {copied ? (
-        <Check size={16} className="text-emerald-600" />
-      ) : (
-        <Copy size={16} />
-      )}
-    </button>
-  );
-}
-
-function FeedbackBlock({ feedback }: { feedback: string }) {
-  const stripped = feedback
-    .replace(/^###\s*Overall\s*Score:.*?\/10.*$/m, "")
-    .trim();
-
-  const fmt = formatFeedbackAsMarkdown(stripped);
-
-  return (
-    <div className="prose prose-sm prose-slate max-w-none bg-white p-4 rounded-lg border border-slate-200">
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        components={feedbackMarkdownComponents}
-      >
-        {fmt}
-      </ReactMarkdown>
-    </div>
-  );
 }
 
 export default function AdminArticleDetail() {
@@ -320,7 +241,7 @@ export default function AdminArticleDetail() {
               {displayScore === null ? (
                 <div className="flex items-center gap-2 text-sm text-slate-500 py-1">
                   <Loader2 size={16} className="animate-spin text-slate-400" />
-                  <span>Scoring...</span>
+                  <span>loading...</span>
                 </div>
               ) : (
                 <>
@@ -359,7 +280,7 @@ export default function AdminArticleDetail() {
             {displayScore === null ? (
               <div className="flex items-center gap-2 text-sm text-slate-500 py-2 bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
                 <Loader2 size={16} className="animate-spin text-slate-400" />
-                <span>Scoring...</span>
+                <span>loading...</span>
               </div>
             ) : (
               <FeedbackBlock
