@@ -9,7 +9,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 import dayjs from "dayjs";
-import { api } from "../../../http-client";
+import { api, tokenStorage } from "../../../http-client";
 import type {
   HistoryItem,
   ArticleDetailResponse,
@@ -46,10 +46,10 @@ const feedbackMarkdownComponents: Components = {
     <ul className="list-disc list-inside ml-2 mb-3 space-y-1">{children}</ul>
   ),
   li: ({ children }: any) => (
-    <li className="text-md text-slate-700 leading-relaxed">{children}</li>
+    <li className="text-sm text-slate-700 leading-relaxed">{children}</li>
   ),
   p: ({ children }: any) => (
-    <p className="text-md text-slate-600 mb-2">{children}</p>
+    <p className="text-sm text-slate-600 mb-2">{children}</p>
   ),
   strong: ({ children }: any) => (
     <strong className="font-semibold text-slate-900">{children}</strong>
@@ -58,7 +58,7 @@ const feedbackMarkdownComponents: Components = {
 };
 
 function scoreColor(score: number) {
-  if (score >= 8) return { bar: "bg-emerald-500" };
+  if (score >= 10) return { bar: "bg-emerald-500" };
   if (score >= 6) return { bar: "bg-amber-500" };
   return { bar: "bg-red-500" };
 }
@@ -200,14 +200,32 @@ export default function AdminArticleDetail() {
 
     (async () => {
       try {
-        const result = await api<ArticleDetailResponse>(`/articles/mine/${id}`);
+        const headers: Record<string, string> = {};
+        const token = tokenStorage.get();
 
-        setArticle(result.article);
-        setHistory(result.history ?? []);
-        setCurrentScore(result.current_score);
-        setCurrentFeedback(result.current_feedback ?? "");
-        setParameterResults((result as any).parameter_results ?? []);
-        setError(null);
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        }
+
+        const res = await fetch(
+          `${import.meta.env.VITE_BACKEND_URL}/api/articles/${id}`,
+          {
+            credentials: "include",
+            headers,
+          },
+        );
+
+        if (!res.ok) {
+          throw new Error("Failed to fetch article");
+        }
+
+        const result = await res.json();
+
+        setArticle(result.data.article);
+        setHistory(result.data.history ?? []);
+        setCurrentScore(result.data.current_score);
+        setCurrentFeedback(result.data.current_feedback ?? "");
+        setParameterResults(result.data.parameter_results ?? []);
       } catch {}
     })();
   }, [id, article]);

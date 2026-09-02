@@ -11,6 +11,9 @@ export async function generateJWT(payload: {
   email: string;
   role: string;
 }, secret: string) {
+  if (!secret) {
+    throw new Error("JWT_SECRET is not configured");
+  }
   const jwt = await new SignJWT({
     userId: payload.userId,
     email: payload.email,
@@ -32,6 +35,9 @@ export async function generateJWT(payload: {
  * @throws Error if token is invalid or expired
  */
 export async function verifyJWT(token: string, secret: string) {
+  if (!secret) {
+    throw new Error("JWT_SECRET is not configured");
+  }
   try {
     const { payload } = await jwtVerify(token, new TextEncoder().encode(secret));
     return payload;
