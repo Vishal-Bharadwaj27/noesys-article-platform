@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import ArticlesTable from "../../components/articles/ArticlesTable";
-import type { ArticleSummary } from "../../components/articles/ArticlesRow";
 import { useNavigate, useParams } from "react-router-dom";
 import { DatePicker, Select, Empty } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
@@ -13,6 +12,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
+import { ArticleSummary } from "@/admin/utils/types";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 

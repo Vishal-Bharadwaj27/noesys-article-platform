@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import UserCard, { User } from "../../components/users/UserCard";
+import UserCard from "../../components/users/UserCard";
 import { Search } from "lucide-react";
 import { DatePicker, AutoComplete, Input } from "antd";
 import { useNavigate } from "react-router-dom";
@@ -12,6 +12,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
+import { User } from "@/admin/utils/types";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 

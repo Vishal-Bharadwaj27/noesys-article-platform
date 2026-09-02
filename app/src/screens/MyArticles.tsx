@@ -425,7 +425,9 @@ function MyArticlesTable({
         key: "version",
         width: 85,
         render: (v: number) => (
-          <Text style={{ color: "#334155", fontSize: fs }}>v{v}</Text>
+          <Text className="text-slate-700" style={{ fontSize: fs }}>
+            v{v}
+          </Text>
         ),
       },
       {
