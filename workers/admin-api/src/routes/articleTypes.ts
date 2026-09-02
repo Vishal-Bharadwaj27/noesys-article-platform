@@ -13,13 +13,14 @@ import { AuthContext } from "../middleware/auth";
 const articleTypesRoute = new Hono<{ Bindings: Env } & AuthContext>();
 // articleTypesRoute.use("*", requiredRole("admin", "super_admin"));
 
-function parseArticleTypeBody(body: any): ArticleTypeInput | { error: string } {
-  const name = body.name;
-  const description = body.description;
-  const passThreshold = body.passThreshold;
-  const scorePrompt = body.scorePrompt;
-  const scoreMin = body.scoreMin;
-  const scoreMax = body.scoreMax;
+function parseArticleTypeBody(body: unknown): ArticleTypeInput | { error: string } {
+  const b = body as Record<string, unknown>;
+  const name = b.name as string | undefined;
+  const description = b.description as string | undefined;
+  const passThreshold = b.passThreshold as unknown;
+  const scorePrompt = b.scorePrompt as string | undefined;
+  const scoreMin = b.scoreMin as unknown;
+  const scoreMax = b.scoreMax as unknown;
 
   if (!name?.trim()) return { error: "Article type name is required" };
   if (!scorePrompt?.trim()) return { error: "Score prompt is required" };

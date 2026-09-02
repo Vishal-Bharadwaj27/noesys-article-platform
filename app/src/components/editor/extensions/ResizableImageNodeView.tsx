@@ -1,13 +1,12 @@
-import { NodeViewWrapper } from "@tiptap/react";
+import { NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
 import { useRef } from "react";
 
 export default function ResizableImageNodeView({
   node,
   selected,
   updateAttributes,
-  extension,
   editor,
-}: any) {
+}: NodeViewProps) {
   const { src, alt, title, width } = node.attrs;
   const containerRef = useRef<HTMLDivElement>(null);
   const isEditable = editor?.isEditable ?? true;
@@ -41,18 +40,18 @@ export default function ResizableImageNodeView({
     window.addEventListener("mouseup", onUp);
   };
 
-  const imgStyle: any = {};
-  if (width) imgStyle.width = width;
+  const imgStyle: React.CSSProperties = {};
+  if (width) imgStyle.width = width as string;
   // Use text-align on full-width wrapper to align inner inline-block container.
   // This is more reliable than margin:auto on the wrapper itself.
-  let wrapperStyle: any = { display: "block", width: "100%", maxWidth: "100%" };
+  let wrapperStyle: React.CSSProperties = { display: "block", width: "100%", maxWidth: "100%" };
   const ta = node.attrs.textAlign || "left";
   wrapperStyle.textAlign = ta === "center" ? "center" : ta === "right" ? "right" : "left";
   if (node.attrs.style) {
     node.attrs.style.split(";").forEach((p: string) => {
       const [k, v] = p.split(":").map((s: string) => s.trim());
       if (k && v)
-        wrapperStyle[
+        (wrapperStyle as Record<string, string>)[
           k.replace(/-([a-z])/g, (_: string, c: string) => c.toUpperCase())
         ] = v;
     });

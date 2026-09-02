@@ -1,17 +1,26 @@
 import { useEffect, useState, useCallback } from "react";
+import type { ArticleDetail, HistoryItem } from "@/utils/types";
 
 type UseArticleOptions = {
   adminMode?: boolean;
 };
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+type AdminArticleDetail = ArticleDetail & {
+  ai_score: number | null;
+  ai_feedback: string | null;
+  author_name?: string;
+  author_email?: string;
+  job_role?: string;
+};
+
+const BACKEND_URL = ((import.meta.env.VITE_BACKEND_URL as string | undefined) || "").replace(/\/$/, "");
 
 export function useArticle(
   id: string,
   { adminMode = false }: UseArticleOptions = {},
 ) {
-  const [article, setArticle] = useState<any>(null);
-  const [history, setHistory] = useState<any[]>([]);
+  const [article, setArticle] = useState<ArticleDetail | AdminArticleDetail | null>(null);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
   const [currentScore, setCurrentScore] = useState<number | null>(null);
   const [currentFeedback, setCurrentFeedback] = useState("");
   const [loading, setLoading] = useState(true);

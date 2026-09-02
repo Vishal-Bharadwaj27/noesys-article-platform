@@ -67,8 +67,18 @@ function redirectToLogin() {
 async function fetchWithAuth<T>(
   path: string,
   options: RequestInit,
+  full: true,
+): Promise<ApiResponse<T>>;
+async function fetchWithAuth<T>(
+  path: string,
+  options: RequestInit,
+  full: false,
+): Promise<T>;
+async function fetchWithAuth<T>(
+  path: string,
+  options: RequestInit,
   full: boolean,
-): Promise<any> {
+): Promise<T | ApiResponse<T>> {
   const token = tokenManager.get() ?? localStorage.getItem("token");
   const headers: Record<string, string> = {
     ...(options.headers as Record<string, string>),

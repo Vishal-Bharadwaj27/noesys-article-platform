@@ -52,9 +52,11 @@ app.get("/article-types", authMiddleware, async (c) => {
 });
 
 app.onError((err, c) => {
+  console.error("[user-api] unhandled error:", err);
   return c.json(
     {
-      message: err.message,
+      success: false,
+      message: err.message || "Internal server error",
     },
     500,
   );

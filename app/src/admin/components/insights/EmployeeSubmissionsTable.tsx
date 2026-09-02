@@ -22,7 +22,7 @@ const formatMonth = (ym: string) => {
   return `${MONTH_LABELS[Number(m) - 1]}-${y.slice(2)}`;
 };
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+const BACKEND_URL = ((import.meta.env.VITE_BACKEND_URL as string | undefined) || "").replace(/\/$/, "");
 
 export function EmployeeSubmissionsTable({
   start,

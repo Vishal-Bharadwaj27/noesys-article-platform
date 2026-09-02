@@ -18,7 +18,7 @@ export function buildEvaluationSchema(
   articleType: ArticleTypeConfig,
   parameters: ParameterConfig[],
 ) {
-  const paramShape: Record<string, z.ZodTypeAny> = {};
+  const paramShape: Record<string, z.ZodType<string | number>> = {};
 
   parameters.forEach((p, i) => {
     const key = `p${i}`; // safe identifier, no hyphens

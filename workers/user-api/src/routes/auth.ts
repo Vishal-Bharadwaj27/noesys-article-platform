@@ -98,7 +98,14 @@ authRoutes.post("/otp/request", async (c) => {
   console.log(`\n========== OTP for ${email}: ${otpCode.code} ==========\n`);
 
   // Fire-and-forget email; failure does not block login (works offline/locally)
-  await sendOTPEmail(c.env, email, otpCode.code).catch((e) => console.error("[Email] async error:", e));
+  // Use waitUntil if available so it doesn't block response, otherwise just don't await
+  try {
+    const p = sendOTPEmail(c.env, email, otpCode.code);
+    if (c.executionCtx?.waitUntil) c.executionCtx.waitUntil(p.catch((e) => console.error("[Email] async error:", e)));
+    else p.catch((e) => console.error("[Email] async error:", e));
+  } catch (e) {
+    console.error("[Email] sync error:", e);
+  }
 
   return c.json({
     success: true,

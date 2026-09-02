@@ -1,0 +1,5 @@
+﻿{
+  "name": "article-platform-router",
+  "compatibility_date": "2026-09-02",
+  "main": "src/index.ts"
+}

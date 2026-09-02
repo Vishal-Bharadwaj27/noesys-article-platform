@@ -1,5 +1,5 @@
 export default {
-  async fetch(request: Request, env: any): Promise<Response> {
+  async fetch(request: Request, env: { ADMIN_API: string; USER_API: string }): Promise<Response> {
     if (request.method === "OPTIONS") {
       return new Response(null, {
         status: 204,

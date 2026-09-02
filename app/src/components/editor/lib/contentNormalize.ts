@@ -111,21 +111,10 @@ function detectAndConvertInlineFormatting(html: string): string {
   return doc.body.innerHTML;
 }
 
-/**
- * Detect and convert Google Docs / web-page "fake headings" to semantic
- * heading tags. Google Docs and many websites don't emit <h1>-<h3>; they
- * present headings as <b> / <strong> with inline font-size and font-weight.
- * Walk the parsed DOM, and for any element whose text is bold and
- * visually large (font-size >= 18px OR font-weight >= 700) replace it
- * with a real <h1>-<h4> so Tiptap can serialize and re-render it correctly.
- */
 function detectAndConvertBoldHeadings(html: string): string {
   if (!html) return html;
   const doc = new DOMParser().parseFromString(html, "text/html");
 
-  // Collect candidate style rules from <style> blocks before they're stripped:
-  // Word defines headings via mso-style-name / mso-outline-level there.
-  // We keep a map of class -> heading level derived from style text.
   let styleText = "";
   doc.querySelectorAll("style").forEach((s) => (styleText += s.textContent || ""));
 
@@ -225,18 +214,11 @@ export function cleanPastedHtml(rawHtml: string): string {
     .replace(/<\/?o:[a-z]+[^>]*>/gi, "")
     .replace(/<\/?w:[a-z]+[^>]*>/gi, "");
 
-  // First pass: detect and convert Google Docs bold headings to semantic
-  // headings BEFORE the rest of the cleanup strips inline styles.
   html = detectAndConvertBoldHeadings(html);
 
-  // Second pass: convert any remaining inline bold/italic/underline/strike
-  // spans (mid-paragraph formatting) to <strong>/<em>/<u>/<s> — otherwise
-  // the style-stripping pass below silently deletes this formatting.
   html = detectAndConvertInlineFormatting(html);
 
   const doc = new DOMParser().parseFromString(html, "text/html");
-
-  // VML shapes: <v:shape><v:imagedata src="..."/></v:shape> -> <img>
   doc.querySelectorAll("*").forEach((el) => {
     const tag = el.tagName.toLowerCase();
     if (tag === "v:imagedata" || tag === "imagedata") {
@@ -290,7 +272,6 @@ export function cleanPastedHtml(rawHtml: string): string {
     }
   });
 
-  // Strip presentational attributes Tiptap ignores anyway, plus mso classes.
   doc.querySelectorAll("*").forEach((el) => {
     if (el.tagName.toLowerCase() === "img") return;
     el.removeAttribute("class");
@@ -335,7 +316,6 @@ export function cleanPastedHtml(rawHtml: string): string {
         currentOrdered = isOrdered;
       }
       const li = doc.createElement("li");
-      // Clean leading "1. " / "1) " / "• " and any leftover tab \u00a0
       let text = child.innerHTML
         .replace(/^\s*(?:\d+[\.\)]|•|·)\s*(?:&nbsp;|\u00a0|\s)*/i, "")
         .replace(/<span[^>]*mso-tab-count[^>]*>[\s\S]*?<\/span>/gi, " ")
@@ -432,11 +412,7 @@ async function urlToDataUrl(url: string): Promise<string | null> {
   }
 }
 
-/**
- * Converts http(s)/blob image sources in an HTML string to base64 data URLs so
- * the article keeps working after the source page expires. Best effort: any
- * image that can't be fetched keeps its original src.
- */
+
 export async function inlineRemoteImages(html: string): Promise<string> {
   if (!html || !/<img/i.test(html)) return html;
   const doc = new DOMParser().parseFromString(html, "text/html");

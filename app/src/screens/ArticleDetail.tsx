@@ -34,7 +34,7 @@ function getAiScoreColorsHex(score: number) {
   return "#cf1322";
 }
 
-function navigateBackOrToArticles(navigate: any) {
+function navigateBackOrToArticles(navigate: ReturnType<typeof useNavigate>) {
   if (window.history.length > 1) navigate(-1);
   else navigate("/");
 }

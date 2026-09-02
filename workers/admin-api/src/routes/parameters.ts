@@ -1,12 +1,11 @@
 import { Hono } from "hono";
-import { Env } from "../types";
+import { Env, ParameterInput } from "../types";
 import {
   createParameter,
   deactivateParameter,
   getParameterById,
   getParametersByArticleType,
   updateParameter,
-  ParameterInput,
 } from "../services/parameters.service";
 import { requiredRole } from "../middleware/requiredRole";
 import { AuthContext } from "../middleware/auth";
@@ -14,10 +13,11 @@ import { AuthContext } from "../middleware/auth";
 const parametersRoute = new Hono<{ Bindings: Env } & AuthContext>();
 // parametersRoute.use("*", requiredRole("admin", "super_admin"));
 
-function parseParameterBody(body: any): ParameterInput | { error: string } {
-  const name = body.name;
-  const prompt = body.prompt;
-  const scopeType = body.scopeType;
+function parseParameterBody(body: unknown): ParameterInput | { error: string } {
+  const b = body as Record<string, unknown>;
+  const name = b.name as string | undefined;
+  const prompt = b.prompt as string | undefined;
+  const scopeType = b.scopeType as string | undefined;
 
   if (!name?.trim()) return { error: "Parameter name is required" };
   if (!prompt?.trim()) return { error: "Parameter prompt is required" };
@@ -29,9 +29,9 @@ function parseParameterBody(body: any): ParameterInput | { error: string } {
     name: name.trim(),
     prompt: prompt.trim(),
     scopeType,
-    minValue: body.minValue,
-    maxValue: body.maxValue,
-    options: body.options,
+    minValue: b.minValue as number | undefined,
+    maxValue: b.maxValue as number | undefined,
+    options: b.options as ParameterInput["options"],
   };
 }
 

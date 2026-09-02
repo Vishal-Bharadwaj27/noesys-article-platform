@@ -100,8 +100,8 @@ export async function evaluateArticle(
       status,
       parameter_results: parameterResults,
     });
-  } catch (error: any) {
-    const msg = error?.message || String(error);
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error);
     console.error("Article evaluation failed:", msg, error);
     await handleEvaluationFailure(db, articleId, msg);
     throw error;

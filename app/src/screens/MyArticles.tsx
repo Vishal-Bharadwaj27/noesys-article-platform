@@ -86,7 +86,7 @@ function getAiScoreColorsHex(score: number) {
   return "#cf1322";
 }
 
-const ResizeableTitle = ({ onResize, width, children, ...restProps }: any) => {
+const ResizeableTitle = ({ onResize, width, children, ...restProps }: { onResize?: (e: React.SyntheticEvent, data: { size: { width: number; height: number } }) => void; width?: number; children?: React.ReactNode } & React.HTMLAttributes<HTMLTableHeaderCellElement>) => {
   if (!width || typeof width !== "number")
     return <th {...restProps}>{children}</th>;
   return (
@@ -488,7 +488,7 @@ function MyArticlesTable({
 
   const handleResize =
     (index: number) =>
-    (_: any, { size }: { size: { width: number } }) => {
+    (_: unknown, { size }: { size: { width: number } }) => {
       setColumns((cur) => {
         const next = [...cur];
         next[index] = { ...next[index], width: size.width };
