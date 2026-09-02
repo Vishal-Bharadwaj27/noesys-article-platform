@@ -38,7 +38,7 @@ import "./paste-content.css";
 import { SmartPaste } from "./extensions/SmartPaste";
 import { resolveContentToHtml } from "./lib/contentNormalize";
 
-function ToolbarButton({ tip, active, onClick, children }: any) {
+function ToolbarButton({ tip, active, onClick, children }: { tip: string; active?: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
     <Tooltip title={tip}>
       <button
@@ -91,8 +91,8 @@ export default function TiptapEditor({
       try {
         const b64 = await convertImageToBase64(file);
         editor?.chain().focus().setImage({ src: b64 }).run();
-      } catch (err: any) {
-        alert(err.message);
+      } catch (err: unknown) {
+        alert(err instanceof Error ? err.message : String(err));
       }
     },
     [editor],

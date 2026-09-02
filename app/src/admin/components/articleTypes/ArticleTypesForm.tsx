@@ -430,7 +430,7 @@ export default function ArticleTypesForm() {
                 {
                   title: "Range / Options",
                   key: "range",
-                  render: (_: any, r: ParameterDraft) =>
+                  render: (_: unknown, r: ParameterDraft) =>
                     r.scopeType === "numeric" ? (
                       <Badge variant="indigo">
                         {r.minValue}–{r.maxValue}
@@ -449,7 +449,7 @@ export default function ArticleTypesForm() {
                   title: "",
                   key: "actions",
                   width: 80,
-                  render: (_: any, r: ParameterDraft) => (
+                  render: (_: unknown, r: ParameterDraft) => (
                     <div className="flex items-center gap-0.5">
                       <button
                         type="button"

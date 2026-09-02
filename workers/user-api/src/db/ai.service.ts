@@ -7,7 +7,7 @@ import { AIEvaluationResult } from "../types";
 export async function evaluateArticle(
   apiKey: string,
   prompt: string,
-  schema: z.ZodTypeAny
+  schema: z.ZodType<AIEvaluationResult>
 ):Promise<AIEvaluationResult> {
   if (!apiKey) {
     throw new Error("Google Generative AI API key is missing.");

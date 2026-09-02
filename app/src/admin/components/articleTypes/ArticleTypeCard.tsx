@@ -54,7 +54,7 @@ function ActionButton({
       onKeyDown={(e) => {
         if (e.key === "Enter") {
           e.stopPropagation();
-          onClick(e as any);
+          onClick(e as unknown as React.MouseEvent);
         }
       }}
       className={`p-2 rounded-md text-slate-400 transition-colors ${hoverClass}`}
@@ -159,7 +159,7 @@ function ArticleTypeCard({
 
               {type.parameters.length > 0 ? (
                 <div className="space-y-3">
-                  {type.parameters.map((param: any) => (
+                  {(type.parameters as unknown as { id: string; name: string; prompt?: string | null; scopeType: string; options?: ParameterOptionDraft[] | null; minValue?: string | number | null; maxValue?: string | number | null }[]).map((param) => (
                     <div
                       key={param.id}
                       className="rounded-xl border border-slate-200 bg-white p-4"
@@ -188,7 +188,7 @@ function ArticleTypeCard({
                         ))}
                       </div>
 
-                      {param.options.length === 0 && (
+                      {(param.options?.length ?? 0) === 0 && (
                         <Badge variant="indigo">
                           {param.minValue} - {param.maxValue}
                         </Badge>

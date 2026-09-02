@@ -8,13 +8,13 @@ import ScoringHistoryTable from "./ScoringHistoryTable";
 import ParameterResultsBox from "./ParameterResultsBox";
 import FeedbackBlock from "./FeedbackBlock";
 import CopyButton from "@/admin/utils/CopyButton";
-import { HistoryItem } from "@/utils/types";
+import { HistoryItem, ArticleDetail, ParameterResult } from "@/utils/types";
 
 function formatAiScore(s: number) {
   return Number.isInteger(s) ? String(s) : s.toFixed(1);
 }
 
-function navigateBackOrToArticles(navigate: any) {
+function navigateBackOrToArticles(navigate: ReturnType<typeof useNavigate>) {
   if (window.history.length > 1) navigate(-1);
   else navigate("/admin/articles");
 }
@@ -41,11 +41,11 @@ export default function AdminArticleDetail() {
   const versionParam =
     parsedVersion !== null && !isNaN(parsedVersion) ? parsedVersion : null;
 
-  const [article, setArticle] = useState<any>(null);
+  const [article, setArticle] = useState<ArticleDetail | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [currentScore, setCurrentScore] = useState<number | null>(null);
   const [currentFeedback, setCurrentFeedback] = useState("");
-  const [parameterResults, setParameterResults] = useState<any[]>([]);
+  const [parameterResults, setParameterResults] = useState<ParameterResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,103 +53,86 @@ export default function AdminArticleDetail() {
 
   useEffect(() => {
     if (!id) return;
+    const controller = new AbortController();
+    let cancelled = false;
 
     (async () => {
       setLoading(true);
+      setError(null);
 
       try {
-        const BACKEND = import.meta.env.VITE_BACKEND_URL;
+        const base = ((import.meta.env.VITE_BACKEND_URL as string | undefined) || "").replace(/\/$/, "");
         const token =
-          tokenStorage.get();
+          tokenStorage.get() || localStorage.getItem("token") || sessionStorage.getItem("token");
 
         const headers: Record<string, string> = {};
+        if (token) headers["Authorization"] = `Bearer ${token}`;
 
-        if (token) {
-          headers["Authorization"] = `Bearer ${token}`;
-        }
-
-        const res = await fetch(`${BACKEND}/api/articles/${id}`, {
+        const res = await fetch(`${base}/api/articles/${id}`, {
           credentials: "include",
           headers,
+          signal: controller.signal,
         });
 
+        if (cancelled || controller.signal.aborted) return;
+
+        const ct = res.headers.get("content-type") || "";
+        if (!ct.includes("application/json")) {
+          const text = await res.text();
+          throw new Error(`Unexpected response (${res.status}): ${text.slice(0, 200)}`);
+        }
         if (!res.ok) throw new Error("Failed to load");
 
         const json = await res.json();
         const d = json.data;
 
-        // admin response shape
-        const art = {
-          id: d.id,
-          title: d.title,
-          content: d.content,
-          article_type_id: d.article_type_id || "",
-          article_type_name: d.article_type_name || d.type || "",
-          status: d.status,
-          version: d.version,
-        } as any;
-
-        setArticle(art);
-        setCurrentScore(d.ai_score ?? null);
-        setCurrentFeedback(d.ai_feedback || "");
-        setParameterResults(d.parameter_results ?? []);
-
-        const hist = (d.history || []).map((h: any) => ({
-          article_id: h.article_id || h.id,
-          version: h.version,
-          title: h.title,
-          content: h.content,
-          score: h.ai_score ?? h.score ?? null,
-          feedback: h.ai_feedback ?? h.feedback ?? null,
-          status: h.status || "pending",
-          submitted_at: h.submitted_at || h.snapshotted_at,
-        }));
-
-        setHistory(hist);
-      } catch (e: any) {
-        setError(e.message);
+        // Handle both admin flat shape and user nested shape
+        if (d.article) {
+          // user shape fallback
+          setArticle(d.article as ArticleDetail);
+          setHistory((d.history ?? []) as HistoryItem[]);
+          setCurrentScore(d.current_score ?? d.ai_score ?? null);
+          setCurrentFeedback(d.current_feedback ?? d.ai_feedback ?? "");
+          setParameterResults(d.parameter_results ?? []);
+        } else {
+          const art: ArticleDetail = {
+            id: d.id as string,
+            title: d.title as string,
+            content: d.content as string,
+            article_type_id: (d.article_type_id as string) || "",
+            article_type_name: (d.article_type_name as string) || (d.type as string) || "",
+            status: d.status as string,
+            version: d.version as number,
+          };
+          setArticle(art);
+          setCurrentScore(d.ai_score ?? null);
+          setCurrentFeedback(d.ai_feedback || "");
+          setParameterResults(d.parameter_results ?? []);
+          const hist = (d.history || []).map((h: { article_id?: string; id?: string; version: number; title: string; content: string; ai_score?: number | null; score?: number | null; ai_feedback?: string | null; feedback?: string | null; status?: string; submitted_at?: string; snapshotted_at?: string }) => ({
+            article_id: h.article_id || (h.id as string) || "",
+            version: h.version,
+            title: h.title,
+            content: h.content,
+            score: h.ai_score ?? h.score ?? null,
+            feedback: h.ai_feedback ?? h.feedback ?? null,
+            status: h.status || "pending",
+            submitted_at: (h.submitted_at || h.snapshotted_at || "") as string,
+          }));
+          setHistory(hist as HistoryItem[]);
+        }
+      } catch (e: unknown) {
+        if (cancelled || (e instanceof DOMException && e.name === "AbortError")) return;
+        setError(e instanceof Error ? e.message : String(e));
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     })();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
   }, [id]);
-
-  // also try user endpoint fallback
-  useEffect(() => {
-    if (article) return;
-    if (!id) return;
-
-    (async () => {
-      try {
-        const headers: Record<string, string> = {};
-        const token = tokenStorage.get();
-
-        if (token) {
-          headers["Authorization"] = `Bearer ${token}`;
-        }
-
-        const res = await fetch(
-          `${import.meta.env.VITE_BACKEND_URL}/api/articles/${id}`,
-          {
-            credentials: "include",
-            headers,
-          },
-        );
-
-        if (!res.ok) {
-          throw new Error("Failed to fetch article");
-        }
-
-        const result = await res.json();
-
-        setArticle(result.data.article);
-        setHistory(result.data.history ?? []);
-        setCurrentScore(result.data.current_score);
-        setCurrentFeedback(result.data.current_feedback ?? "");
-        setParameterResults(result.data.parameter_results ?? []);
-      } catch {}
-    })();
-  }, [id, article]);
 
   const isVersionSnapshot =
     versionParam !== null &&
