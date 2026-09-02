@@ -1,12 +1,9 @@
-import { HistoryItem } from "@/hooks/useArticle";
+import { HistoryItem } from "@/utils/types";
 import { ConfigProvider, Table, Tag, Progress, theme as antdTheme } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Resizable } from "react-resizable";
-import type { CSSProperties } from "react";
-import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 
 function getAiScoreColorsHex(s: number) {
