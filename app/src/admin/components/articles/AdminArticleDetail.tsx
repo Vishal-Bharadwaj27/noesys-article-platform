@@ -9,7 +9,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 import dayjs from "dayjs";
-import { api } from "../../../http-client";
+import { api, tokenStorage } from "../../../http-client";
 import type {
   HistoryItem,
   ArticleDetailResponse,
@@ -200,14 +200,32 @@ export default function AdminArticleDetail() {
 
     (async () => {
       try {
-        const result = await api<ArticleDetailResponse>(`/articles/mine/${id}`);
+        const headers: Record<string, string> = {};
+        const token = tokenStorage.get();
 
-        setArticle(result.article);
-        setHistory(result.history ?? []);
-        setCurrentScore(result.current_score);
-        setCurrentFeedback(result.current_feedback ?? "");
-        setParameterResults((result as any).parameter_results ?? []);
-        setError(null);
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        }
+
+        const res = await fetch(
+          `${import.meta.env.VITE_BACKEND_URL}/api/articles/${id}`,
+          {
+            credentials: "include",
+            headers,
+          },
+        );
+
+        if (!res.ok) {
+          throw new Error("Failed to fetch article");
+        }
+
+        const result = await res.json();
+
+        setArticle(result.data.article);
+        setHistory(result.data.history ?? []);
+        setCurrentScore(result.data.current_score);
+        setCurrentFeedback(result.data.current_feedback ?? "");
+        setParameterResults(result.data.parameter_results ?? []);
       } catch {}
     })();
   }, [id, article]);

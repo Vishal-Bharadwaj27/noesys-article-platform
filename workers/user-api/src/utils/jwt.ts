@@ -2,8 +2,6 @@ import type { Bindings } from "../types";
 
 const encoder = new TextEncoder();
 
-const DEV_SECRET = "noesys-dev-jwt-secret-change-me";
-
 function base64UrlEncode(data: Uint8Array | string): string {
   const bytes = typeof data === "string" ? encoder.encode(data) : data;
   let binary = "";
@@ -37,7 +35,10 @@ export type JwtPayload = {
 };
 
 async function getJwtKey(env: Bindings): Promise<CryptoKey> {
-  const secret = env.JWT_SECRET || DEV_SECRET;
+  const secret = env.JWT_SECRET;
+  if (!secret) {
+    throw new Error("JWT_SECRET is not configured");
+  }
   return crypto.subtle.importKey(
     "raw",
     encoder.encode(secret),
