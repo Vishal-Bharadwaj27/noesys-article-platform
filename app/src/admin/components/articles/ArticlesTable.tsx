@@ -54,13 +54,13 @@ const STATUS_CONFIG: Record<
   },
 };
 
-function scoreColor(score: number) {
+function getAiScoreColors(score: number) {
   if (score >= 10) return "#389e0d";
   if (score >= 6) return "#d48806";
   return "#cf1322";
 }
 
-function formatDate(dateStr: string) {
+function formatDateToUSLocale(dateStr: string) {
   const d = new Date(dateStr);
 
   if (Number.isNaN(d.getTime())) {
@@ -74,7 +74,7 @@ function formatDate(dateStr: string) {
   });
 }
 
-function initials(name: string) {
+function getNameInitials(name: string) {
   return name
     .trim()
     .split(/\s+/)
@@ -84,7 +84,7 @@ function initials(name: string) {
     .toUpperCase();
 }
 
-function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
+function ArticlesTableContent({ articles, onRowClick }: ArticlesTableProps) {
   const [columns, setColumns] = useState<ColumnsType<ArticleSummary>>([]);
 
   const [titleFilter, setTitleFilter] = useState("");
@@ -175,7 +175,7 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
               size={26}
               style={{ backgroundColor: "#7f77dd", fontSize: 11 }}
             >
-              {initials(name)}
+              {getNameInitials(name)}
             </Avatar>
             <Text ellipsis style={{ fontSize: fs }}>
               {name}
@@ -235,10 +235,10 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
                 percent={Math.min(Math.max(score, 0), 10) * 10}
                 size="small"
                 showInfo={false}
-                strokeColor={scoreColor(score)}
+                strokeColor={getAiScoreColors(score)}
                 style={{ width: 56 }}
               />
-              <Text strong style={{ color: scoreColor(score), fontSize: fs }}>
+              <Text strong style={{ color: getAiScoreColors(score), fontSize: fs }}>
                 {score}
               </Text>
             </Space>
@@ -250,7 +250,7 @@ function ArticlesTableInner({ articles, onRowClick }: ArticlesTableProps) {
         key: "created_at",
         width: 125,
         render: (date: string) => (
-          <Text style={{ fontSize: fs }}>{formatDate(date)}</Text>
+          <Text style={{ fontSize: fs }}>{formatDateToUSLocale(date)}</Text>
         ),
         defaultSortOrder: "descend",
       },
@@ -433,7 +433,7 @@ export default function ArticlesTable(props: ArticlesTableProps) {
         },
       }}
     >
-      <ArticlesTableInner {...props} />
+      <ArticlesTableContent {...props} />
     </ConfigProvider>
   );
 }

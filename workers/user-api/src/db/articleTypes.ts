@@ -44,7 +44,7 @@ export async function getArticleTypeById(
 }
 
 // after AI scoring
-export async function updateEvaluation(
+export async function updateArticleEvaluation(
   db: D1Database,
   articleId: string,
   score: number,

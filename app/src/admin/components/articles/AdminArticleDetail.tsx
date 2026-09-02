@@ -10,16 +10,16 @@ import FeedbackBlock from "./FeedbackBlock";
 import CopyButton from "@/admin/utils/CopyButton";
 import { HistoryItem } from "@/utils/types";
 
-function formatScore(s: number) {
+function formatAiScore(s: number) {
   return Number.isInteger(s) ? String(s) : s.toFixed(1);
 }
 
-function goBack(navigate: any) {
+function navigateBackOrToArticles(navigate: any) {
   if (window.history.length > 1) navigate(-1);
   else navigate("/admin/articles");
 }
 
-function scoreColor(score: number) {
+function getAiScoreColors(score: number) {
   if (score >= 10) return { bar: "bg-emerald-500" };
   if (score >= 6) return { bar: "bg-amber-500" };
   return { bar: "bg-red-500" };
@@ -173,7 +173,7 @@ export default function AdminArticleDetail() {
   const displaySubmittedAt = effectiveSnapshot?.submitted_at ?? null;
 
   const hasScore = displayScore !== null;
-  const colors = hasScore ? scoreColor(displayScore!) : null;
+  const colors = hasScore ? getAiScoreColors(displayScore!) : null;
 
   if (loading) {
     return (
@@ -204,7 +204,7 @@ export default function AdminArticleDetail() {
     <div className="min-h-screen bg-slate-50">
       <div className="w-full px-4 md:px-8 py-8">
         <button
-          onClick={() => goBack(navigate)}
+          onClick={() => navigateBackOrToArticles(navigate)}
           className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-6"
         >
           <ChevronLeft size={14} />
@@ -246,7 +246,7 @@ export default function AdminArticleDetail() {
               ) : (
                 <>
                   <p className="text-3xl font-semibold text-slate-900">
-                    {hasScore ? formatScore(displayScore!) : "—"}
+                    {hasScore ? formatAiScore(displayScore!) : "—"}
                     <span className="text-base text-slate-400 font-normal">
                       {" "}
                       / 10

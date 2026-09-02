@@ -124,7 +124,7 @@ export default function ArticleTypesForm() {
 
   useEffect(() => {
     if (!id) return;
-    async function load() {
+    async function loadArticleType() {
       setLoading(true);
       try {
         const headers: Record<string, string> = {};
@@ -163,7 +163,7 @@ export default function ArticleTypesForm() {
         setLoading(false);
       }
     }
-    load();
+    loadArticleType();
   }, [id]);
 
   const openAddModal = () => {

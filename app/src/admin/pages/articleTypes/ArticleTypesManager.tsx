@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Plus, Search, Tag } from "lucide-react";
 
 import DeleteConfirmation from "../../components/articleTypes/DeleteConfirmation";
-import ArticleTypesCard from "../../components/articleTypes/ArticleTypesCard";
+import ArticleTypeCard from "../../components/articleTypes/ArticleTypeCard";
 import EmptyState from "../../components/ui/EmptyState";
 import { useNavigate } from "react-router-dom";
 
@@ -147,7 +147,7 @@ export default function ArticleTypesManager({
         ) : (
           <div className="bg-white border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100">
             {filtered.map((type) => (
-              <ArticleTypesCard
+              <ArticleTypeCard
                 key={type.id}
                 type={type}
                 isExpanded={expandedId === type.id}

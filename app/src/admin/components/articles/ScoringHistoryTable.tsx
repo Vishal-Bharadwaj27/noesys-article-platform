@@ -9,13 +9,13 @@ import type { CSSProperties } from "react";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 
-function scoreColorHex(s: number) {
+function getAiScoreColorsHex(s: number) {
   if (s >= 10) return "#389e0d";
   if (s >= 6) return "#d48806";
   return "#cf1322";
 }
 
-function formatScore(s: number) {
+function formatAiScore(s: number) {
   return Number.isInteger(s) ? String(s) : s.toFixed(1);
 }
 
@@ -81,18 +81,18 @@ export default function ScoringHistoryTable({
                 percent={Math.min(Math.max(s, 0), 10) * 10}
                 size="small"
                 showInfo={false}
-                strokeColor={scoreColorHex(s)}
+                strokeColor={getAiScoreColorsHex(s)}
                 style={{ width: 56 }}
               />
 
               <span
                 style={{
-                  color: scoreColorHex(s),
+                  color: getAiScoreColorsHex(s),
                   fontWeight: 600,
                   fontSize: 13,
                 }}
               >
-                {formatScore(s)}
+                {formatAiScore(s)}
               </span>
             </span>
           ),

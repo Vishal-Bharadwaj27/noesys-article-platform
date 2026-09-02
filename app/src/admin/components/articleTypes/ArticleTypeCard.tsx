@@ -7,11 +7,11 @@ import {
   Trash2,
 } from "lucide-react";
 import { ArticleTypeWithPrompt } from "../../pages/articleTypes/ArticleTypesManager";
-import { formatDate } from "../../utils/date";
+import { formatDateToUSLocale } from "../../utils/date";
 import Badge from "../ui/Badge";
 import { ParameterOptionDraft } from "./ArticleTypesForm";
 
-type ArticleTypesCardProps = {
+type ArticleTypeCardProps = {
   type: ArticleTypeWithPrompt;
   isExpanded: boolean;
   onToggle: (type: string | null) => void;
@@ -27,12 +27,12 @@ const AVATAR_PALETTE = [
   "bg-rose-50 text-rose-600",
 ];
 
-function avatarColor(name: string) {
+function getAvatarColor(name: string) {
   const idx = name.charCodeAt(0) % AVATAR_PALETTE.length;
   return AVATAR_PALETTE[idx];
 }
 
-function ActionIcon({
+function ActionButton({
   icon,
   label,
   onClick,
@@ -65,13 +65,13 @@ function ActionIcon({
   );
 }
 
-function ArticleTypesCard({
+function ArticleTypeCard({
   type,
   isExpanded,
   onToggle,
   onEdit,
   onDelete,
-}: ArticleTypesCardProps) {
+}: ArticleTypeCardProps) {
   return (
     <div className="group">
       <button
@@ -80,7 +80,7 @@ function ArticleTypesCard({
         style={{ background: "#e2e8f0" }}
       >
         <div
-          className={`w-9 h-9 shrink-0 rounded-lg flex items-center justify-center font-semibold text-sm ${avatarColor(type.name)}`}
+          className={`w-9 h-9 shrink-0 rounded-lg flex items-center justify-center font-semibold text-sm ${getAvatarColor(type.name)}`}
         >
           {type.name.charAt(0).toUpperCase() || <Tag size={16} />}
         </div>
@@ -107,13 +107,13 @@ function ArticleTypesCard({
         </div>
 
         <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-          <ActionIcon
+          <ActionButton
             icon={<Pencil size={15} />}
             label={`Edit ${type.name}`}
             onClick={() => onEdit(type)}
             hoverClass="hover:bg-slate-100 hover:text-indigo-600"
           />
-          <ActionIcon
+          <ActionButton
             icon={<Trash2 size={15} />}
             label={`Delete ${type.name}`}
             onClick={() => onDelete(type)}
@@ -134,7 +134,7 @@ function ArticleTypesCard({
           <div className="border-t border-slate-100 px-4 py-3.5 bg-slate-50/70 space-y-3">
             <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-400">
               <Clock size={12} />
-              Updated {formatDate(type.updated_at)}
+              Updated {formatDateToUSLocale(type.updated_at)}
             </div>
 
             <div>
@@ -208,4 +208,4 @@ function ArticleTypesCard({
   );
 }
 
-export default ArticleTypesCard;
+export default ArticleTypeCard;

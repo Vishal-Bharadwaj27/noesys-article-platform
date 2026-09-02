@@ -1,10 +1,8 @@
-// InsightsPage.tsx
 import { EmployeeSubmissionsTable } from "@/admin/components/insights/EmployeeSubmissionsTable";
 import { SummaryView } from "@/admin/components/insights/SummaryView";
 import { MonthYearPicker } from "@/admin/components/ui/MonthYearPicker";
 import { Select } from "antd";
 import { useState } from "react";
-import { Calendar } from "lucide-react";
 
 const currentMonthYear = () => {
   const d = new Date();

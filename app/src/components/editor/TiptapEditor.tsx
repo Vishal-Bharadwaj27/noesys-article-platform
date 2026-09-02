@@ -38,7 +38,7 @@ import "./paste-content.css";
 import { SmartPaste } from "./extensions/SmartPaste";
 import { resolveContentToHtml } from "./lib/contentNormalize";
 
-function ToolBtn({ tip, active, onClick, children }: any) {
+function ToolbarButton({ tip, active, onClick, children }: any) {
   return (
     <Tooltip title={tip}>
       <button
@@ -109,21 +109,21 @@ export default function TiptapEditor({
   return (
     <div className="border border-slate-300 bg-white rounded-lg shadow-sm overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent">
       <div className="flex flex-wrap items-center gap-0.5 px-2 py-1.5 bg-slate-50 border-b border-slate-300">
-        <ToolBtn tip="Undo" onClick={() => editor.chain().focus().undo().run()}>
+        <ToolbarButton tip="Undo" onClick={() => editor.chain().focus().undo().run()}>
           <Undo2 size={16} />
-        </ToolBtn>
-        <ToolBtn tip="Redo" onClick={() => editor.chain().focus().redo().run()}>
+        </ToolbarButton>
+        <ToolbarButton tip="Redo" onClick={() => editor.chain().focus().redo().run()}>
           <Redo2 size={16} />
-        </ToolBtn>
+        </ToolbarButton>
         <span className="w-px h-5 bg-slate-300 mx-1" />
-        <ToolBtn
+        <ToolbarButton
           tip="Paragraph"
           active={editor.isActive("paragraph")}
           onClick={() => editor.chain().focus().setParagraph().run()}
         >
           <Pilcrow size={16} />
-        </ToolBtn>
-        <ToolBtn
+        </ToolbarButton>
+        <ToolbarButton
           tip="Heading 1"
           active={editor.isActive("heading", { level: 1 })}
           onClick={() =>
@@ -131,8 +131,8 @@ export default function TiptapEditor({
           }
         >
           <Heading1 size={16} />
-        </ToolBtn>
-        <ToolBtn
+        </ToolbarButton>
+        <ToolbarButton
           tip="Heading 2"
           active={editor.isActive("heading", { level: 2 })}
           onClick={() =>
@@ -140,8 +140,8 @@ export default function TiptapEditor({
           }
         >
           <Heading2 size={16} />
-        </ToolBtn>
-        <ToolBtn
+        </ToolbarButton>
+        <ToolbarButton
           tip="Heading 3"
           active={editor.isActive("heading", { level: 3 })}
           onClick={() =>
@@ -149,37 +149,37 @@ export default function TiptapEditor({
           }
         >
           <Heading3 size={16} />
-        </ToolBtn>
+        </ToolbarButton>
         <span className="w-px h-5 bg-slate-300 mx-1" />
-        <ToolBtn
+        <ToolbarButton
           tip="Bold"
           active={editor.isActive("bold")}
           onClick={() => editor.chain().focus().toggleBold().run()}
         >
           <Bold size={16} />
-        </ToolBtn>
-        <ToolBtn
+        </ToolbarButton>
+        <ToolbarButton
           tip="Italic"
           active={editor.isActive("italic")}
           onClick={() => editor.chain().focus().toggleItalic().run()}
         >
           <Italic size={16} />
-        </ToolBtn>
-        <ToolBtn
+        </ToolbarButton>
+        <ToolbarButton
           tip="Underline"
           active={editor.isActive("underline")}
           onClick={() => editor.chain().focus().toggleUnderline().run()}
         >
           <UnderlineIcon size={16} />
-        </ToolBtn>
-        <ToolBtn
+        </ToolbarButton>
+        <ToolbarButton
           tip="Strike"
           active={editor.isActive("strike")}
           onClick={() => editor.chain().focus().toggleStrike().run()}
         >
           <Strikethrough size={16} />
-        </ToolBtn>
-        <ToolBtn
+        </ToolbarButton>
+        <ToolbarButton
           tip="Link"
           active={editor.isActive("link")}
           onClick={() => {
@@ -188,38 +188,38 @@ export default function TiptapEditor({
           }}
         >
           <Link2 size={16} />
-        </ToolBtn>
+        </ToolbarButton>
         <span className="w-px h-5 bg-slate-300 mx-1" />
-        <ToolBtn
+        <ToolbarButton
           tip="Bullet list"
           active={editor.isActive("bulletList")}
           onClick={() => editor.chain().focus().toggleBulletList().run()}
         >
           <List size={16} />
-        </ToolBtn>
-        <ToolBtn
+        </ToolbarButton>
+        <ToolbarButton
           tip="Ordered list"
           active={editor.isActive("orderedList")}
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
         >
           <ListOrdered size={16} />
-        </ToolBtn>
-        <ToolBtn
+        </ToolbarButton>
+        <ToolbarButton
           tip="Blockquote"
           active={editor.isActive("blockquote")}
           onClick={() => editor.chain().focus().toggleBlockquote().run()}
         >
           <Quote size={16} />
-        </ToolBtn>
-        <ToolBtn
+        </ToolbarButton>
+        <ToolbarButton
           tip="Code block"
           active={editor.isActive("codeBlock")}
           onClick={() => editor.chain().focus().toggleCodeBlock().run()}
         >
           <Code2 size={16} />
-        </ToolBtn>
+        </ToolbarButton>
         <span className="w-px h-5 bg-slate-300 mx-1" />
-        <ToolBtn
+        <ToolbarButton
           tip="Align left"
           active={
             editor.isActive({ textAlign: "left" }) ||
@@ -236,8 +236,8 @@ export default function TiptapEditor({
           }}
         >
           <AlignLeft size={16} />
-        </ToolBtn>
-        <ToolBtn
+        </ToolbarButton>
+        <ToolbarButton
           tip="Align center"
           active={
             editor.isActive({ textAlign: "center" }) ||
@@ -254,8 +254,8 @@ export default function TiptapEditor({
           }}
         >
           <AlignCenter size={16} />
-        </ToolBtn>
-        <ToolBtn
+        </ToolbarButton>
+        <ToolbarButton
           tip="Align right"
           active={
             editor.isActive({ textAlign: "right" }) ||
@@ -272,16 +272,16 @@ export default function TiptapEditor({
           }}
         >
           <AlignRight size={16} />
-        </ToolBtn>
-        <ToolBtn
+        </ToolbarButton>
+        <ToolbarButton
           tip="Justify"
           active={editor.isActive({ textAlign: "justify" })}
           onClick={() => editor.chain().focus().setTextAlign("justify").run()}
         >
           <AlignJustify size={16} />
-        </ToolBtn>
+        </ToolbarButton>
         <span className="w-px h-5 bg-slate-300 mx-1" />
-        <ToolBtn
+        <ToolbarButton
           tip="Insert table"
           onClick={() =>
             editor
@@ -292,10 +292,10 @@ export default function TiptapEditor({
           }
         >
           <Table2 size={16} />
-        </ToolBtn>
-        <ToolBtn tip="Insert image" onClick={() => fileRef.current?.click()}>
+        </ToolbarButton>
+        <ToolbarButton tip="Insert image" onClick={() => fileRef.current?.click()}>
           <ImageIcon size={16} />
-        </ToolBtn>
+        </ToolbarButton>
         <input
           ref={fileRef}
           type="file"
