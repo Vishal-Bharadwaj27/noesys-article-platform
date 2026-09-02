@@ -12,7 +12,7 @@ import { ArticleTypeSummary, NumericDistributionBucket, ParameterSummary } from 
 
 
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+const BACKEND_URL = ((import.meta.env.VITE_BACKEND_URL as string | undefined) || "").replace(/\/$/, "");
 
 function NumericDistribution({
   distribution,
@@ -126,7 +126,7 @@ export function SummaryView({ start, end }: { start: string; end: string }) {
                 {
                   title: "Details",
                   key: "details",
-                  render: (_: any, r: ParameterSummary) =>
+                  render: (_: unknown, r: ParameterSummary) =>
                     r.scopeType === "option" ? (
                       <div className="flex flex-wrap gap-1.5">
                         {r.options?.map((o) => (
@@ -163,7 +163,7 @@ export function SummaryView({ start, end }: { start: string; end: string }) {
                   border: "1px solid #e2e8f0",
                   borderRadius: 12,
                   overflow: "hidden",
-                } as any
+                } as React.CSSProperties
               }
             />
           ),

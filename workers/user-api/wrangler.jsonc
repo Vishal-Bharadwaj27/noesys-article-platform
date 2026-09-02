@@ -1,0 +1,12 @@
+﻿{
+  "name": "article-platform-user-api",
+  "compatibility_date": "2026-09-02",
+  "main": "src/index.ts",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "noesys-dev",
+      "database_id": "83331df4-d437-4c67-92e4-313065a15762"
+    }
+  ]
+}

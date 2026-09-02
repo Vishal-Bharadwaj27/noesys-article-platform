@@ -92,5 +92,4 @@ export interface SmartPasteOptions {
  *    with `marked` and insert the resulting HTML, so the editor and the Preview
  *    tab both show formatted markdown plus the inline images.
  *
- * Anything else falls through to Tiptap's default paste behaviour.
  */

@@ -12,7 +12,7 @@ export async function getSummary(
 
   const result: ArticleTypeSummary[] = [];
 
-  for (const at of articleTypes.results as any[]) {
+  for (const at of articleTypes.results as { id: string; name: string }[]) {
     const totalRow = await db
       .prepare(
         `
@@ -40,7 +40,7 @@ export async function getSummary(
 
     const parameterSummaries: ParameterSummary[] = [];
 
-    for (const p of params.results as any[]) {
+    for (const p of params.results as { id: string; name: string; scope_type: string; sort_order: number; min_value: number | null; max_value: number | null }[]) {
       if (p.scope_type === "option") {
         const rows = await db
           .prepare(
@@ -68,7 +68,7 @@ export async function getSummary(
           parameterName: p.name,
           scopeType: "option",
           sortOrder: p.sort_order,
-          options: (rows.results as any[]).map((r) => ({
+          options: (rows.results as { label: string; cnt: number; sortOrder: number }[]).map((r) => ({
             label: r.label,
             count: r.cnt,
             sortOrder: r.sortOrder,
@@ -86,7 +86,7 @@ export async function getSummary(
         `,
           )
           .bind(p.id, range.start, range.end)
-          .first<any>();
+          .first<{ avg: number | null; min: number | null; max: number | null; cnt: number }>();
 
         let distribution: NumericDistributionBucket[] = [];
         if (p.min_value != null && p.max_value != null) {
@@ -114,7 +114,7 @@ export async function getSummary(
             .bind(p.min_value, p.max_value, p.id, range.start, range.end)
             .all();
 
-          distribution = (distRows.results as any[]).map((r) => ({
+          distribution = (distRows.results as { value: number; cnt: number }[]).map((r) => ({
             value: r.value,
             count: r.cnt,
           }));
@@ -204,7 +204,7 @@ export async function getEmployeeSubmissions(
   );
   let grandTotal = 0;
 
-  for (const r of rowsRaw.results as any[]) {
+  for (const r of rowsRaw.results as { userId: string; name: string; jobRole: string; monthYear: string; cnt: number }[]) {
     if (!byUser.has(r.userId)) {
       byUser.set(r.userId, {
         userId: r.userId,

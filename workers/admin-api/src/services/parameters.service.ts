@@ -52,7 +52,7 @@ export async function getParametersByArticleType(
   const results = [];
 
   for (const parameter of parameters.results ?? []) {
-    let options: any[] = [];
+    let options: unknown[] = [];
 
     if (parameter.scope_type === "option") {
       const optionResult = await db

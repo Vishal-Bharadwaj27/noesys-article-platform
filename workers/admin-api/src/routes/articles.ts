@@ -72,7 +72,7 @@ articlesRoute.get("/:id", async (c) => {
       current_feedback: currentFeedback,
       current_score: article.ai_score,
       parameter_results,
-      history: history.map((item: any) => ({
+      history: history.map((item: { article_id: string; version: number; title: string | null; content: string | null; ai_score: number | null; ai_feedback: string | null; submitted_at: string }) => ({
         article_id: item.article_id,
         version: item.version,
         title: item.title ?? "",

@@ -4,7 +4,7 @@ import { useState } from "react";
 export default function ParameterResultsBox({
   results,
 }: {
-  results: { parameter_name: string; value: any }[];
+  results: { parameter_name: string; name?: string; value: string | number | null }[];
 }) {
   const [open, setOpen] = useState(false);
   if (!results || !results.length)
@@ -47,7 +47,7 @@ export default function ParameterResultsBox({
       </button>
       {open && (
         <div className="px-4 pb-4 grid gap-2">
-          {results.map((r: any, i: number) => (
+          {results.map((r: { parameter_name: string; name?: string; value: string | number | null }, i: number) => (
             <div
               key={i}
               className="flex justify-between items-center bg-slate-50 rounded-lg px-3 py-2 border border-slate-100"

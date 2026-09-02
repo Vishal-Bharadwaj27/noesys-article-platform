@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+const BACKEND_URL = ((import.meta.env.VITE_BACKEND_URL as string | undefined) || "").replace(/\/$/, "");
 
 type ArticleTypeOption = {
   id: string;
@@ -105,16 +105,27 @@ const AllArticles = () => {
         params.set("type", selectedType);
       }
 
+      const base = BACKEND_URL;
       const endpoint = id
-        ? `${BACKEND_URL}/api/users/${id}/articles?${params.toString()}`
-        : `${BACKEND_URL}/api/articles?${params.toString()}`;
+        ? `${base}/api/users/${id}/articles?${params.toString()}`
+        : `${base}/api/articles?${params.toString()}`;
 
       const res = await fetch(endpoint, {
         credentials: "include",
+        headers: {
+          ...(localStorage.getItem("auth:token") ? { Authorization: `Bearer ${localStorage.getItem("auth:token")}` } : {}),
+        },
       });
 
+      const ct = res.headers.get("content-type") || "";
+      if (!ct.includes("application/json")) {
+        const text = await res.text();
+        throw new Error(`Unexpected response (${res.status}): ${text.slice(0, 200)}`);
+      }
+
       if (!res.ok) {
-        throw new Error(`Failed to fetch articles (${res.status})`);
+        const body = await res.json().catch(() => ({}));
+        throw new Error((body as { message?: string }).message || `Failed to fetch articles (${res.status})`);
       }
 
       const json = await res.json();

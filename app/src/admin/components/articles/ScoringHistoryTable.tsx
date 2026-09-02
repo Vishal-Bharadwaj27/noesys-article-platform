@@ -99,7 +99,7 @@ export default function ScoringHistoryTable({
         dataIndex: "status",
         key: "status",
         width: 130,
-        render: (_: any, r: HistoryItem) => {
+        render: (_: unknown, r: HistoryItem) => {
           const ds =
             r.score === null
               ? "scoring"
@@ -156,7 +156,7 @@ export default function ScoringHistoryTable({
 
   const handleResize =
     (idx: number) =>
-    (_: any, { size }: { size: { width: number } }) =>
+    (_: unknown, { size }: { size: { width: number } }) =>
       setCols((cur) => {
         const n = [...cur];
         n[idx] = { ...n[idx], width: size.width };

@@ -10,19 +10,19 @@ export const ResizableImage = Image.extend({
         default: null,
         parseHTML: (el: HTMLElement) =>
           el.getAttribute("width") || el.style.width || null,
-        renderHTML: (attrs: any) => (attrs.width ? { width: attrs.width } : {}),
+        renderHTML: (attrs: { width?: string | number | null }) => (attrs.width ? { width: attrs.width } : {}),
       },
       height: {
         default: null,
         parseHTML: (el: HTMLElement) =>
           el.getAttribute("height") || el.style.height || null,
-        renderHTML: (attrs: any) =>
+        renderHTML: (attrs: { height?: string | number | null }) =>
           attrs.height ? { height: attrs.height } : {},
       },
       style: {
         default: null,
         parseHTML: (el: HTMLElement) => el.getAttribute("style"),
-        renderHTML: (attrs: any) => (attrs.style ? { style: attrs.style } : {}),
+        renderHTML: (attrs: { style?: string | null }) => (attrs.style ? { style: attrs.style } : {}),
       },
       textAlign: {
         default: null,
@@ -44,7 +44,7 @@ export const ResizableImage = Image.extend({
           if (style.includes("margin-left: auto")) return "right";
           return null;
         },
-        renderHTML: (attrs: any) => {
+        renderHTML: (attrs: { textAlign?: string | null }) => {
           if (!attrs.textAlign) return {};
           return { textAlign: attrs.textAlign };
         },
@@ -54,7 +54,7 @@ export const ResizableImage = Image.extend({
   addNodeView() {
     return ReactNodeViewRenderer(ResizableImageNodeView);
   },
-  renderHTML({ HTMLAttributes }: any) {
+  renderHTML({ HTMLAttributes }: { HTMLAttributes: Record<string, unknown> }) {
     const styleParts: string[] = [];
     if (HTMLAttributes.width)
       styleParts.push(
@@ -62,7 +62,7 @@ export const ResizableImage = Image.extend({
       );
     if (HTMLAttributes.height)
       styleParts.push(`height:${HTMLAttributes.height}`);
-    if (HTMLAttributes.style) styleParts.push(HTMLAttributes.style);
+    if (HTMLAttributes.style) styleParts.push(String(HTMLAttributes.style));
     // Wrap image in aligned paragraph for preview portability
     // The actual alignment is stored as a wrapper style, but for static HTML
     // (preview/article viewer) we emit margin auto on the img itself.
