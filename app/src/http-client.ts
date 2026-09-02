@@ -64,7 +64,7 @@ function redirectToLogin() {
   tokenManager.clear();
   if (window.location.pathname !== "/login") window.location.assign("/login");
 }
-async function doFetch<T>(
+async function fetchWithAuth<T>(
   path: string,
   options: RequestInit,
   full: boolean,
@@ -101,13 +101,13 @@ export async function api<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
-  return doFetch<T>(path, options, false);
+  return fetchWithAuth<T>(path, options, false);
 }
 export async function apiFull<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<ApiResponse<T>> {
-  return doFetch<T>(path, options, true);
+  return fetchWithAuth<T>(path, options, true);
 }
 export { API_BASE };
 export type { ApiResponse };

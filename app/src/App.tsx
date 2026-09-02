@@ -28,7 +28,7 @@ function AdminLayout({ children }: { children: ReactNode }) {
   );
 }
 
-function Protected({ children }: { children: ReactNode }) {
+function ProtectedRoute({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
   if (loading)
     return (
@@ -40,7 +40,7 @@ function Protected({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-function RootRedirect() {
+function RootRouteRedirect() {
   const { user, loading } = useAuth();
   if (loading)
     return (
@@ -58,30 +58,30 @@ export default function App() {
   return ( // <-- No BrowserRouter here, just Routes
     <Routes>
       <Route path="/login" element={<Login />} />
-      <Route path="/" element={<RootRedirect />} />
+      <Route path="/" element={<RootRouteRedirect />} />
 
       <Route
         path="/articles/new"
         element={
-          <Protected>
+          <ProtectedRoute>
             <ArticleCreation />
-          </Protected>
+          </ProtectedRoute>
         }
       />
       <Route
         path="/articles/:id/history/:version"
         element={
-          <Protected>
+          <ProtectedRoute>
             <ArticleDetail />
-          </Protected>
+          </ProtectedRoute>
         }
       />
       <Route
         path="/articles/:id"
         element={
-          <Protected>
+          <ProtectedRoute>
             <ArticleDetail />
-          </Protected>
+          </ProtectedRoute>
         }
       />
 

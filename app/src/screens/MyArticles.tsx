@@ -79,7 +79,7 @@ function getDisplayStatus(article: {
   };
 }
 
-function scoreColorHex(score: number) {
+function getAiScoreColorsHex(score: number) {
   if (score >= 10) return "#389e0d";
   if (score >= 6) return "#d48806";
   return "#cf1322";
@@ -443,12 +443,12 @@ function MyArticlesTable({
                 percent={Math.min(Math.max(score, 0), 10) * 10}
                 size="small"
                 showInfo={false}
-                strokeColor={scoreColorHex(score)}
+                strokeColor={getAiScoreColorsHex(score)}
                 style={{ width: 56 }}
               />
               <Text
                 strong
-                style={{ color: scoreColorHex(score), fontSize: fs }}
+                style={{ color: getAiScoreColorsHex(score), fontSize: fs }}
               >
                 {score}
               </Text>

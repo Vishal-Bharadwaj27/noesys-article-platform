@@ -56,11 +56,11 @@ const ResizeableTitle = ({ onResize, width, children, ...restProps }: any) => {
   );
 };
 
-function formatScore(s: number) {
+function formatAiScore(s: number) {
   return Number.isInteger(s) ? String(s) : s.toFixed(1);
 }
 
-function scoreColorHex(score: number) {
+function getAiScoreColorsHex(score: number) {
   if (score >= 10) return "#389e0d";
   if (score >= 6) return "#d48806";
   return "#cf1322";
@@ -130,7 +130,7 @@ function ParameterResultsBox({
   );
 }
 
-function goBack(navigate: any) {
+function navigateBackOrToArticles(navigate: any) {
   if (window.history.length > 1) navigate(-1);
   else navigate("/");
 }
@@ -183,7 +183,7 @@ const feedbackMarkdownComponents: Components = {
   em: ({ children }: any) => <em className="italic">{children}</em>,
 };
 
-function scoreColor(score: number) {
+function getAiScoreColors(score: number) {
   if (score >= 10) {
     return { bar: "bg-emerald-500", badge: "bg-emerald-50 text-emerald-700" };
   }
@@ -417,7 +417,7 @@ export default function ArticleDetail() {
   }
 
   const hasScore = displayScore !== null;
-  const colors = hasScore ? scoreColor(displayScore!) : null;
+  const colors = hasScore ? getAiScoreColors(displayScore!) : null;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -425,7 +425,7 @@ export default function ArticleDetail() {
 
       <div className="w-full px-4 md:px-8 py-8">
         <button
-          onClick={() => goBack(navigate)}
+          onClick={() => navigateBackOrToArticles(navigate)}
           className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-6"
         >
           <ChevronLeft size={14} />
@@ -531,7 +531,7 @@ export default function ArticleDetail() {
               ) : (
                 <>
                   <p className="text-3xl font-semibold text-slate-900">
-                    {hasScore ? formatScore(displayScore!) : "—"}
+                    {hasScore ? formatAiScore(displayScore!) : "—"}
 
                     <span className="text-base text-slate-400 font-normal">
                       {" "}
@@ -713,17 +713,17 @@ function ScoringHistoryTable({
                 percent={Math.min(Math.max(s, 0), 10) * 10}
                 size="small"
                 showInfo={false}
-                strokeColor={scoreColorHex(s)}
+                strokeColor={getAiScoreColorsHex(s)}
                 style={{ width: 56 }}
               />
               <span
                 style={{
-                  color: scoreColorHex(s),
+                  color: getAiScoreColorsHex(s),
                   fontWeight: 600,
                   fontSize: 13,
                 }}
               >
-                {formatScore(s)}
+                {formatAiScore(s)}
               </span>
             </span>
           ),
