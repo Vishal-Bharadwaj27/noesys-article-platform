@@ -7,7 +7,8 @@ import {
   Users,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
-import logoImage from "../../Logo/Noesys_logo.avif";
+// import logoImage from "../../Logo/Noesys_logo.avif";
+import logoImage from '../../Logo/Noesys_logo.png';
 import { NavLink } from "react-router-dom";
 
 const NAV_ITEMS = [

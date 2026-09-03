@@ -107,7 +107,6 @@ export default function ArticleTypesManager({
       setSubmitting(false);
     }
   };
-  console.log(articleTypes);
   return (
     <div className="w-full px-4 md:px-8 py-5">
       <div className="flex items-center justify-between mb-5">

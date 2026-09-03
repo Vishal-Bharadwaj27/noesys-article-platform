@@ -24,7 +24,6 @@ export default function ScoringHistoryTable({
 }) {
   const navigate = useNavigate();
   const [cols, setCols] = useState<ColumnsType<HistoryItem>>([]);
-  console.log(history);
   useEffect(() => {
     const columns: ColumnsType<HistoryItem> = [
       {

@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import UserCard from "../../components/users/UserCard";
 import { Search } from "lucide-react";
 import { DatePicker, AutoComplete, Input } from "antd";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import dayjs, { type Dayjs } from "dayjs";
 
 import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { User } from "@/admin/utils/types";
 import { tokenManager } from "@/http-client";
 
-const BACKEND_URL = ((import.meta.env.VITE_BACKEND_URL as string | undefined) || "").replace(/\/$/, "");
+const BACKEND_URL = (import.meta.env.VITE_BACKEND_URL as string | undefined);
 
 async function fetchUsers(
   month?: string,
@@ -42,20 +42,32 @@ async function fetchUsers(
 }
 
 const UsersPage = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedMonth, setSelectedMonth] = useState<Dayjs>(
-    dayjs().startOf("month"),
-  );
-  const [focusedYear, setFocusedYear] = useState(dayjs().year());
+  const monthParam = searchParams.get("month");
+  const selectedMonthKey =
+    monthParam && /^\d{4}-\d{2}$/.test(monthParam) && dayjs(`${monthParam}-01`).isValid()
+      ? monthParam
+      : dayjs().format("YYYY-MM");
+  const selectedMonth: Dayjs = dayjs(`${selectedMonthKey}-01`).startOf("month");
+  const focusedYear = Number(searchParams.get("year")) || selectedMonth.year();
 
   const navigate = useNavigate();
-  const [search, setSearch] = useState("");
-  const [showNotSubmitted, setShowNotSubmitted] = useState(false);
+  const search = searchParams.get("q") || "";
+  const showNotSubmitted = searchParams.get("status") === "not_submitted";
+  const setFilterParam = (name: string, value: string, defaultValue?: string) => {
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      if (!value || value === defaultValue) next.delete(name);
+      else next.set(name, value);
+      return next;
+    });
+  };
 
   const handleToggleNotSubmitted = () => {
-    setShowNotSubmitted((p) => !p);
+    setFilterParam("status", showNotSubmitted ? "" : "not_submitted");
   };
 
   useEffect(() => {
@@ -64,14 +76,14 @@ const UsersPage = () => {
 
     fetchUsers(
       showNotSubmitted && selectedMonth
-        ? selectedMonth.format("YYYY-MM")
+        ? selectedMonthKey
         : undefined,
       showNotSubmitted ? "not_submitted" : undefined,
     )
       .then(setUsers)
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, [showNotSubmitted, selectedMonth]);
+  }, [showNotSubmitted, selectedMonthKey]);
 
   const handleToggleActive = async (userId: string, nextIsActive: boolean) => {
     const res = await fetch(`${BACKEND_URL}/api/users/${userId}/status`, {
@@ -132,7 +144,7 @@ const UsersPage = () => {
         <div className="flex-1 relative">
           <AutoComplete
             value={search}
-            onChange={setSearch}
+            onChange={(value) => setFilterParam("q", value)}
             options={
               search.trim()
                 ? filteredUsers.map((u) => ({
@@ -142,7 +154,7 @@ const UsersPage = () => {
                   }))
                 : []
             }
-            onSelect={(value) => setSearch(value)}
+            onSelect={(value) => setFilterParam("q", value)}
             style={{ width: "100%" }}
           >
             <div className="flex items-center gap-2 mb-4 w-full">
@@ -192,7 +204,7 @@ const UsersPage = () => {
                 <Button
                   variant="ghost"
                   className="h-7 w-7 p-0 opacity-50 hover:opacity-100"
-                  onClick={() => setFocusedYear((y) => y - 1)}
+                  onClick={() => setFilterParam("year", String(focusedYear - 1))}
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
@@ -202,7 +214,7 @@ const UsersPage = () => {
                 <Button
                   variant="ghost"
                   className="h-7 w-7 p-0 opacity-50 hover:opacity-100"
-                  onClick={() => setFocusedYear((y) => y + 1)}
+                  onClick={() => setFilterParam("year", String(focusedYear + 1))}
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
@@ -225,7 +237,7 @@ const UsersPage = () => {
                     <Button
                       key={i}
                       variant={isSelected ? "default" : "ghost"}
-                      onClick={() => setSelectedMonth(month)}
+                      onClick={() => setFilterParam("month", month.format("YYYY-MM"))}
                       className={`h-9 text-sm ${
                         isSelected
                           ? ""
