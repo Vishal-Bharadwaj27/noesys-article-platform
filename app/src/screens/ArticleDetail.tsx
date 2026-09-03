@@ -28,26 +28,15 @@ function formatAiScore(s: number) {
   return Number.isInteger(s) ? String(s) : s.toFixed(1);
 }
 
-function getAiScoreColorsHex(score: number) {
-  if (score >= 10) return "#389e0d";
-  if (score >= 6) return "#d48806";
-  return "#cf1322";
-}
-
 function navigateBackOrToArticles(navigate: ReturnType<typeof useNavigate>) {
   if (window.history.length > 1) navigate(-1);
   else navigate("/");
 }
-function getAiScoreColors(score: number) {
-  if (score >= 10) {
-    return { bar: "bg-emerald-500", badge: "bg-emerald-50 text-emerald-700" };
-  }
 
-  if (score >= 6) {
-    return { bar: "bg-amber-500", badge: "bg-amber-50 text-amber-700" };
-  }
-
-  return { bar: "bg-red-500", badge: "bg-red-50 text-red-600" };
+function getScoreBarColor(status: string) {
+  if (status === "approved") return "bg-emerald-500";
+  if (status === "rewrite_required" || status === "failed") return "bg-red-500";
+  return "bg-amber-500";
 }
 
 export default function ArticleDetail() {
@@ -111,6 +100,8 @@ export default function ArticleDetail() {
   const displayFeedback = effectiveSnapshot
     ? (effectiveSnapshot.feedback ?? "")
     : (currentFeedback ?? "");
+  const displayStatus =
+    effectiveSnapshot?.status ?? article?.status ?? "pending";
   const displaySubmittedAt = effectiveSnapshot?.submitted_at ?? null;
 
   // Poll every 2.5s while scoring; stops on unmount/complete/timeout (5 min)
@@ -228,7 +219,6 @@ export default function ArticleDetail() {
   }
 
   const hasScore = displayScore !== null;
-  const colors = hasScore ? getAiScoreColors(displayScore!) : null;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -350,10 +340,10 @@ export default function ArticleDetail() {
                     </span>
                   </p>
 
-                  {hasScore && colors && (
+                  {hasScore && (
                     <div className="flex-1 h-2 rounded-full bg-slate-200 overflow-hidden">
                       <div
-                        className={`h-full rounded-full ${colors.bar}`}
+                        className={`h-full rounded-full ${getScoreBarColor(displayStatus)}`}
                         style={{
                           width: `${(Math.min(displayScore!, 10) / 10) * 100}%`,
                         }}
@@ -398,9 +388,12 @@ export default function ArticleDetail() {
 
               <div className="flex items-center gap-2">
                 {article && (
-                  <span className="text-xs font-medium text-slate-600 bg-slate-100 rounded-full px-2.5 py-1">
-                    {article.article_type_name}
-                  </span>
+                  <div className="flex items-center">
+                    <span className="text-xs font-medium text-slate-600 bg-slate-100 rounded-full px-2.5 py-1">
+                      {article.article_type_name}
+                    </span>
+                    <CopyButton text={content} />
+                  </div>
                 )}
                 <span className="p-1 text-slate-400">
                   {contentCollapsed ? (
@@ -446,7 +439,6 @@ export default function ArticleDetail() {
                         <TiptapEditor value={content} onChange={setContent} />
                       )}
                     </div>
-
                     {editorView === "preview" && (
                       <ArticleViewer content={content} />
                     )}

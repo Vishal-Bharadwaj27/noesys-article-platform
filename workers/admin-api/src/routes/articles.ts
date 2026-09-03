@@ -74,22 +74,19 @@ articlesRoute.get("/:id", async (c) => {
       current_feedback: currentFeedback,
       current_score: article.ai_score,
       parameter_results,
-      history: history.map((item: ArticleHistoryEntry) => ({
-        article_id: item.article_id,
-        version: item.version,
-        title: item.title ?? "",
-        content: item.content ?? "",
-        score: item.ai_score,
-        feedback: item.ai_feedback || null,
-        status:
-          item.ai_score === null
-            ? "pending"
-            : item.ai_score >= 10
-              ? "approved"
-              : "rewrite_required",
-        submitted_at: item.submitted_at ?? "",
-        snapshotted_at: item.snapshotted_at,
-      })),
+      history: history.map((item: ArticleHistoryEntry) => {
+        return {
+          article_id: item.article_id,
+          version: item.version,
+          title: item.title ?? "",
+          content: item.content ?? "",
+          score: item.ai_score,
+          feedback: item.ai_feedback || null,
+          status: item.status ?? "pending",
+          submitted_at: item.submitted_at ?? "",
+          snapshotted_at: item.snapshotted_at,
+        };
+      }),
     },
   });
 });

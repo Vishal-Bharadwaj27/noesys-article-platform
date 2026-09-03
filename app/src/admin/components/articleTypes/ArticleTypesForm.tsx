@@ -1,16 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, WheelEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ChevronLeft, Plus, Pencil, Trash2 } from "lucide-react";
-import {
-  ConfigProvider,
-  Table,
-  theme as antdTheme,
-} from "antd";
+import { ConfigProvider, Table, theme as antdTheme } from "antd";
 import Button from "../../components/ui/Button";
 import DeleteConfirmation from "./DeleteConfirmation";
 import { tokenStorage } from "@/http-client";
 import Badge from "../../components/ui/Badge";
-import { ArticleTypeResponse, FormState, ParameterDraft, ParameterResponse, ScopeType } from "@/admin/utils/types";
+import {
+  ArticleTypeResponse,
+  FormState,
+  ParameterDraft,
+  ParameterResponse,
+  ScopeType,
+} from "@/admin/utils/types";
 import ArticleTypesParameterModal from "./ArticleTypesParameterModal";
 
 const EMPTY_FORM: FormState = {
@@ -68,6 +70,10 @@ export default function ArticleTypesForm() {
   const { id } = useParams<{ id: string }>();
   const isEditing = Boolean(id);
   const token = tokenStorage.get();
+  const handleWheel = (e: WheelEvent<HTMLInputElement>) => {
+    // Blur the element to prevent changing the number value on scroll
+    e.currentTarget.blur();
+  };
 
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [removedParameterIds, setRemovedParameterIds] = useState<string[]>([]);
@@ -78,7 +84,9 @@ export default function ArticleTypesForm() {
   // modal state
   const [modalOpen, setModalOpen] = useState(false);
   const [modalDraft, setModalDraft] = useState<ParameterDraft | null>(null);
-  const [pendingDelete, setPendingDelete] = useState<ParameterDraft | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<ParameterDraft | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!id) return;
@@ -327,19 +335,36 @@ export default function ArticleTypesForm() {
             className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
           />
         </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1.5">
-            Description
-          </label>
-          <input
-            type="text"
-            value={form.description}
-            onChange={(e) =>
-              setForm((c) => ({ ...c, description: e.target.value }))
-            }
-            placeholder="Short description (optional)"
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-          />
+        <div className="grid grid-cols-10 gap-4">
+          <div className="col-span-7">
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              Description
+            </label>
+            <input
+              type="text"
+              value={form.description}
+              onChange={(e) =>
+                setForm((c) => ({ ...c, description: e.target.value }))
+              }
+              placeholder="Short description (optional)"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            />
+          </div>
+          <div className="col-span-3">
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              Pass Threshold
+            </label>
+            <input
+              type="number"
+              value={form.passThreshold}
+              onWheel={handleWheel}
+              onChange={(e) =>
+                setForm((c) => ({ ...c, passThreshold: e.target.value }))
+              }
+              placeholder="10"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            />
+          </div>
         </div>
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1.5">
@@ -505,7 +530,6 @@ export default function ArticleTypesForm() {
         saveModal={saveModal}
         closeModal={closeModal}
       />
-
     </div>
   );
 }

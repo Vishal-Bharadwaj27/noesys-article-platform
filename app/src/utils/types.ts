@@ -16,7 +16,7 @@ export interface HistoryItem {
   content: string;
   score: number | null;
   feedback: string | null;
-  status: string;
+  status: "approved" | "rewrite_required" | "pending" | "failed";
   submitted_at: string;
   snapshotted_at?: string;
 }

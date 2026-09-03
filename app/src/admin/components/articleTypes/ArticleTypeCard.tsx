@@ -87,6 +87,9 @@ function ArticleTypeCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-medium text-slate-900">{type.name}</span>
+            {type.pass_threshold !== undefined && type.pass_threshold !== null && (
+              <Badge variant="indigo">Pass: {type.pass_threshold}</Badge>
+            )}
             {!type.is_active && (
               <Badge variant="danger" dot>
                 Inactive

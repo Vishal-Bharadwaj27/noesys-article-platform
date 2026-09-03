@@ -18,6 +18,7 @@ export type ArticleType = {
   name: string;
   description: string | null;
   is_active: number;
+  pass_threshold: number;
   created_by: string;
   created_at: string;
   parameters: Parameter[];
@@ -106,7 +107,7 @@ export default function ArticleTypesManager({
       setSubmitting(false);
     }
   };
-
+  console.log(articleTypes);
   return (
     <div className="w-full px-4 md:px-8 py-5">
       <div className="flex items-center justify-between mb-5">

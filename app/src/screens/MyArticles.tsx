@@ -57,7 +57,11 @@ function getDisplayStatus(article: {
     };
   }
 
-  if (article.ai_score === null) {
+  if (
+    article.status === "pending" ||
+    article.status === "processing" ||
+    article.ai_score === null
+  ) {
     return {
       key: "scoring",
       label: STATUS_CONFIG.scoring.label,
@@ -65,7 +69,7 @@ function getDisplayStatus(article: {
     };
   }
 
-  if (article.ai_score === 10 && article.status === "approved") {
+  if (article.status === "approved") {
     return {
       key: "accepted",
       label: STATUS_CONFIG.accepted.label,
@@ -80,10 +84,10 @@ function getDisplayStatus(article: {
   };
 }
 
-function getAiScoreColorsHex(score: number) {
-  if (score >= 10) return "#389e0d";
-  if (score >= 6) return "#d48806";
-  return "#cf1322";
+function getAiScoreColor(status: string) {
+  if (status === "approved") return "#389e0d";
+  if (status === "rewrite_required" || status === "failed") return "#cf1322";
+  return "#d48806";
 }
 
 const ResizeableTitle = ({ onResize, width, children, ...restProps }: { onResize?: (e: React.SyntheticEvent, data: { size: { width: number; height: number } }) => void; width?: number; children?: React.ReactNode } & React.HTMLAttributes<HTMLTableHeaderCellElement>) => {
@@ -435,7 +439,7 @@ function MyArticlesTable({
         dataIndex: "ai_score",
         key: "ai_score",
         width: 130,
-        render: (score: number | null) =>
+        render: (score: number | null, record: ArticleListItem) =>
           score === null ? (
             <Text style={{ color: "#334155", fontSize: fs }}>—</Text>
           ) : (
@@ -446,12 +450,12 @@ function MyArticlesTable({
                 percent={Math.min(Math.max(score, 0), 10) * 10}
                 size="small"
                 showInfo={false}
-                strokeColor={getAiScoreColorsHex(score)}
+                strokeColor={getAiScoreColor(record.status)}
                 style={{ width: 56 }}
               />
               <Text
                 strong
-                style={{ color: getAiScoreColorsHex(score), fontSize: fs }}
+                style={{ color: getAiScoreColor(record.status), fontSize: fs }}
               >
                 {score}
               </Text>

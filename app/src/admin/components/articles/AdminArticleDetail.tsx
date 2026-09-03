@@ -19,10 +19,10 @@ function navigateBackOrToArticles(navigate: ReturnType<typeof useNavigate>) {
   else navigate("/admin/articles");
 }
 
-function getAiScoreColors(score: number) {
-  if (score >= 10) return { bar: "bg-emerald-500" };
-  if (score >= 6) return { bar: "bg-amber-500" };
-  return { bar: "bg-red-500" };
+function getScoreBarColor(status: string) {
+  if (status === "approved") return "bg-emerald-500";
+  if (status === "rewrite_required" || status === "failed") return "bg-red-500";
+  return "bg-amber-500";
 }
 
 export default function AdminArticleDetail() {
@@ -45,7 +45,9 @@ export default function AdminArticleDetail() {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [currentScore, setCurrentScore] = useState<number | null>(null);
   const [currentFeedback, setCurrentFeedback] = useState("");
-  const [parameterResults, setParameterResults] = useState<ParameterResult[]>([]);
+  const [parameterResults, setParameterResults] = useState<ParameterResult[]>(
+    [],
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -61,9 +63,13 @@ export default function AdminArticleDetail() {
       setError(null);
 
       try {
-        const base = ((import.meta.env.VITE_BACKEND_URL as string | undefined) || "").replace(/\/$/, "");
+        const base = (
+          (import.meta.env.VITE_BACKEND_URL as string | undefined) || ""
+        ).replace(/\/$/, "");
         const token =
-          tokenStorage.get() || localStorage.getItem("token") || sessionStorage.getItem("token");
+          tokenStorage.get() ||
+          localStorage.getItem("token") ||
+          sessionStorage.getItem("token");
 
         const headers: Record<string, string> = {};
         if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -79,7 +85,9 @@ export default function AdminArticleDetail() {
         const ct = res.headers.get("content-type") || "";
         if (!ct.includes("application/json")) {
           const text = await res.text();
-          throw new Error(`Unexpected response (${res.status}): ${text.slice(0, 200)}`);
+          throw new Error(
+            `Unexpected response (${res.status}): ${text.slice(0, 200)}`,
+          );
         }
         if (!res.ok) throw new Error("Failed to load");
 
@@ -100,7 +108,8 @@ export default function AdminArticleDetail() {
             title: d.title as string,
             content: d.content as string,
             article_type_id: (d.article_type_id as string) || "",
-            article_type_name: (d.article_type_name as string) || (d.type as string) || "",
+            article_type_name:
+              (d.article_type_name as string) || (d.type as string) || "",
             status: d.status as string,
             version: d.version as number,
           };
@@ -108,21 +117,39 @@ export default function AdminArticleDetail() {
           setCurrentScore(d.ai_score ?? null);
           setCurrentFeedback(d.ai_feedback || "");
           setParameterResults(d.parameter_results ?? []);
-          const hist = (d.history || []).map((h: { article_id?: string; id?: string; version: number; title: string; content: string; ai_score?: number | null; score?: number | null; ai_feedback?: string | null; feedback?: string | null; status?: string; submitted_at?: string; snapshotted_at?: string }) => ({
-            article_id: h.article_id || (h.id as string) || "",
-            version: h.version,
-            title: h.title,
-            content: h.content,
-            score: h.ai_score ?? h.score ?? null,
-            feedback: h.ai_feedback ?? h.feedback ?? null,
-            status: h.status || "pending",
-            submitted_at: (h.submitted_at || h.snapshotted_at || "") as string,
-            snapshotted_at: h.snapshotted_at || "",
-          }));
+          const hist = (d.history || []).map(
+            (h: {
+              article_id?: string;
+              id?: string;
+              version: number;
+              title: string;
+              content: string;
+              ai_score?: number | null;
+              score?: number | null;
+              ai_feedback?: string | null;
+              feedback?: string | null;
+              status?: string;
+              submitted_at?: string;
+              snapshotted_at?: string;
+            }) => ({
+              article_id: h.article_id || (h.id as string) || "",
+              version: h.version,
+              title: h.title,
+              content: h.content,
+              score: h.ai_score ?? h.score ?? null,
+              feedback: h.ai_feedback ?? h.feedback ?? null,
+              status: h.status || "pending",
+              submitted_at: (h.submitted_at ||
+                h.snapshotted_at ||
+                "") as string,
+              snapshotted_at: h.snapshotted_at || "",
+            }),
+          );
           setHistory(hist as HistoryItem[]);
         }
       } catch (e: unknown) {
-        if (cancelled || (e instanceof DOMException && e.name === "AbortError")) return;
+        if (cancelled || (e instanceof DOMException && e.name === "AbortError"))
+          return;
         setError(e instanceof Error ? e.message : String(e));
       } finally {
         if (!cancelled) setLoading(false);
@@ -154,6 +181,8 @@ export default function AdminArticleDetail() {
   const displayFeedback = effectiveSnapshot
     ? (effectiveSnapshot.feedback ?? "")
     : (currentFeedback ?? "");
+  const displayStatus =
+    effectiveSnapshot?.status ?? article?.status ?? "pending";
   const displaySubmittedAt = effectiveSnapshot?.submitted_at ?? null;
 
   useEffect(() => {
@@ -162,28 +191,45 @@ export default function AdminArticleDetail() {
 
     (async () => {
       try {
-        const base = ((import.meta.env.VITE_BACKEND_URL as string | undefined) || "").replace(/\/$/, "");
+        const base = (
+          (import.meta.env.VITE_BACKEND_URL as string | undefined) || ""
+        ).replace(/\/$/, "");
         const token =
-          tokenStorage.get() || localStorage.getItem("token") || sessionStorage.getItem("token");
+          tokenStorage.get() ||
+          localStorage.getItem("token") ||
+          sessionStorage.getItem("token");
 
         const headers: Record<string, string> = {};
         if (token) headers["Authorization"] = `Bearer ${token}`;
 
-        const res = await fetch(`${base}/api/articles/${id}/parameter-results?version=${versionParam}`, {
-          credentials: "include",
-          headers,
-          signal: controller.signal,
-        });
+        const res = await fetch(
+          `${base}/api/articles/${id}/parameter-results?version=${versionParam}`,
+          {
+            credentials: "include",
+            headers,
+            signal: controller.signal,
+          },
+        );
 
         if (res.ok) {
           const json = await res.json();
           if (json.data) {
             setParameterResults(
-              json.data.map((r: { name?: string; parameterName?: string; parameter_name?: string; scopeType?: string; scope_type?: string; value: string | number }) => ({
-                parameter_name: r.parameterName || r.parameter_name || r.name || "",
-                scope_type: r.scopeType || r.scope_type || "",
-                value: r.value,
-              }))
+              json.data.map(
+                (r: {
+                  name?: string;
+                  parameterName?: string;
+                  parameter_name?: string;
+                  scopeType?: string;
+                  scope_type?: string;
+                  value: string | number;
+                }) => ({
+                  parameter_name:
+                    r.parameterName || r.parameter_name || r.name || "",
+                  scope_type: r.scopeType || r.scope_type || "",
+                  value: r.value,
+                }),
+              ),
             );
           }
         }
@@ -196,7 +242,6 @@ export default function AdminArticleDetail() {
   }, [id, versionParam]);
 
   const hasScore = displayScore !== null;
-  const colors = hasScore ? getAiScoreColors(displayScore!) : null;
 
   if (loading) {
     return (
@@ -276,10 +321,10 @@ export default function AdminArticleDetail() {
                     </span>
                   </p>
 
-                  {hasScore && colors && (
+                  {hasScore && (
                     <div className="flex-1 h-2 rounded-full bg-slate-200 overflow-hidden">
                       <div
-                        className={`h-full rounded-full ${colors.bar}`}
+                        className={`h-full rounded-full ${getScoreBarColor(displayStatus)}`}
                         style={{
                           width: `${(Math.min(displayScore!, 10) / 10) * 100}%`,
                         }}
@@ -322,9 +367,12 @@ export default function AdminArticleDetail() {
 
               <div className="flex items-center gap-2">
                 {article && (
-                  <span className="text-xs font-medium text-slate-600 bg-slate-100 rounded-full px-2.5 py-1">
-                    {article.article_type_name}
-                  </span>
+                  <div className="flex items-center">
+                    <span className="text-xs font-medium text-slate-600 bg-slate-100 rounded-full px-2.5 py-1">
+                      {article.article_type_name}
+                    </span>
+                    <CopyButton text={displayContent} />
+                  </div>
                 )}
 
                 <span className="p-1 text-slate-400">

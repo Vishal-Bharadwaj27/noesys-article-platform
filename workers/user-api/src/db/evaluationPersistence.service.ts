@@ -24,7 +24,8 @@ export async function persistEvaluationResults(
           SET ai_score = ?,
               ai_feedback = ?,
               status = ?,
-              scored_at = ?
+              scored_at = ?,
+              pass_threshold = ?
           WHERE id = ?
         `
       )
@@ -33,6 +34,7 @@ export async function persistEvaluationResults(
         outcome.ai_feedback,
         outcome.status,
         scoredAt,
+        outcome.pass_threshold,
         articleId
       )
       .run();

@@ -29,6 +29,7 @@ export interface ArticleHistoryEntry {
   content: string;
   ai_score: number | null;
   ai_feedback: string | null;
+  status: "approved" | "rewrite_required" | "pending" | "failed" | null;
   submitted_at: string | null;
   scored_at: string | null;
   snapshotted_at: string;
