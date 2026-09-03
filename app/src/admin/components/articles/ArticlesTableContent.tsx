@@ -24,10 +24,10 @@ type ArticlesTableProps = {
 
 const { Text } = Typography;
 
-function getAiScoreColors(score: number) {
-  if (score >= 10) return "#389e0d";
-  if (score >= 6) return "#d48806";
-  return "#cf1322";
+function getAiScoreColor(status: ArticleStatus) {
+  if (status === "approved") return "#389e0d";
+  if (status === "rewrite_required" || status === "failed") return "#cf1322";
+  return "#d48806";
 }
 
 function formatDateToUSLocale(dateStr: string) {
@@ -64,6 +64,10 @@ const STATUS_CONFIG: Record<
   failed: {
     color: "orange",
     label: "Failed",
+  },
+  unknown: {
+    color: "default",
+    label: "Unavailable",
   },
 };
 
@@ -223,7 +227,7 @@ export default function ArticlesTableContent({
         dataIndex: "ai_score",
         key: "ai_score",
         width: 130,
-        render: (score: number | null) =>
+        render: (score: number | null, record: ArticleSummary) =>
           score === null ? (
             <Text style={{ fontSize: fs }}>—</Text>
           ) : (
@@ -232,12 +236,12 @@ export default function ArticlesTableContent({
                 percent={Math.min(Math.max(score, 0), 10) * 10}
                 size="small"
                 showInfo={false}
-                strokeColor={getAiScoreColors(score)}
+                strokeColor={getAiScoreColor(record.status)}
                 style={{ width: 56 }}
               />
               <Text
                 strong
-                style={{ color: getAiScoreColors(score), fontSize: fs }}
+                style={{ color: getAiScoreColor(record.status), fontSize: fs }}
               >
                 {score}
               </Text>

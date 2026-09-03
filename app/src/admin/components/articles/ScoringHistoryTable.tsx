@@ -5,10 +5,10 @@ import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-function getAiScoreColorsHex(s: number) {
-  if (s >= 10) return "#389e0d";
-  if (s >= 6) return "#d48806";
-  return "#cf1322";
+function getAiScoreColor(status: HistoryItem["status"]) {
+  if (status === "approved") return "#389e0d";
+  if (status === "rewrite_required" || status === "failed") return "#cf1322";
+  return "#d48806";
 }
 
 function formatAiScore(s: number) {
@@ -24,7 +24,7 @@ export default function ScoringHistoryTable({
 }) {
   const navigate = useNavigate();
   const [cols, setCols] = useState<ColumnsType<HistoryItem>>([]);
-
+  console.log(history);
   useEffect(() => {
     const columns: ColumnsType<HistoryItem> = [
       {
@@ -49,7 +49,7 @@ export default function ScoringHistoryTable({
         dataIndex: "score",
         key: "score",
         width: 130,
-        render: (s: number | null) =>
+        render: (s: number | null, record: HistoryItem) =>
           s === null ? (
             <span className="text-slate-400 text-[13px]">—</span>
           ) : (
@@ -58,12 +58,12 @@ export default function ScoringHistoryTable({
                 percent={Math.min(Math.max(s, 0), 10) * 10}
                 size="small"
                 showInfo={false}
-                strokeColor={getAiScoreColorsHex(s)}
+                strokeColor={getAiScoreColor(record.status)}
                 className="w-14"
               />
 
               <span
-                style={{ color: getAiScoreColorsHex(s) }}
+                style={{ color: getAiScoreColor(record.status) }}
                 className="font-semibold text-[13px]"
               >
                 {formatAiScore(s)}
@@ -77,32 +77,21 @@ export default function ScoringHistoryTable({
         key: "status",
         width: 130,
         render: (_: unknown, r: HistoryItem) => {
-          const ds =
-            r.score === null
-              ? "scoring"
-              : r.score === 10
-                ? "accepted"
-                : "rejected";
+          const STATUS_MAP: Record<string, { label: string; color: string }> = {
+            approved: { label: "Accepted", color: "green" },
+            rewrite_required: { label: "Rejected", color: "red" },
+            pending: { label: "Scoring...", color: "default" },
+            failed: { label: "Rejected", color: "red" },
+          };
 
-          const label =
-            ds === "scoring"
-              ? "Scoring..."
-              : ds === "accepted"
-                ? "Accepted"
-                : "Rejected";
+          const cfg = STATUS_MAP[r.status] || STATUS_MAP.pending;
 
           return (
             <Tag
-              color={
-                ds === "accepted"
-                  ? "green"
-                  : ds === "rejected"
-                    ? "red"
-                    : "default"
-              }
+              color={cfg.color}
               className="text-[13px]"
             >
-              {label}
+              {cfg.label}
             </Tag>
           );
         },

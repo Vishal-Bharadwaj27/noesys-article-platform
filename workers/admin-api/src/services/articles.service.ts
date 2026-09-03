@@ -157,6 +157,7 @@ export async function getArticleHistory(
         content,
         ai_score,
         ai_feedback,
+        status,
         submitted_at,
         scored_at,
         snapshotted_at

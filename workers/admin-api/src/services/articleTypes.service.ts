@@ -201,49 +201,54 @@ export async function createArticleType(
 export async function updateArticleType(
   db: D1Database,
   articleTypeId: string,
-  input: ArticleTypeInput,
+  input: Partial<ArticleTypeInput>,
 ): Promise<void> {
   const existing = await db
     .prepare(
       `
-      SELECT id
+      SELECT id, name, description, pass_threshold, score_prompt, score_min, score_max
       FROM article_types
       WHERE id = ?
         AND is_active = 1
     `,
     )
     .bind(articleTypeId)
-    .first<{ id: string }>();
+    .first<ArticleTypeRow>();
 
   if (!existing) {
     throw new Error("Article type not found");
   }
 
-  const duplicate = await db
-    .prepare(
-      `
-      SELECT id
-      FROM article_types
-      WHERE LOWER(name) = LOWER(?)
-        AND id != ?
-        AND is_active = 1
-    `,
-    )
-    .bind(input.name, articleTypeId)
-    .first<{ id: string }>();
+  if (input.name !== undefined && input.name !== existing.name) {
+    const duplicate = await db
+      .prepare(
+        `
+        SELECT id
+        FROM article_types
+        WHERE LOWER(name) = LOWER(?)
+          AND id != ?
+          AND is_active = 1
+      `,
+      )
+      .bind(input.name, articleTypeId)
+      .first<{ id: string }>();
 
-  if (duplicate) {
-    throw new Error("Article type already exists");
+    if (duplicate) {
+      throw new Error("Article type already exists");
+    }
   }
 
-  if (input.scoreMax <= input.scoreMin) {
+  const name = input.name ?? existing.name;
+  const description = input.description !== undefined ? input.description : existing.description;
+  const passThreshold = input.passThreshold ?? existing.pass_threshold;
+  const scorePrompt = input.scorePrompt ?? existing.score_prompt;
+  const scoreMin = input.scoreMin ?? existing.score_min;
+  const scoreMax = input.scoreMax ?? existing.score_max;
+
+  if (scoreMax <= scoreMin) {
     throw new Error("score_max must be greater than score_min");
   }
-
-  if (
-    input.passThreshold < input.scoreMin ||
-    input.passThreshold > input.scoreMax
-  ) {
+  if (passThreshold < scoreMin || passThreshold > scoreMax) {
     throw new Error("pass_threshold must fall within score_min and score_max");
   }
 
@@ -265,12 +270,12 @@ export async function updateArticleType(
     `,
     )
     .bind(
-      input.name,
-      input.description ?? null,
-      input.passThreshold,
-      input.scorePrompt,
-      input.scoreMin,
-      input.scoreMax,
+      name,
+      description ?? null,
+      passThreshold,
+      scorePrompt,
+      scoreMin,
+      scoreMax,
       now,
       articleTypeId,
     )

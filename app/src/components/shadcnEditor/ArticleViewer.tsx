@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import "./Tiptap.css";
 import { tiptapExtensions } from "./TiptapExtensions";
 import { resolveContentToHtml } from "@/components/editor/lib/contentNormalize";
+import CopyButton from "@/admin/utils/CopyButton";
 
 type Props = {
   content: string;

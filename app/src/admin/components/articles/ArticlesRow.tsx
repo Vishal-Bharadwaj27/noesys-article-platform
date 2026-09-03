@@ -7,24 +7,26 @@ const STATUS_STYLES: Record<ArticleStatus, string> = {
   rewrite_required: "bg-red-50 text-red-600",
   pending: "bg-amber-50 text-amber-700",
   failed: "bg-red",
+  unknown: "bg-slate-100 text-slate-600",
 };
 
 const STATUS_LABELS: Record<ArticleStatus, string> = {
   approved: "Approved",
   rewrite_required: "Rewrite Required",
   pending: "Pending",
-  failed: "failed"
+  failed: "failed",
+  unknown: "Unavailable",
 };
 
-function getAiScoreColors(score: number) {
-  if (score >= 10) {
+function getAiScoreColors(status: ArticleStatus) {
+  if (status === "approved") {
     return {
       bar: "bg-emerald-500",
       badge: "bg-emerald-50 text-emerald-700",
     };
   }
 
-  if (score >= 6) {
+  if (status === "pending") {
     return {
       bar: "bg-amber-500",
       badge: "bg-amber-50 text-amber-700",
@@ -64,7 +66,7 @@ export default function ArticleRow({ article, onClick }: ArticleRowProps) {
   } = article;
 
   const hasScore = ai_score !== null;
-  const colors = hasScore ? getAiScoreColors(ai_score) : null;
+  const colors = hasScore ? getAiScoreColors(status) : null;
 
   return (
     <div

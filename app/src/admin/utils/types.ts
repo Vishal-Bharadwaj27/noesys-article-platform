@@ -13,7 +13,8 @@ export type ArticleStatus =
   | "approved"
   | "rewrite_required"
   | "pending"
-  | "failed";
+  | "failed"
+  | "unknown";
 
 
 export type ArticleParameterResult = {

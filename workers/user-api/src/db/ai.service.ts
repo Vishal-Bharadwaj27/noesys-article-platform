@@ -20,7 +20,7 @@ export async function evaluateArticle(
       model: google("gemini-3.5-flash-lite"),
       schema,
       system:
-        "You are an article evaluator. Follow the scoring instructions exactly and only return values allowed by the schema. Keep in mind that the passing score is 10, and evaluate article's ai_score strictly between 0-10",
+        "You are an article evaluator. Follow the scoring instructions exactly and only return values allowed by the schema. Evaluate article's ai_score strictly between 0-10",
       prompt,
     });
     

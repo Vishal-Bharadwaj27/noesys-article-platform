@@ -40,6 +40,7 @@ export type ArticleHistory = {
   ai_feedback: string | null;
   content: string;
   ai_score: number | null;
+  status: "approved" | "rewrite_required" | "pending" | "failed" | null;
   version: number;
   submitted_at: string;
   scored_at: string | null;

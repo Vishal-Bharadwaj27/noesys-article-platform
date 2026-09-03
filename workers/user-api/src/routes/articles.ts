@@ -203,16 +203,6 @@ articleRoutes.get("/mine/:id", async (c) => {
       current_score: article.ai_score,
       parameter_results,
       history: history.map((item) => {
-        // For historical items, we infer status from score
-        // Note: This uses a default threshold since historical pass_threshold isn't stored
-        // A future migration should add status to the history table for accuracy
-        let status = "pending";
-
-        if (item.ai_score !== null) {
-          // Default threshold for historical data (article type thresholds may have changed)
-          status = item.ai_score >= 10.0 ? "approved" : "rewrite_required";
-        }
-
         return {
           article_id: item.article_id,
           version: item.version,
@@ -220,7 +210,7 @@ articleRoutes.get("/mine/:id", async (c) => {
           content: item.content ?? "",
           score: item.ai_score,
           feedback: item.ai_feedback || null,
-          status,
+          status: item.status ?? "pending",
           submitted_at: item.submitted_at,
           snapshotted_at: item.snapshotted_at,
         };

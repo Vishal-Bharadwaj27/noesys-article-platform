@@ -12,31 +12,41 @@ import { authMiddleware } from "../middleware/auth";
 const articleTypesRoute = new Hono<{ Bindings: Env } & AuthContext>();
 articleTypesRoute.use("*", authMiddleware("admin", "super_admin"));
 
-function parseArticleTypeBody(body: unknown): ArticleTypeInput | { error: string } {
+function parseArticleTypeBody(
+  body: unknown,
+  isUpdate = false,
+): Partial<ArticleTypeInput> | { error: string } {
+  if (!body || typeof body !== "object") return { error: "Invalid request body" };
   const b = body as Record<string, unknown>;
   const name = b.name as string | undefined;
   const description = b.description as string | undefined;
   const passThreshold = b.passThreshold as unknown;
   const scorePrompt = b.scorePrompt as string | undefined;
-  const scoreMin = b.scoreMin as unknown;
-  const scoreMax = b.scoreMax as unknown;
+  const scoreMin = b.scoreMin !== undefined ? b.scoreMin : (isUpdate ? undefined : 0);
+  const scoreMax = b.scoreMax !== undefined ? b.scoreMax : (isUpdate ? undefined : 10);
 
-  if (!name?.trim()) return { error: "Article type name is required" };
-  if (!scorePrompt?.trim()) return { error: "Score prompt is required" };
-  if (typeof passThreshold !== "number") {
-    return { error: "passThreshold must be a number" };
-  }
-  if (typeof scoreMin !== "number" || typeof scoreMax !== "number") {
-    return { error: "scoreMin and scoreMax must be numbers" };
+  if (!isUpdate) {
+    if (!name?.trim()) return { error: "Article type name is required" };
+    if (!scorePrompt?.trim()) return { error: "Score prompt is required" };
+    if (typeof passThreshold !== "number" || isNaN(passThreshold)) {
+      return { error: "passThreshold must be a valid numeric value" };
+    }
+  } else {
+    if (
+      passThreshold !== undefined &&
+      (typeof passThreshold !== "number" || isNaN(passThreshold))
+    ) {
+      return { error: "passThreshold must be a valid numeric value" };
+    }
   }
 
   return {
-    name: name.trim(),
-    description: description?.trim() || undefined,
-    passThreshold,
-    scorePrompt: scorePrompt.trim(),
-    scoreMin,
-    scoreMax,
+    ...(name !== undefined ? { name: name.trim() } : {}),
+    ...(description !== undefined ? { description: description.trim() || undefined } : {}),
+    ...(passThreshold !== undefined ? { passThreshold: passThreshold as number } : {}),
+    ...(scorePrompt !== undefined ? { scorePrompt: scorePrompt.trim() } : {}),
+    ...(scoreMin !== undefined ? { scoreMin: Number(scoreMin) } : {}),
+    ...(scoreMax !== undefined ? { scoreMax: Number(scoreMax) } : {}),
   };
 }
 
@@ -65,21 +75,29 @@ articleTypesRoute.get("/:id", async (c) => {
 
 articleTypesRoute.post("/", async (c) => {
   const body = await c.req.json();
-  const parsed = parseArticleTypeBody(body);
+  const parsed = parseArticleTypeBody(body, false);
 
   if ("error" in parsed) {
     return c.json({ message: parsed.error }, 400);
   }
 
-  const data = await createArticleType(c.env.DB, parsed, c.get("user").id);
+  try {
+    const data = await createArticleType(
+      c.env.DB,
+      parsed as ArticleTypeInput,
+      c.get("user").id,
+    );
 
-  return c.json(
-    {
-      message: "Article type created successfully.",
-      data,
-    },
-    201,
-  );
+    return c.json(
+      {
+        message: "Article type created successfully.",
+        data,
+      },
+      201,
+    );
+  } catch (err: any) {
+    return c.json({ message: err.message || "Failed to create article type" }, 400);
+  }
 });
 
 articleTypesRoute.patch("/:id", async (c) => {
@@ -90,15 +108,18 @@ articleTypesRoute.patch("/:id", async (c) => {
   }
 
   const body = await c.req.json();
-  const parsed = parseArticleTypeBody(body);
+  const parsed = parseArticleTypeBody(body, true);
 
   if ("error" in parsed) {
     return c.json({ message: parsed.error }, 400);
   }
 
-  await updateArticleType(c.env.DB, id, parsed);
-
-  return c.json({ message: "Article type updated successfully" });
+  try {
+    await updateArticleType(c.env.DB, id, parsed);
+    return c.json({ message: "Article type updated successfully" });
+  } catch (err: any) {
+    return c.json({ message: err.message || "Failed to update article type" }, 400);
+  }
 });
 
 articleTypesRoute.delete("/:id", async (c) => {
