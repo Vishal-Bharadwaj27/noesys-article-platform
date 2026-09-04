@@ -6,9 +6,10 @@ export default function CopyButton({ text }: { text: string }) {
 
   return (
     <button
-      onClick={() => {
+      onClick={(e) => {
         navigator.clipboard.writeText(text);
         setCopied(true);
+        e.stopPropagation();
         setTimeout(() => setCopied(false), 2000);
       }}
       className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-colors"
