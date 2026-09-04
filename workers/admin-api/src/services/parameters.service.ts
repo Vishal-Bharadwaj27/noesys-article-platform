@@ -122,84 +122,214 @@ async function syncParameterOptions(
   const statements: D1PreparedStatement[] = [];
   const incoming = options ?? [];
 
-  const activeResult = await db
+  // --- 1. Validate incoming payload up front: reject duplicate labels in
+  //     a single request with a clear error instead of letting them reach
+  //     the DB and surface as a UNIQUE constraint failure. ---
+  const seenLabels = new Set<string>();
+  const normalized = incoming.map((o) => ({ ...o, label: o.label.trim() }));
+  for (const opt of normalized) {
+    if (!opt.label) {
+      throw new Error("Option label cannot be empty");
+    }
+    if (seenLabels.has(opt.label)) {
+      throw new Error(`Duplicate option label "${opt.label}" in request`);
+    }
+    seenLabels.add(opt.label);
+  }
+
+  // --- 2. Load the FULL row set once — active AND inactive together.
+  //     The previous version split this into two separate queries
+  //     (is_active = 1 / is_active = 0) and only used the inactive one
+  //     for reuse lookups. That's the root cause of the bug: it relied
+  //     on every row landing cleanly in one of those two buckets. Any
+  //     row whose state wasn't exactly 0 or 1 was invisible to reuse,
+  //     and — more importantly — a brand-new label-only submission
+  //     ({ label: "Auth" }, no id, which is the *only* shape the admin
+  //     UI ever sends for a newly typed option, see
+  //     ArticleTypesParameterModal.tsx line 186) depended on that
+  //     lookup succeeding. Loading everything in one unfiltered query
+  //     means reuse can never miss a matching row, regardless of its
+  //     current is_active value. ---
+  const existingResult = await db
     .prepare(
-      `SELECT id, label FROM parameter_options WHERE parameter_id = ? AND is_active = 1`,
+      `SELECT id, label, is_active FROM parameter_options WHERE parameter_id = ?`,
     )
     .bind(parameterId)
-    .all<{ id: string; label: string }>();
-  const active = activeResult.results ?? [];
+    .all<{ id: string; label: string; is_active: number }>();
+  const existingRows = existingResult.results ?? [];
 
-  const inactiveResult = await db
-    .prepare(
-      `SELECT id, label FROM parameter_options WHERE parameter_id = ? AND is_active = 0`,
-    )
-    .bind(parameterId)
-    .all<{ id: string; label: string }>();
-  const inactiveByLabel = new Map(
-    (inactiveResult.results ?? []).map((o) => [o.label, o.id]),
+  const byId = new Map(existingRows.map((r) => [r.id, r]));
+  const byLabel = new Map(existingRows.map((r) => [r.label, r]));
+
+  // TEMP DEBUG — remove once verified in staging. Prints exactly what
+  // came in, what already exists in the DB for this parameter, and
+  // whether each option resolved to INSERT or REUSE.
+  console.debug("[syncParameterOptions] parameterId:", parameterId);
+  console.debug("[syncParameterOptions] incoming:", normalized);
+  console.debug(
+    "[syncParameterOptions] existing rows:",
+    existingRows.map((r) => `${r.id}:${r.label}:active=${r.is_active}`),
   );
 
-  const incomingIds = new Set(
-    incoming.map((o) => o.id).filter((id): id is string => Boolean(id)),
+  // --- 3. Resolve every incoming option to a definite target row before
+  //     generating any SQL. ---
+  type Resolved = {
+    id: string;
+    label: string;
+    sortOrder: number;
+    isNew: boolean;
+    oldLabel: string | null;
+  };
+  const resolved: Resolved[] = [];
+  const usedExistingIds = new Set<string>();
+
+  // ids explicitly present in this request. Used below to tell the
+  // difference between "the row that already owns this label is being
+  // renamed away right now as part of a swap" (fine — the placeholder
+  // phase handles that) vs "the row that already owns this label is an
+  // untouched row this request never mentions" (a real, otherwise-silent
+  // conflict — typically an old soft-deleted row with the same label).
+  const incomingIdSet = new Set(
+    normalized.map((o) => o.id).filter((id): id is string => Boolean(id)),
   );
 
-  // Deactivate anything currently active that's missing from the incoming list
-  // (covers: option removed, or scopeType switched away from "option" entirely)
-  for (const opt of active) {
-    if (!incomingIds.has(opt.id)) {
+  normalized.forEach((option, i) => {
+    const sourceRow = option.id ? byId.get(option.id) : undefined;
+    if (option.id && !sourceRow) {
+      throw new Error(
+        `Option id ${option.id} does not belong to parameter ${parameterId}`,
+      );
+    }
+
+    const labelOwner = byLabel.get(option.label);
+
+    const externalConflict =
+      !!labelOwner &&
+      labelOwner.id !== option.id &&
+      !usedExistingIds.has(labelOwner.id) &&
+      !incomingIdSet.has(labelOwner.id);
+
+    if (externalConflict) {
+      // Some other row — not mentioned anywhere in this request, so not
+      // being renamed away as part of a swap — already owns this exact
+      // label (typically an old soft-deleted row the UI never fetched,
+      // since inactive options aren't shown). That row is the only one
+      // allowed to hold this label per the UNIQUE constraint, active or
+      // not. Reuse IT rather than renaming sourceRow onto a label that's
+      // already taken. sourceRow (if any) is deliberately left out of
+      // usedExistingIds so it falls into the "no longer referenced"
+      // deactivation pass below instead of colliding.
+      resolved.push({
+        id: labelOwner!.id,
+        label: option.label,
+        sortOrder: i,
+        isNew: false,
+        oldLabel: labelOwner!.label,
+      });
+      usedExistingIds.add(labelOwner!.id);
+      return;
+    }
+
+    if (sourceRow) {
+      // Safe to rename this row in place — nothing untouched already
+      // owns the target label. (If another row in this same batch is
+      // also being renamed and briefly "owns" this label, the phase 1
+      // placeholder pass below vacates it before phase 2 writes here.)
+      resolved.push({
+        id: option.id!,
+        label: option.label,
+        sortOrder: i,
+        isNew: false,
+        oldLabel: sourceRow.label,
+      });
+      usedExistingIds.add(option.id!);
+      return;
+    }
+
+    if (labelOwner && !usedExistingIds.has(labelOwner.id)) {
+      // No id sent (freshly typed option) and an existing row — active or
+      // not — already owns this label. Reuse it. This is the "add Auth,
+      // remove it, add Auth again later, no id sent" case.
+      resolved.push({
+        id: labelOwner.id,
+        label: option.label,
+        sortOrder: i,
+        isNew: false,
+        oldLabel: labelOwner.label,
+      });
+      usedExistingIds.add(labelOwner.id);
+      return;
+    }
+
+    resolved.push({
+      id: crypto.randomUUID(),
+      label: option.label,
+      sortOrder: i,
+      isNew: true,
+      oldLabel: null,
+    });
+  });
+
+  console.debug(
+    "[syncParameterOptions] resolved:",
+    resolved.map((r) =>
+      r.isNew
+        ? `INSERT ${r.id}:${r.label}`
+        : `REUSE ${r.id}: ${r.oldLabel} -> ${r.label}`,
+    ),
+  );
+
+  // --- 4. Deactivate existing rows that were active but are no longer
+  //     represented in the incoming list at all. ---
+  for (const row of existingRows) {
+    if (row.is_active === 1 && !usedExistingIds.has(row.id)) {
       statements.push(
         db
           .prepare(
             `UPDATE parameter_options SET is_active = 0 WHERE id = ? AND parameter_id = ?`,
           )
-          .bind(opt.id, parameterId),
+          .bind(row.id, parameterId),
       );
     }
   }
 
-  incoming.forEach((option, i) => {
-    const label = option.label.trim();
+  // --- 5. Phase 1: move every row whose label is CHANGING to a
+  //     collision-proof placeholder first. This makes label swaps
+  //     (e.g. "AI"+"A" -> "A"+"AI") safe: every row about to take over
+  //     another row's old label first vacates its own old label. ---
+  for (const r of resolved) {
+    if (!r.isNew && r.oldLabel !== r.label) {
+      statements.push(
+        db
+          .prepare(
+            `UPDATE parameter_options SET label = ? WHERE id = ? AND parameter_id = ?`,
+          )
+          .bind(`__pending_relabel__${r.id}`, r.id, parameterId),
+      );
+    }
+  }
 
-    if (option.id) {
-      // Matched by id: update label/order and force it active (fixes the
-      // reactivation bug — a row deactivated by an earlier numeric switch
-      // must come back when re-selected, not stay silently hidden).
+  // --- 6. Phase 2: write final state. Every row needing a new label has
+  //     already vacated its old one, so nothing here can collide. ---
+  for (const r of resolved) {
+    if (r.isNew) {
+      statements.push(
+        db
+          .prepare(
+            `INSERT INTO parameter_options (id, parameter_id, label, sort_order, is_active, created_at) VALUES (?, ?, ?, ?, 1, ?)`,
+          )
+          .bind(r.id, parameterId, r.label, r.sortOrder, now),
+      );
+    } else {
       statements.push(
         db
           .prepare(
             `UPDATE parameter_options SET label = ?, sort_order = ?, is_active = 1 WHERE id = ? AND parameter_id = ?`,
           )
-          .bind(label, i, option.id, parameterId),
+          .bind(r.label, r.sortOrder, r.id, parameterId),
       );
-      return;
     }
-
-    const reuseId = inactiveByLabel.get(label);
-    if (reuseId) {
-      // A deactivated row with this exact label already exists for this
-      // parameter — reactivate it instead of inserting a duplicate. Avoids
-      // a UNIQUE(parameter_id, label) clash and preserves the id for any
-      // historical article_parameter_results pointing at it.
-      statements.push(
-        db
-          .prepare(
-            `UPDATE parameter_options SET label = ?, sort_order = ?, is_active = 1 WHERE id = ? AND parameter_id = ?`,
-          )
-          .bind(label, i, reuseId, parameterId),
-      );
-      inactiveByLabel.delete(label);
-      return;
-    }
-
-    statements.push(
-      db
-        .prepare(
-          `INSERT INTO parameter_options (id, parameter_id, label, sort_order, is_active, created_at) VALUES (?, ?, ?, ?, 1, ?)`,
-        )
-        .bind(crypto.randomUUID(), parameterId, label, i, now),
-    );
-  });
+  }
 
   return statements;
 }
