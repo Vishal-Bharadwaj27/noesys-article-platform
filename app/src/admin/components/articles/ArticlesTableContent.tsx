@@ -16,6 +16,7 @@ import {
   Tooltip,
 } from "antd";
 import { useEffect, useMemo, useState } from "react";
+import { formatDateToUSLocale } from "@/admin/utils/date";
 
 type ArticlesTableProps = {
   articles: ArticleSummary[];
@@ -28,20 +29,6 @@ function getAiScoreColor(status: ArticleStatus) {
   if (status === "approved") return "#389e0d";
   if (status === "rewrite_required" || status === "failed") return "#cf1322";
   return "#d48806";
-}
-
-function formatDateToUSLocale(dateStr: string) {
-  const d = new Date(dateStr);
-
-  if (Number.isNaN(d.getTime())) {
-    return dateStr;
-  }
-
-  return d.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
 }
 
 const STATUS_CONFIG: Record<
