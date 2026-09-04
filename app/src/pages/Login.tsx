@@ -118,7 +118,7 @@ export default function Login() {
           <img
             src={logoImage}
             alt="Noesys Article Platform"
-            className="h-12 w-20 rounded-lg"
+            className="h-20 w-20 rounded-lg"
           />
           <span className="font-semibold text-lg text-slate-900">
             Article Platform
