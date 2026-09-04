@@ -172,19 +172,38 @@ articleRoutes.get("/mine/:id", async (c) => {
       (history.length > 0 ? history[history.length - 1].ai_feedback || "" : "");
 
   // parameter results for current version
-  const paramRows: { parameter_name: string; scope_type: string; numeric_value: number | null; option_id: string | null; option_label: string | null }[] = (
+  const paramRows: {
+    parameter_name: string;
+    scope_type: string;
+    numeric_value: number | null;
+    option_id: string | null;
+    option_label: string | null;
+  }[] = (
     await db
       .prepare(
         `SELECT p.name as parameter_name, p.scope_type, r.numeric_value, r.option_id, po.label as option_label FROM article_parameter_results r JOIN parameters p ON p.id=r.parameter_id LEFT JOIN parameter_options po ON po.id=r.option_id WHERE r.article_id=? AND r.version=? ORDER BY p.sort_order`,
       )
       .bind(articleId, article.version)
       .all()
-  ).results as { parameter_name: string; scope_type: string; numeric_value: number | null; option_id: string | null; option_label: string | null }[];
-  const parameter_results = paramRows.map((r: { parameter_name: string; scope_type: string; numeric_value: number | null; option_label: string | null }) => ({
-    parameter_name: r.parameter_name,
-    scope_type: r.scope_type,
-    value: r.scope_type === "option" ? r.option_label : r.numeric_value,
-  }));
+  ).results as {
+    parameter_name: string;
+    scope_type: string;
+    numeric_value: number | null;
+    option_id: string | null;
+    option_label: string | null;
+  }[];
+  const parameter_results = paramRows.map(
+    (r: {
+      parameter_name: string;
+      scope_type: string;
+      numeric_value: number | null;
+      option_label: string | null;
+    }) => ({
+      parameter_name: r.parameter_name,
+      scope_type: r.scope_type,
+      value: r.scope_type === "option" ? r.option_label : r.numeric_value,
+    }),
+  );
   return c.json({
     message: "Article fetched successfully",
     data: {
