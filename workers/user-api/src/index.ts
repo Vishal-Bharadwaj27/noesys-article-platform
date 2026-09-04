@@ -11,7 +11,7 @@ const app = new Hono<AppEnv>();
 app.use(
   "*",
   cors({
-    origin: ["https://noesys-article-platform.pages.dev", "https://article-platform-router.vishal-97a.workers.dev", "http://localhost:5173"],
+    origin: ["https://noesys-article-platform.pages.dev", "http://localhost:5173"],
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
     credentials: true,
