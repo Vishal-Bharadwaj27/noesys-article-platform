@@ -11,8 +11,6 @@ import {
 import { ChevronLeft, Send, Loader2, Copy, Check } from "lucide-react";
 import { api } from "../http-client";
 import ReactMarkdown, { type Components } from "react-markdown";
-import remarkGfm from "remark-gfm";
-import rehypeRaw from "rehype-raw";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import type { CSSProperties } from "react";
@@ -23,26 +21,6 @@ import TiptapEditor from "@/components/editor/TiptapEditor";
 import ArticleViewer from "@/components/shadcnEditor/ArticleViewer";
 
 const syntaxTheme = oneDark as { [key: string]: CSSProperties };
-
-const MarkdownCode: Components["code"] = ({
-  className,
-  children,
-  ...props
-}) => {
-  const match = /language-(\w+)/.exec(className || "");
-  if (match) {
-    return (
-      <SyntaxHighlighter style={syntaxTheme} language={match[1]} PreTag="div">
-        {String(children).replace(/\n$/, "")}
-      </SyntaxHighlighter>
-    );
-  }
-  return (
-    <code className={className} {...props}>
-      {children}
-    </code>
-  );
-};
 
 const turndown = new TurndownService({
   headingStyle: "atx",
