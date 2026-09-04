@@ -287,26 +287,24 @@ export default function ArticleCreation() {
     }
 
     setSubmitting(true);
-
-    api<CreateResponse>("/articles", {
-      method: "POST",
-      body: JSON.stringify({
-        article_type_id: values.article_type_id,
-        title: values.title.trim(),
-        content: toMarkdown(values.content.trim()),
-      }),
-    }).catch((err) => {
-      console.error("Background article submission failed:", err);
-    });
-
     try {
-      sessionStorage.setItem(
-        "toast",
-        "Article submitted! Scoring in progress...",
-      );
-    } catch {}
-
-    navigate("/");
+      await api<CreateResponse>("/articles", {
+        method: "POST",
+        body: JSON.stringify({
+          article_type_id: values.article_type_id,
+          title: values.title.trim(),
+          content: toMarkdown(values.content.trim()),
+        }),
+      });
+      try {
+        sessionStorage.removeItem("toastError");
+        sessionStorage.setItem("toast", "Article submitted! Scoring in progress...");
+      } catch {}
+      navigate("/");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to submit article");
+      setSubmitting(false);
+    }
   }
 
   return (

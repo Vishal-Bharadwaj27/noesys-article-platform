@@ -135,11 +135,14 @@ export default function MyArticles() {
   const [articleTypes, setArticleTypes] = useState<
     { id: string; name: string }[]
   >([]);
+  const [typesError, setTypesError] = useState<string | null>(null);
 
   useEffect(() => {
     api<{ id: string; name: string }[]>("/article-types")
       .then(setArticleTypes)
-      .catch(() => {});
+      .catch((err) =>
+        setTypesError(err instanceof Error ? err.message : "Failed to load types"),
+      );
   }, []);
 
   const { articles, loading, error, pagination, isPolling, refetch } =
@@ -174,12 +177,21 @@ export default function MyArticles() {
     return out;
   }, [articles, typeFilter, statusFilter, articleTypes]);
 
-  // toast from creation
+  // toast from creation (consume once, clear stale timeout marker on success)
   const [toast, setToast] = useState<string | null>(() => {
     try {
       const t = sessionStorage.getItem("toast");
-      if (t) sessionStorage.removeItem("toast");
-      return t;
+      const te = sessionStorage.getItem("toastError");
+      if (t) {
+        sessionStorage.removeItem("toast");
+        if (te) sessionStorage.removeItem("toastError");
+        return t;
+      }
+      if (te) {
+        sessionStorage.removeItem("toastError");
+        return te;
+      }
+      return null;
     } catch {
       return null;
     }
@@ -335,8 +347,15 @@ export default function MyArticles() {
           />
         </div>
 
+        {typesError && (
+          <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600">
+            {typesError}
+          </div>
+        )}
         {toast && (
-          <div className="mb-4 rounded-lg bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-700">
+          <div
+            className={`mb-4 rounded-lg border px-4 py-3 text-sm ${toast.toLowerCase().includes("timed out") || toast.toLowerCase().includes("failed") ? "bg-red-50 border-red-200 text-red-600" : "bg-emerald-50 border-emerald-200 text-emerald-700"}`}
+          >
             {toast}
           </div>
         )}

@@ -101,6 +101,9 @@ export function useMyArticles(options: UseMyArticlesOptions = {}) {
     if (!hasPending) {
       pollStartRef.current = null;
       clear();
+      try {
+        sessionStorage.removeItem("toastError");
+      } catch {}
       return;
     }
     if (document.visibilityState === "hidden") {

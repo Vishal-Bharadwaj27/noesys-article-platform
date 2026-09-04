@@ -18,30 +18,34 @@ export function useArticle(id: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchArticle = useCallback(async () => {
-    if (!id) {
-      return;
-    }
+  const fetchArticle = useCallback(async (signal?: AbortSignal) => {
+    if (!id) return;
+    if (signal?.aborted) return;
     setLoading(true);
     setError(null);
     try {
-      const result = await api<ArticleDetailResponse>(`/articles/mine/${id}`);
+      const result = await api<ArticleDetailResponse>(`/articles/mine/${id}`, {
+        signal,
+      } as RequestInit);
+      if (signal?.aborted) return;
       setArticle(result.article);
       setHistory(result.history ?? []);
       setCurrentScore(result.current_score);
       setCurrentFeedback(result.current_feedback ?? "");
       setParameterResults(result.parameter_results ?? []);
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to load article";
+      if (signal?.aborted) return;
+      const message = err instanceof Error ? err.message : "Failed to load article";
       setError(message);
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   }, [id]);
 
   useEffect(() => {
-    fetchArticle();
+    const ac = new AbortController();
+    fetchArticle(ac.signal);
+    return () => ac.abort();
   }, [fetchArticle]);
 
   return {
