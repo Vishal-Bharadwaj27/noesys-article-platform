@@ -5,61 +5,8 @@ import DeleteConfirmation from "../../components/articleTypes/DeleteConfirmation
 import ArticleTypeCard from "../../components/articleTypes/ArticleTypeCard";
 import EmptyState from "../../components/ui/EmptyState";
 import { useNavigate } from "react-router-dom";
+import { ArticleTypeWithPrompt } from "@/admin/utils/types";
 
-type Parameter = {
-  id: string;
-  name: string;
-  scopeType: "numeric" | "option";
-  options: string | null;
-};
-
-export type ArticleType = {
-  id: string;
-  name: string;
-  description: string | null;
-  is_active: number;
-  pass_threshold: number;
-  created_by: string;
-  created_at: string;
-  parameters: Parameter[];
-  updated_at: string;
-};
-
-export type ArticleTypeWithPrompt = ArticleType & {
-  score_prompt: string | null;
-};
-
-type ScopeType = "numeric" | "option";
-
-const OPTION_KEYS = ["ABC", "HIGH_MED_LOW"] as const;
-
-type ParameterDraft = {
-  id: string;
-  name: string;
-  prompt: string;
-  scopeType: ScopeType;
-  minValue: string;
-  maxValue: string;
-  options: (typeof OPTION_KEYS)[number];
-  isNew: boolean;
-};
-
-export type ArticleTypeParameterInput = {
-  id?: string;
-  name: string;
-  prompt: string;
-  scopeType: ScopeType;
-  minValue?: number;
-  maxValue?: number;
-  options?: (typeof OPTION_KEYS)[number];
-};
-
-type FormState = {
-  name: string;
-  description: string;
-  promptContent: string;
-  parameters: ParameterDraft[];
-};
 
 type ArticleTypesManagerProps = {
   articleTypes: ArticleTypeWithPrompt[];

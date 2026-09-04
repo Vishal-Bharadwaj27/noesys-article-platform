@@ -44,7 +44,6 @@ const AllArticles = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  console.log(searchParams)
 
   const [articles, setArticles] = useState<ArticleSummary[]>([]);
 

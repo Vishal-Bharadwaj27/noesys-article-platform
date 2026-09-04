@@ -9,36 +9,8 @@ import {
 } from "react";
 import { useNavigate } from "react-router-dom";
 import { api, tokenManager } from "../http-client";
+import { AuthContextValue, AuthUser, MeResponse, RequestOtpResponse, VerifyOtpResponse } from "@/utils/types";
 
-export type AuthUser = {
-  id: string;
-  name: string;
-  email: string;
-  job_role: string;
-  auth_role: "super_admin" | "admin" | "user";
-};
-
-type RequestOtpResponse = {
-  expires_in: number;
-  devOtp: string;
-};
-
-type VerifyOtpResponse = {
-  token: string;
-  user: AuthUser;
-};
-
-type MeResponse = AuthUser & { is_active: boolean };
-
-type AuthContextValue = {
-  user: AuthUser | null;
-  token: string | null;
-  loading: boolean;
-  requestOTP: (email: string) => Promise<RequestOtpResponse>;
-  verifyOTP: (email: string, code: string) => Promise<void>;
-  logout: () => void;
-  isAuthenticated: () => boolean;
-};
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 

@@ -1,0 +1,26 @@
+{
+  "name": "article-seed-script",
+  "version": "1.0.0",
+  "description": "Seed script to import articles and article types into D1 from .docx/.md files",
+  "type": "module",
+  "main": "seed.ts",
+  "scripts": {
+    "seed": "node seed.mjs",
+    "seed:dry": "node seed.mjs --dry-run",
+    "seed:verbose": "node seed.mjs --verbose",
+    "seed:test": "node seed.mjs --dry-run --verbose"
+  },
+  "dependencies": {
+    "csv-parse": "^5.5.2",
+    "gray-matter": "^4.0.3",
+    "mammoth": "^1.6.0"
+  },
+  "devDependencies": {
+    "better-sqlite3": "^9.2.2",
+    "typescript": "^5.3.3",
+    "ts-node": "^10.9.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

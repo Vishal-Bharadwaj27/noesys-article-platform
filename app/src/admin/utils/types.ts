@@ -46,6 +46,33 @@ export type ArticleRowProps = {
 
 // article types 
 
+// manager page
+
+export type Parameter = {
+  id: string;
+  name: string;
+  scopeType: "numeric" | "option";
+  options: string | null;
+};
+
+export type ArticleType = {
+  id: string;
+  name: string;
+  description: string | null;
+  is_active: number;
+  pass_threshold: number;
+  created_by: string;
+  created_at: string;
+  parameters: Parameter[];
+  updated_at: string;
+};
+
+export type ArticleTypeWithPrompt = ArticleType & {
+  score_prompt: string | null;
+};
+
+// components
+
 export type ScopeType = "numeric" | "option";
 export type ParameterOptionDraft = { id?: string; label: string };
 export type ParameterDraft = {
