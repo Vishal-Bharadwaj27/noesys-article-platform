@@ -132,6 +132,7 @@ export default function ArticleDetail() {
         setCurrentFeedback(result.current_feedback ?? "");
         setParameterResults(result.parameter_results ?? []);
         if (result.current_score !== null) {
+          try { sessionStorage.removeItem("toastError"); } catch {}
           if (timer) clearInterval(timer);
           return;
         }

@@ -85,6 +85,7 @@ export async function getArticlesByUser(
         WHERE a.user_id = ?
           AND a.month_year = ?
         ORDER BY a.submitted_at DESC
+        LIMIT 100
       `
     )
     .bind(userId, month || new Date().toISOString().slice(0, 7))

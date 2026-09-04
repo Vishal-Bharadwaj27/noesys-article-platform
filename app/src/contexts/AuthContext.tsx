@@ -36,7 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let active = true;
 
     async function validate() {
-      const stored = tokenManager.get() ?? localStorage.getItem("token");
+      const stored = tokenManager.get();
       if (!stored || isTokenExpired(stored)) {
         tokenManager.clear();
         setToken(null);
@@ -115,7 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [navigate]);
 
   const isAuthenticated = useCallback(() => {
-    const stored = tokenManager.get() ?? localStorage.getItem("token");
+    const stored = tokenManager.get();
     return !!stored && !isTokenExpired(stored);
   }, []);
 

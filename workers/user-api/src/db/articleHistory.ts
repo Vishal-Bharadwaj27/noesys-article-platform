@@ -81,7 +81,8 @@ export async function updateArticleForRewrite(
   db: D1Database,
   articleId: string,
   title: string,
-  content: string
+  content: string,
+  monthYear: string
 ): Promise<void> {
   await db
     .prepare(
@@ -97,10 +98,11 @@ export async function updateArticleForRewrite(
           pass_threshold = NULL,
           submitted_at = CURRENT_TIMESTAMP,
           scored_at = NULL,
+          month_year = ?,
           retry_count = retry_count + 1
         WHERE id = ?
       `
     )
-    .bind(title, content, articleId)
+    .bind(title, content, monthYear, articleId)
     .run();
 }

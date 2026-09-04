@@ -51,7 +51,7 @@ function articleToListItem(article: {
   };
 }
 
-// Background evaluation function - runs asynchronously
+// Background evaluation with safe retry (does not affect request flow)
 async function backgroundEvaluateArticle(
   db: D1Database,
   env: { GOOGLE_GENERATIVE_AI_API_KEY: string },
@@ -61,21 +61,25 @@ async function backgroundEvaluateArticle(
   content: string,
   version: number,
 ) {
-  try {
-    await evaluateArticle(
-      db,
-      env.GOOGLE_GENERATIVE_AI_API_KEY,
-      articleId,
-      articleTypeId,
-      title,
-      content,
-      version,
-    );
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error("Background evaluation error:", msg, err);
-    // Error handling is already done inside evaluateArticle service
-    // This catch is just for logging
+  const maxAttempts = 2;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      await evaluateArticle(
+        db,
+        env.GOOGLE_GENERATIVE_AI_API_KEY,
+        articleId,
+        articleTypeId,
+        title,
+        content,
+        version,
+      );
+      return;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`Background evaluation attempt ${attempt} failed:`, msg, err);
+      if (attempt === maxAttempts) return;
+      await new Promise((r) => setTimeout(r, 2000 * attempt));
+    }
   }
 }
 
@@ -172,19 +176,38 @@ articleRoutes.get("/mine/:id", async (c) => {
       (history.length > 0 ? history[history.length - 1].ai_feedback || "" : "");
 
   // parameter results for current version
-  const paramRows: { parameter_name: string; scope_type: string; numeric_value: number | null; option_id: string | null; option_label: string | null }[] = (
+  const paramRows: {
+    parameter_name: string;
+    scope_type: string;
+    numeric_value: number | null;
+    option_id: string | null;
+    option_label: string | null;
+  }[] = (
     await db
       .prepare(
         `SELECT p.name as parameter_name, p.scope_type, r.numeric_value, r.option_id, po.label as option_label FROM article_parameter_results r JOIN parameters p ON p.id=r.parameter_id LEFT JOIN parameter_options po ON po.id=r.option_id WHERE r.article_id=? AND r.version=? ORDER BY p.sort_order`,
       )
       .bind(articleId, article.version)
       .all()
-  ).results as { parameter_name: string; scope_type: string; numeric_value: number | null; option_id: string | null; option_label: string | null }[];
-  const parameter_results = paramRows.map((r: { parameter_name: string; scope_type: string; numeric_value: number | null; option_label: string | null }) => ({
-    parameter_name: r.parameter_name,
-    scope_type: r.scope_type,
-    value: r.scope_type === "option" ? r.option_label : r.numeric_value,
-  }));
+  ).results as {
+    parameter_name: string;
+    scope_type: string;
+    numeric_value: number | null;
+    option_id: string | null;
+    option_label: string | null;
+  }[];
+  const parameter_results = paramRows.map(
+    (r: {
+      parameter_name: string;
+      scope_type: string;
+      numeric_value: number | null;
+      option_label: string | null;
+    }) => ({
+      parameter_name: r.parameter_name,
+      scope_type: r.scope_type,
+      value: r.scope_type === "option" ? r.option_label : r.numeric_value,
+    }),
+  );
   return c.json({
     message: "Article fetched successfully",
     data: {
@@ -276,10 +299,27 @@ articleRoutes.post("/", async (c) => {
     }
 
     const historyId = "hist_" + crypto.randomUUID();
+    const rewriteMonth = now.slice(0, 7);
 
-    await snapshotArticle(db, requestedId, historyId, now);
-
-    await updateArticleForRewrite(db, requestedId, title, content);
+    // Atomic snapshot + rewrite; if either fails neither partially persists as orphan
+    try {
+      await db.batch([
+        db
+          .prepare(
+            `INSERT INTO article_history (id, article_id, article_type_id, title, ai_feedback, content, ai_score, pass_threshold, status, version, submitted_at, scored_at, snapshotted_at) SELECT ?, id, article_type_id, title, ai_feedback, content, ai_score, pass_threshold, status, version, submitted_at, scored_at, ? FROM articles WHERE id = ?`
+          )
+          .bind(historyId, now, requestedId),
+        db
+          .prepare(
+            `UPDATE articles SET title=?, content=?, version=version+1, status='pending', ai_score=NULL, ai_feedback=NULL, pass_threshold=NULL, submitted_at=CURRENT_TIMESTAMP, scored_at=NULL, month_year=?, retry_count=retry_count+1 WHERE id=?`
+          )
+          .bind(title, content, rewriteMonth, requestedId),
+      ]);
+    } catch {
+      // Fallback to sequential if batch not supported in local D1
+      await snapshotArticle(db, requestedId, historyId, now);
+      await updateArticleForRewrite(db, requestedId, title, content, rewriteMonth);
+    }
 
     articleId = requestedId;
 
