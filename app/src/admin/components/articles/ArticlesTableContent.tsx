@@ -16,6 +16,7 @@ import {
   Tooltip,
 } from "antd";
 import { useEffect, useMemo, useState } from "react";
+import { formatDateToUSLocale } from "@/admin/utils/date";
 
 type ArticlesTableProps = {
   articles: ArticleSummary[];
@@ -28,20 +29,6 @@ function getAiScoreColor(status: ArticleStatus) {
   if (status === "approved") return "#389e0d";
   if (status === "rewrite_required" || status === "failed") return "#cf1322";
   return "#d48806";
-}
-
-function formatDateToUSLocale(dateStr: string) {
-  const d = new Date(dateStr);
-
-  if (Number.isNaN(d.getTime())) {
-    return dateStr;
-  }
-
-  return d.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
 }
 
 const STATUS_CONFIG: Record<
@@ -262,52 +249,6 @@ export default function ArticlesTableContent({
     setColumns(initialColumns);
   }, []);
 
-  const handleResize =
-    (index: number) =>
-    (
-      _: React.SyntheticEvent<Element>,
-      {
-        size,
-      }: {
-        size: {
-          width: number;
-          height: number;
-        };
-      },
-    ) => {
-      setColumns((current) => {
-        const next = [...current];
-
-        next[index] = {
-          ...next[index],
-          width: size.width,
-        };
-
-        return next;
-      });
-    };
-
-  const mergedColumns = columns.map((column, index) => ({
-    ...column,
-    ...(typeof column.width === "number"
-      ? {
-          onHeaderCell: () => ({
-            width: column.width,
-            onResize: handleResize(index),
-          }),
-        }
-      : {}),
-  }));
-
-  const handleTableChange: TableProps<ArticleSummary>["onChange"] = (
-    _,
-    __,
-    ___,
-    extra,
-  ) => {
-    setVisibleRows(extra.currentDataSource ?? locallyFilteredArticles);
-  };
-
   return (
     <div className="space-y-4">
       {/* Dashboard - full width, reduced height */}
@@ -383,7 +324,7 @@ export default function ArticlesTableContent({
 
         <Table<ArticleSummary>
           components={{}}
-          columns={mergedColumns}
+          columns={columns}
           dataSource={locallyFilteredArticles}
           rowKey="id"
           pagination={{
@@ -391,7 +332,6 @@ export default function ArticlesTableContent({
             hideOnSinglePage: true,
           }}
           scroll={{ x: 1085 }}
-          onChange={handleTableChange}
           onRow={(record) => ({
             onClick: () => onRowClick?.(record.id),
             className: onRowClick ? "cursor-pointer" : "cursor-default",

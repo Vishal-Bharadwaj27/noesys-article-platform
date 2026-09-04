@@ -6,10 +6,9 @@ import {
   Tag,
   Trash2,
 } from "lucide-react";
-import { ArticleTypeWithPrompt } from "../../pages/articleTypes/ArticleTypesManager";
 import { formatDateToUSLocale } from "../../utils/date";
 import Badge from "../ui/Badge";
-import { ParameterOptionDraft } from "@/admin/utils/types";
+import { ArticleTypeWithPrompt, ParameterOptionDraft } from "@/admin/utils/types";
 
 type ArticleTypeCardProps = {
   type: ArticleTypeWithPrompt;

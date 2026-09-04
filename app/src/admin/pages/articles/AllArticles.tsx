@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import ArticlesTable from "../../components/articles/ArticlesTable";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { DatePicker, Select, Empty } from "antd";
+import { Select } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
-import { api, tokenManager, tokenStorage } from "@/http-client";
+import { api, tokenStorage } from "@/http-client";
 
 import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import {

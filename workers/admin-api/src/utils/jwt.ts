@@ -1,5 +1,5 @@
 import { jwtVerify } from "jose";
- 
+
 /**
  * Verify and decode JWT token
  * @param token - JWT token to verify
@@ -21,4 +21,3 @@ export async function verifyJWT(token: string, secret: string) {
     throw new Error("Invalid or expired token");
   }
 }
- 

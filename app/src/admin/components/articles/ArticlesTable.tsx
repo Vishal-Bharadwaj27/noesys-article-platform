@@ -1,5 +1,4 @@
 import { ConfigProvider, theme as antdTheme } from "antd";
-import "react-resizable/css/styles.css";
 import { ArticleSummary } from "@/admin/utils/types";
 import ArticlesTableContent from "./ArticlesTableContent";
 

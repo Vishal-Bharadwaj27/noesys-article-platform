@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import ArticleTypesManager, {
-  ArticleTypeWithPrompt,
-} from "./ArticleTypesManager";
+import ArticleTypesManager from "./ArticleTypesManager";
 import { tokenStorage } from "@/http-client";
+import { ArticleTypeWithPrompt } from "@/admin/utils/types";
 
-const BACKEND_URL = ((import.meta.env.VITE_BACKEND_URL as string | undefined) || "").replace(/\/$/, "");
+const BACKEND_URL = (
+  (import.meta.env.VITE_BACKEND_URL as string | undefined) || ""
+).replace(/\/$/, "");
 
 const ArticleTypesPage = () => {
   const [types, setTypes] = useState<ArticleTypeWithPrompt[]>([]);
