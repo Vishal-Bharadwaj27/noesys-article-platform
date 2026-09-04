@@ -9,5 +9,6 @@ export interface EvaluationOutcome {
   ai_score: number;
   ai_feedback: string;
   status: "approved" | "rewrite_required";
+  pass_threshold: number;
   parameter_results: ParameterResultInput[];
 }

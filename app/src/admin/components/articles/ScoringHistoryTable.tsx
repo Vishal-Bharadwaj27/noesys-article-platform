@@ -5,17 +5,15 @@ import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-
-function getAiScoreColorsHex(s: number) {
-  if (s >= 10) return "#389e0d";
-  if (s >= 6) return "#d48806";
-  return "#cf1322";
+function getAiScoreColor(status: HistoryItem["status"]) {
+  if (status === "approved") return "#389e0d";
+  if (status === "rewrite_required" || status === "failed") return "#cf1322";
+  return "#d48806";
 }
 
 function formatAiScore(s: number) {
   return Number.isInteger(s) ? String(s) : s.toFixed(1);
 }
-
 
 export default function ScoringHistoryTable({
   history,
@@ -26,7 +24,6 @@ export default function ScoringHistoryTable({
 }) {
   const navigate = useNavigate();
   const [cols, setCols] = useState<ColumnsType<HistoryItem>>([]);
-
   useEffect(() => {
     const columns: ColumnsType<HistoryItem> = [
       {
@@ -40,12 +37,7 @@ export default function ScoringHistoryTable({
             onClick={() =>
               navigate(`/admin/articles/${articleId}?version=${r.version}`)
             }
-            style={{
-              color: "#0284c7",
-              fontWeight: 600,
-              fontSize: 14,
-              cursor: "pointer",
-            }}
+            className="text-sky-600 font-semibold text-sm cursor-pointer"
           >
             Aritcle Version {v}
           </span>
@@ -56,38 +48,22 @@ export default function ScoringHistoryTable({
         dataIndex: "score",
         key: "score",
         width: 130,
-        render: (s: number | null) =>
+        render: (s: number | null, record: HistoryItem) =>
           s === null ? (
-            <span
-              style={{
-                color: "#94a3b8",
-                fontSize: 13,
-              }}
-            >
-              —
-            </span>
+            <span className="text-slate-400 text-[13px]">—</span>
           ) : (
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-              }}
-            >
+            <span className="inline-flex items-center gap-2">
               <Progress
                 percent={Math.min(Math.max(s, 0), 10) * 10}
                 size="small"
                 showInfo={false}
-                strokeColor={getAiScoreColorsHex(s)}
-                style={{ width: 56 }}
+                strokeColor={getAiScoreColor(record.status)}
+                className="w-14"
               />
 
               <span
-                style={{
-                  color: getAiScoreColorsHex(s),
-                  fontWeight: 600,
-                  fontSize: 13,
-                }}
+                style={{ color: getAiScoreColor(record.status) }}
+                className="font-semibold text-[13px]"
               >
                 {formatAiScore(s)}
               </span>
@@ -100,32 +76,21 @@ export default function ScoringHistoryTable({
         key: "status",
         width: 130,
         render: (_: unknown, r: HistoryItem) => {
-          const ds =
-            r.score === null
-              ? "scoring"
-              : r.score === 10
-                ? "accepted"
-                : "rejected";
+          const STATUS_MAP: Record<string, { label: string; color: string }> = {
+            approved: { label: "Accepted", color: "green" },
+            rewrite_required: { label: "Rejected", color: "red" },
+            pending: { label: "Scoring...", color: "default" },
+            failed: { label: "Rejected", color: "red" },
+          };
 
-          const label =
-            ds === "scoring"
-              ? "Scoring..."
-              : ds === "accepted"
-                ? "Accepted"
-                : "Rejected";
+          const cfg = STATUS_MAP[r.status] || STATUS_MAP.pending;
 
           return (
             <Tag
-              color={
-                ds === "accepted"
-                  ? "green"
-                  : ds === "rejected"
-                    ? "red"
-                    : "default"
-              }
-              style={{ fontSize: 13 }}
+              color={cfg.color}
+              className="text-[13px]"
             >
-              {label}
+              {cfg.label}
             </Tag>
           );
         },
@@ -135,19 +100,27 @@ export default function ScoringHistoryTable({
         dataIndex: "submitted_at",
         key: "submitted_at",
         width: 160,
-        sorter: (a, b) =>
-          new Date(a.submitted_at).getTime() -
-          new Date(b.submitted_at).getTime(),
-        render: (d: string) => (
-          <span
-            style={{
-              color: "#334155",
-              fontSize: 13,
-            }}
-          >
-            {dayjs(d).format("MMM D, YYYY h:mm A")}
-          </span>
-        ),
+        sorter: (a, b) => {
+          // Compare using snapshotted_at (when available) for accurate timeline archiving order
+          const tA = new Date(a.snapshotted_at || a.submitted_at).getTime();
+          const tB = new Date(b.snapshotted_at || b.submitted_at).getTime();
+          return tA - tB;
+        },
+        render: (_: string, r: HistoryItem) => {
+          // snapshotted_at reflects when this version was archived/replaced when a rewrite was triggered.
+          // Using snapshotted_at for historical timeline display ensures each version's row accurately
+          // represents when that version ended and entered history, avoiding duplicated timestamps across versions.
+          const dateStr = r.snapshotted_at || r.submitted_at;
+          if (!dateStr) return <span className="text-slate-400 text-[13px]">—</span>;
+          const normalized = typeof dateStr === "string" && dateStr.includes("T") && !dateStr.endsWith("Z") && !/[+-]\d{2}:\d{2}$/.test(dateStr)
+            ? `${dateStr}Z`
+            : dateStr;
+          return (
+            <span className="text-slate-700 text-[13px]">
+              {dayjs(normalized).format("MMM D, YYYY h:mm A")}
+            </span>
+          );
+        },
       },
     ];
 
@@ -199,40 +172,13 @@ export default function ScoringHistoryTable({
         },
       }}
     >
-      <div
-        style={{
-          background: "#ffffff",
-          border: "1.5px solid #d1d5db",
-          borderRadius: 12,
-          overflow: "hidden",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "14px 20px",
-            borderBottom: "1.5px solid #d1d5db",
-          }}
-        >
-          <span
-            style={{
-              fontSize: 15,
-              fontWeight: 600,
-              color: "#111827",
-            }}
-          >
+      <div className="bg-white border-[1.5px] border-gray-300 rounded-xl overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b-[1.5px] border-gray-300">
+          <span className="text-[15px] font-semibold text-gray-900">
             Scoring History
           </span>
 
-          <span
-            style={{
-              fontSize: 13,
-              color: "#64748b",
-            }}
-          >
+          <span className="text-[13px] text-slate-500">
             {history.length} versions
           </span>
         </div>

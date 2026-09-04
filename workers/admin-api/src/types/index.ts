@@ -2,10 +2,38 @@ export type Env = {
   DB: D1Database;
   DEV_EMAIL?: string;
   JWT_SECRET: string;
-  ENVIRONMENT: string;
-  SENDGRID_API_KEY: string;
-  FROM_EMAIL: string;
+  ENVIRONMENT?: string;
+  SENDGRID_API_KEY?: string;
+  FROM_EMAIL?: string;
 };
+
+export type AuthContext = {
+  Variables: {
+    user: {
+      id: string;
+      email: string;
+      name: string;
+      job_role: string;
+      auth_role: string;
+      is_active: number;
+    };
+  };
+};
+
+
+export interface ArticleHistoryEntry {
+  id: string;
+  article_id: string;
+  version: number;
+  title: string;
+  content: string;
+  ai_score: number | null;
+  ai_feedback: string | null;
+  status: "approved" | "rewrite_required" | "pending" | "failed" | null;
+  submitted_at: string | null;
+  scored_at: string | null;
+  snapshotted_at: string;
+}
 
 export type AuthenticatedUser = {
   id: string;

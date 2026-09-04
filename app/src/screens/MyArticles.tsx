@@ -1,6 +1,6 @@
 import Header from "../components/Header";
 import { useEffect, useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Plus,
   ChevronLeft,
@@ -57,7 +57,11 @@ function getDisplayStatus(article: {
     };
   }
 
-  if (article.ai_score === null) {
+  if (
+    article.status === "pending" ||
+    article.status === "processing" ||
+    article.ai_score === null
+  ) {
     return {
       key: "scoring",
       label: STATUS_CONFIG.scoring.label,
@@ -65,7 +69,7 @@ function getDisplayStatus(article: {
     };
   }
 
-  if (article.ai_score === 10 && article.status === "approved") {
+  if (article.status === "approved") {
     return {
       key: "accepted",
       label: STATUS_CONFIG.accepted.label,
@@ -80,10 +84,10 @@ function getDisplayStatus(article: {
   };
 }
 
-function getAiScoreColorsHex(score: number) {
-  if (score >= 10) return "#389e0d";
-  if (score >= 6) return "#d48806";
-  return "#cf1322";
+function getAiScoreColor(status: string) {
+  if (status === "approved") return "#389e0d";
+  if (status === "rewrite_required" || status === "failed") return "#cf1322";
+  return "#d48806";
 }
 
 const ResizeableTitle = ({ onResize, width, children, ...restProps }: { onResize?: (e: React.SyntheticEvent, data: { size: { width: number; height: number } }) => void; width?: number; children?: React.ReactNode } & React.HTMLAttributes<HTMLTableHeaderCellElement>) => {
@@ -109,15 +113,25 @@ const ResizeableTitle = ({ onResize, width, children, ...restProps }: { onResize
 
 export default function MyArticles() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { logout, user } = useAuth();
 
   const currentMonth = dayjs().format("YYYY-MM");
-  const [month, setMonth] = useState(currentMonth);
-  const [focusedYear, setFocusedYear] = useState(dayjs().year());
-  const [viewAll, setViewAll] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [typeFilter, setTypeFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const monthParam = searchParams.get("month");
+  const month = monthParam && /^\d{4}-\d{2}$/.test(monthParam) ? monthParam : currentMonth;
+  const focusedYear = Number(searchParams.get("year")) || Number(month.slice(0, 4));
+  const viewAll = searchParams.get("viewAll") === "true";
+  const currentPage = Math.max(1, Number(searchParams.get("page")) || 1);
+  const typeFilter = searchParams.get("type") || "all";
+  const statusFilter = searchParams.get("status") || "all";
+  const setFilterParam = (name: string, value: string, defaultValue?: string) => {
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      if (!value || value === defaultValue) next.delete(name);
+      else next.set(name, value);
+      return next;
+    });
+  };
   const [articleTypes, setArticleTypes] = useState<
     { id: string; name: string }[]
   >([]);
@@ -218,7 +232,7 @@ export default function MyArticles() {
                 <Button
                   variant="ghost"
                   className="h-7 w-7 p-0 opacity-50 hover:opacity-100"
-                  onClick={() => setFocusedYear((y) => y - 1)}
+                  onClick={() => setFilterParam("year", String(focusedYear - 1))}
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
@@ -226,7 +240,7 @@ export default function MyArticles() {
                 <Button
                   variant="ghost"
                   className="h-7 w-7 p-0 opacity-50 hover:opacity-100"
-                  onClick={() => setFocusedYear((y) => y + 1)}
+                  onClick={() => setFilterParam("year", String(focusedYear + 1))}
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
@@ -243,7 +257,7 @@ export default function MyArticles() {
                     <Button
                       key={i}
                       variant={isSelected ? "default" : "ghost"}
-                      onClick={() => setMonth(m)}
+                    onClick={() => setFilterParam("month", m, currentMonth)}
                       className={`h-9 text-sm ${isSelected ? "" : "hover:bg-accent hover:text-accent-foreground"}`}
                     >
                       {dayjs().month(i).format("MMM")}
@@ -259,8 +273,13 @@ export default function MyArticles() {
 
           <button
             onClick={() => {
-              setViewAll((p) => !p);
-              setCurrentPage(1);
+              setSearchParams((current) => {
+                const next = new URLSearchParams(current);
+                if (viewAll) next.delete("viewAll");
+                else next.set("viewAll", "true");
+                next.delete("page");
+                return next;
+              });
             }}
             className="h-9 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-lg px-3 hover:bg-slate-50 transition-colors"
           >
@@ -269,7 +288,7 @@ export default function MyArticles() {
 
           <AntSelect
             value={typeFilter}
-            onChange={setTypeFilter}
+            onChange={(value) => setFilterParam("type", value, "all")}
             showSearch
             optionFilterProp="label"
             placeholder="Filter by Type"
@@ -292,7 +311,7 @@ export default function MyArticles() {
           />
           <AntSelect
             value={statusFilter}
-            onChange={setStatusFilter}
+            onChange={(value) => setFilterParam("status", value, "all")}
             showSearch
             optionFilterProp="label"
             placeholder="Filter by Status"
@@ -350,7 +369,7 @@ export default function MyArticles() {
             </span>
             <div className="flex gap-2">
               <button
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                onClick={() => setFilterParam("page", String(Math.max(1, currentPage - 1)), "1")}
                 disabled={currentPage === 1}
                 className="p-2 rounded-lg border border-slate-400 hover:bg-slate-100 disabled:opacity-40 transition-colors"
               >
@@ -358,7 +377,7 @@ export default function MyArticles() {
               </button>
               <button
                 onClick={() =>
-                  setCurrentPage((p) => Math.min(totalPages, p + 1))
+                  setFilterParam("page", String(Math.min(totalPages, currentPage + 1)), "1")
                 }
                 disabled={currentPage === totalPages}
                 className="p-2 rounded-lg border border-slate-400 hover:bg-slate-100 disabled:opacity-40 transition-colors"
@@ -425,7 +444,9 @@ function MyArticlesTable({
         key: "version",
         width: 85,
         render: (v: number) => (
-          <Text style={{ color: "#334155", fontSize: fs }}>v{v}</Text>
+          <Text className="text-slate-700" style={{ fontSize: fs }}>
+            v{v}
+          </Text>
         ),
       },
       {
@@ -433,7 +454,7 @@ function MyArticlesTable({
         dataIndex: "ai_score",
         key: "ai_score",
         width: 130,
-        render: (score: number | null) =>
+        render: (score: number | null, record: ArticleListItem) =>
           score === null ? (
             <Text style={{ color: "#334155", fontSize: fs }}>—</Text>
           ) : (
@@ -444,12 +465,12 @@ function MyArticlesTable({
                 percent={Math.min(Math.max(score, 0), 10) * 10}
                 size="small"
                 showInfo={false}
-                strokeColor={getAiScoreColorsHex(score)}
+                strokeColor={getAiScoreColor(record.status)}
                 style={{ width: 56 }}
               />
               <Text
                 strong
-                style={{ color: getAiScoreColorsHex(score), fontSize: fs }}
+                style={{ color: getAiScoreColor(record.status), fontSize: fs }}
               >
                 {score}
               </Text>

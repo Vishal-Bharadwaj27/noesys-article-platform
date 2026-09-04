@@ -2,7 +2,7 @@ import { useState, useRef, KeyboardEvent, ClipboardEvent } from "react";
 import { Mail, ChevronLeft, Loader2 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { Navigate } from "react-router-dom";
-import logoImage from "../Logo/Noesys_logo.avif";
+import logoImage from "../Logo/Noesys_logo.png";
 
 type Stage = "email" | "otp";
 const OTP_LENGTH = 6;

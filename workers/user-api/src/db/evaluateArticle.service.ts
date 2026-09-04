@@ -98,6 +98,7 @@ export async function evaluateArticle(
       ai_score: aiResult.score,
       ai_feedback: aiResult.feedback,
       status,
+      pass_threshold: articleType.pass_threshold,
       parameter_results: parameterResults,
     });
   } catch (error: unknown) {

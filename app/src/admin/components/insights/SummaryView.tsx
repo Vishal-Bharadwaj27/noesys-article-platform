@@ -8,9 +8,12 @@ import {
   theme as antdTheme,
   Tooltip,
 } from "antd";
-import { ArticleTypeSummary, NumericDistributionBucket, ParameterSummary } from "@/admin/utils/types";
-
-
+import {
+  ArticleTypeSummary,
+  NumericDistributionBucket,
+  ParameterSummary,
+} from "@/admin/utils/types";
+import { tokenManager } from "@/http-client";
 
 const BACKEND_URL = ((import.meta.env.VITE_BACKEND_URL as string | undefined) || "").replace(/\/$/, "");
 
@@ -50,12 +53,32 @@ function NumericDistribution({
 export function SummaryView({ start, end }: { start: string; end: string }) {
   const [data, setData] = useState<ArticleTypeSummary[]>([]);
   const [loading, setLoading] = useState(true);
+
+  async function fetchInsightsSummary(start: string, end: string) {
+    const res = await fetch(
+      `${BACKEND_URL}/api/insights/summary?start=${start}&end=${end}`,
+      {
+        headers: {
+          Authorization: `Bearer ${tokenManager.get()}`,
+        },
+      },
+    );
+    const data = await res.json();
+    return data;
+  }
+
   useEffect(() => {
-    setLoading(true);
-    fetch(`${BACKEND_URL}/api/insights/summary?start=${start}&end=${end}`)
-      .then((res) => res.json())
-      .then(setData)
-      .finally(() => setLoading(false));
+    async function loadSummary() {
+      setLoading(true);
+      try {
+        const data = await fetchInsightsSummary(start, end);
+        setData(data);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadSummary();
   }, [start, end]);
 
   if (loading)

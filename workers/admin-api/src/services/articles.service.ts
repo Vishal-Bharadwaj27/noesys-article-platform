@@ -1,4 +1,4 @@
-import { ArticleListRawRow, ArticleListResult, ArticleParameterResult } from "../types";
+import { ArticleHistoryEntry, ArticleListRawRow, ArticleListResult, ArticleParameterResult } from "../types";
 
 export async function getArticles(
   db: D1Database,
@@ -97,6 +97,7 @@ export async function getArticles(
 }
 
 export interface ArticleDetail {
+  ai_feedback: string;
   id: string;
   title: string;
   content: string;
@@ -140,20 +141,6 @@ WHERE a.id = ?
     .first<ArticleDetail>();
 }
 
-// ---------- getArticleHistory ----------
-
-export interface ArticleHistoryEntry {
-  id: string;
-  article_id: string;
-  version: number;
-  title: string;
-  content: string;
-  ai_score: number | null;
-  ai_feedback: string | null;
-  submitted_at: string | null;
-  scored_at: string | null;
-  snapshotted_at: string;
-}
 
 export async function getArticleHistory(
   db: D1Database,
@@ -170,6 +157,7 @@ export async function getArticleHistory(
         content,
         ai_score,
         ai_feedback,
+        status,
         submitted_at,
         scored_at,
         snapshotted_at

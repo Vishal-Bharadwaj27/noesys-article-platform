@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import ArticlesTable from "../../components/articles/ArticlesTable";
-import type { ArticleSummary } from "../../components/articles/ArticlesRow";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { DatePicker, Select, Empty } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
-import { api } from "@/http-client";
+import { api, tokenManager, tokenStorage } from "@/http-client";
 
 import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import {
@@ -13,6 +12,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
+import { ArticleSummary } from "@/admin/utils/types";
 
 const BACKEND_URL = ((import.meta.env.VITE_BACKEND_URL as string | undefined) || "").replace(/\/$/, "");
 
@@ -43,6 +43,7 @@ const STATUS_OPTIONS = [
 const AllArticles = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [articles, setArticles] = useState<ArticleSummary[]>([]);
 
@@ -50,22 +51,31 @@ const AllArticles = () => {
 
   const [userName, setUserName] = useState("");
 
-  // Current month is the default.
-  const [selectedMonth, setSelectedMonth] = useState<Dayjs>(
-    dayjs().startOf("month"),
-  );
-
-  const [focusedYear, setFocusedYear] = useState(dayjs().year());
-
-  const [selectedStatus, setSelectedStatus] = useState("all");
-
-  const [selectedType, setSelectedType] = useState("all");
-  const [selectedAuthor, setSelectedAuthor] = useState("all");
+  const monthParam = searchParams.get("month");
+  const selectedMonthKey =
+    monthParam && /^\d{4}-\d{2}$/.test(monthParam) && dayjs(`${monthParam}-01`).isValid()
+      ? monthParam
+      : dayjs().format("YYYY-MM");
+  const selectedMonth: Dayjs = dayjs(`${selectedMonthKey}-01`).startOf("month");
+  const focusedYear = Number(searchParams.get("year")) || selectedMonth.year();
+  const selectedStatus = searchParams.get("status") || "all";
+  const selectedType = searchParams.get("type") || "all";
+  const selectedAuthor = searchParams.get("author") || "all";
+  const sortBy = searchParams.get("sort") || "created_desc";
   const [authors, setAuthors] = useState<string[]>([]);
 
   const [loading, setLoading] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
+
+  const setFilterParam = (name: string, value: string, defaultValue?: string) => {
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      if (!value || value === defaultValue) next.delete(name);
+      else next.set(name, value);
+      return next;
+    });
+  };
 
   const fetchArticleTypes = useCallback(async () => {
     try {
@@ -95,7 +105,7 @@ const AllArticles = () => {
       const params = new URLSearchParams();
 
       // Always send month.
-      params.set("month", selectedMonth.format("YYYY-MM"));
+      params.set("month", selectedMonthKey);
 
       if (selectedStatus !== "all") {
         params.set("status", selectedStatus);
@@ -111,10 +121,9 @@ const AllArticles = () => {
         : `${base}/api/articles?${params.toString()}`;
 
       const res = await fetch(endpoint, {
-        credentials: "include",
         headers: {
-          ...(localStorage.getItem("auth:token") ? { Authorization: `Bearer ${localStorage.getItem("auth:token")}` } : {}),
-        },
+          Authorization: `Bearer ${tokenStorage.get()}`
+        }
       });
 
       const ct = res.headers.get("content-type") || "";
@@ -144,7 +153,7 @@ const AllArticles = () => {
     } finally {
       setLoading(false);
     }
-  }, [id, selectedMonth, selectedStatus, selectedType]);
+  }, [id, selectedMonthKey, selectedStatus, selectedType]);
 
   useEffect(() => {
     fetchArticleTypes();
@@ -161,8 +170,6 @@ const AllArticles = () => {
     fetchArticles();
   }, [fetchArticles]);
   
-  const [sortBy, setSortBy] = useState("created_desc");
-
   const filteredByAuthor = useMemo(() => {
     if (selectedAuthor === "all") return articles;
     return articles.filter((a) => a.author_name === selectedAuthor);
@@ -214,7 +221,9 @@ const AllArticles = () => {
     <div className="w-full px-4 md:px-8 py-5">
       {isUserView && (
         <button
-          onClick={() => navigate("/admin/users")}
+          onClick={() =>
+            window.history.length > 1 ? navigate(-1) : navigate("/admin/users")
+          }
           className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-4"
         >
           <ChevronLeft size={14} /> Back to Users
@@ -246,7 +255,7 @@ const AllArticles = () => {
               <Button
                 variant="ghost"
                 className="h-7 w-7 p-0 opacity-50 hover:opacity-100"
-                onClick={() => setFocusedYear((y) => y - 1)}
+                onClick={() => setFilterParam("year", String(focusedYear - 1))}
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -256,7 +265,7 @@ const AllArticles = () => {
               <Button
                 variant="ghost"
                 className="h-7 w-7 p-0 opacity-50 hover:opacity-100"
-                onClick={() => setFocusedYear((y) => y + 1)}
+                onClick={() => setFilterParam("year", String(focusedYear + 1))}
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
@@ -279,7 +288,7 @@ const AllArticles = () => {
                   <Button
                     key={i}
                     variant={isSelected ? "default" : "ghost"}
-                    onClick={() => setSelectedMonth(month)}
+                    onClick={() => setFilterParam("month", month.format("YYYY-MM"))}
                     className={`h-9 text-sm ${
                       isSelected
                         ? ""
@@ -299,7 +308,7 @@ const AllArticles = () => {
 
         <Select
           value={selectedType}
-          onChange={setSelectedType}
+          onChange={(value) => setFilterParam("type", value, "all")}
           showSearch
           optionFilterProp="label"
           placeholder="All Types"
@@ -323,7 +332,7 @@ const AllArticles = () => {
         />
         <Select
           value={selectedStatus}
-          onChange={setSelectedStatus}
+          onChange={(value) => setFilterParam("status", value, "all")}
           showSearch
           optionFilterProp="label"
           placeholder="All Statuses"
@@ -341,7 +350,7 @@ const AllArticles = () => {
         />
         <Select
           value={sortBy}
-          onChange={setSortBy}
+          onChange={(value) => setFilterParam("sort", value, "created_desc")}
           showSearch
           optionFilterProp="label"
           placeholder="Sort"
@@ -367,7 +376,7 @@ const AllArticles = () => {
         {!isUserView && (
           <Select
             value={selectedAuthor}
-            onChange={setSelectedAuthor}
+            onChange={(value) => setFilterParam("author", value, "all")}
             showSearch
             optionFilterProp="label"
             placeholder="All Authors"

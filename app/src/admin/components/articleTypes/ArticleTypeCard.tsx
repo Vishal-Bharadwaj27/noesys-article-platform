@@ -9,7 +9,7 @@ import {
 import { ArticleTypeWithPrompt } from "../../pages/articleTypes/ArticleTypesManager";
 import { formatDateToUSLocale } from "../../utils/date";
 import Badge from "../ui/Badge";
-import { ParameterOptionDraft } from "./ArticleTypesForm";
+import { ParameterOptionDraft } from "@/admin/utils/types";
 
 type ArticleTypeCardProps = {
   type: ArticleTypeWithPrompt;
@@ -76,8 +76,7 @@ function ArticleTypeCard({
     <div className="group">
       <button
         onClick={() => onToggle(isExpanded ? null : type.id)}
-        className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:brightness-95 transition-colors"
-        style={{ background: "#e2e8f0" }}
+        className="w-full flex items-center gap-3 px-4 py-3.5 text-left bg-slate-200 hover:brightness-95 transition-colors"
       >
         <div
           className={`w-9 h-9 shrink-0 rounded-lg flex items-center justify-center font-semibold text-sm ${getAvatarColor(type.name)}`}
@@ -88,6 +87,9 @@ function ArticleTypeCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-medium text-slate-900">{type.name}</span>
+            {type.pass_threshold !== undefined && type.pass_threshold !== null && (
+              <Badge variant="indigo">Pass: {type.pass_threshold}</Badge>
+            )}
             {!type.is_active && (
               <Badge variant="danger" dot>
                 Inactive
@@ -176,7 +178,9 @@ function ArticleTypeCard({
                           </p>
                         </div>
 
-                        <Badge variant="indigo">{param.scopeType.toUpperCase()}</Badge>
+                        <Badge variant="indigo">
+                          {param.scopeType.toUpperCase()}
+                        </Badge>
                       </div>
 
                       <div className="flex gap-1 my-1">

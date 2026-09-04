@@ -1,61 +1,32 @@
+import { ArticleRowProps, ArticleStatus } from "@/admin/utils/types";
 import { Clock } from "lucide-react";
 
-export type ArticleStatus =
-  | "approved"
-  | "rewrite_required"
-  | "pending"
-  | "failed";
-
-
-export type ArticleParameterResult = {
-  parameterId: string;
-  parameterName: string;
-  scopeType: "numeric" | "option";
-  value: string;
-};
-
-export type ArticleSummary = {
-  id: string;
-  title: string;
-  type: string;
-  version: number;
-  ai_score: number | null;
-  status: ArticleStatus;
-  created_at: string;
-  author_name: string;
-  submitted_at: string;
-  month_year: string;
-  parameters: ArticleParameterResult[];
-};
-
-type ArticleRowProps = {
-  article: ArticleSummary;
-  onClick?: (id: string) => void;
-};
 
 const STATUS_STYLES: Record<ArticleStatus, string> = {
   approved: "bg-indigo-50 text-indigo-700",
   rewrite_required: "bg-red-50 text-red-600",
   pending: "bg-amber-50 text-amber-700",
   failed: "bg-red",
+  unknown: "bg-slate-100 text-slate-600",
 };
 
 const STATUS_LABELS: Record<ArticleStatus, string> = {
   approved: "Approved",
   rewrite_required: "Rewrite Required",
   pending: "Pending",
-  failed: "failed"
+  failed: "failed",
+  unknown: "Unavailable",
 };
 
-function getAiScoreColors(score: number) {
-  if (score >= 10) {
+function getAiScoreColors(status: ArticleStatus) {
+  if (status === "approved") {
     return {
       bar: "bg-emerald-500",
       badge: "bg-emerald-50 text-emerald-700",
     };
   }
 
-  if (score >= 6) {
+  if (status === "pending") {
     return {
       bar: "bg-amber-500",
       badge: "bg-amber-50 text-amber-700",
@@ -95,7 +66,7 @@ export default function ArticleRow({ article, onClick }: ArticleRowProps) {
   } = article;
 
   const hasScore = ai_score !== null;
-  const colors = hasScore ? getAiScoreColors(ai_score) : null;
+  const colors = hasScore ? getAiScoreColors(status) : null;
 
   return (
     <div
