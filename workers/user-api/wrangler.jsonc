@@ -1,6 +1,6 @@
 ﻿{
   "name": "article-platform-user-api",
-  "compatibility_date": "2026-09-02",
+  "compatibility_date": "2024-12-30",
   "main": "src/index.ts",
   "d1_databases": [
     {

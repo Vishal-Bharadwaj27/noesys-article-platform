@@ -51,3 +51,6 @@ coverage/
 *.temp
 
 **/.dev.vars
+
+# Seed articles (local only)
+Article_folder/

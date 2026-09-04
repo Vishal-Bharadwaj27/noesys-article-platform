@@ -51,12 +51,18 @@ export function isLikelyHtml(value: string): boolean {
   return /^\s*<[a-z!][\s\S]*>/i.test(value.trim());
 }
 
-/** Decide how to feed stored/incoming content into Tiptap. */
+/** Strip seeder `<!-- author_name: ... -->` prefix that breaks markdown detection */
+function stripAuthorComment(s: string): string {
+  return s.replace(/^\s*<!--\s*author_name:[^>]*-->\s*/i, "");
+}
+ /** Decide how to feed stored/incoming content into Tiptap. */
 export function resolveContentToHtml(content: string): string {
   if (!content || !content.trim()) return "<p></p>";
-  if (isLikelyMarkdown(content)) return markdownToHtml(content);
-  if (isLikelyHtml(content)) return content;
-  return markdownToHtml(content);
+  const stripped = stripAuthorComment(content);
+  const text = stripped.trim() ? stripped : content;
+  if (isLikelyMarkdown(text)) return markdownToHtml(text);
+  if (isLikelyHtml(text)) return stripped.trim() ? stripped : content;
+  return markdownToHtml(text);
 }
 
 /* ------------------------------------------------------------------ */
